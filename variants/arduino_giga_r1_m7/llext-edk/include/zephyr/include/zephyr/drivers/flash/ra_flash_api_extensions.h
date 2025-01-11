@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024 Renesas Electronics Corporation
+ *
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +11,6 @@
 
 enum ra_ex_ops {
 	FLASH_RA_EX_OP_WRITE_PROTECT = FLASH_EX_OP_VENDOR_BASE,
-	FLASH_RA_EX_OP_READ_PROTECT,
 };
 
 typedef struct {

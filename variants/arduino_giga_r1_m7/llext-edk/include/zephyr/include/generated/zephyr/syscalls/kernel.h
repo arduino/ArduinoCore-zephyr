@@ -234,23 +234,6 @@ static inline void k_thread_abort(k_tid_t thread)
 }
 
 
-extern void z_impl_k_thread_start(k_tid_t thread);
-
-__pinned_func
-static inline void k_thread_start(k_tid_t thread)
-{
-#ifdef CONFIG_USERSPACE
-	if (z_syscall_trap()) {
-		union { uintptr_t x; k_tid_t val; } parm0 = { .val = thread };
-		(void) arch_syscall_invoke1(parm0.x, K_SYSCALL_K_THREAD_START);
-		return;
-	}
-#endif
-	compiler_barrier();
-	z_impl_k_thread_start(thread);
-}
-
-
 extern k_ticks_t z_impl_k_thread_timeout_expires_ticks(const struct k_thread * thread);
 
 __pinned_func

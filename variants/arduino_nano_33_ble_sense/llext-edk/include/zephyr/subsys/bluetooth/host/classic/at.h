@@ -15,7 +15,7 @@ enum at_result {
 };
 
 enum at_cme {
-	CME_ERROR_AG_FAILURE                    = 0,
+	CME_ERPOR_AG_FAILURE                    = 0,
 	CME_ERROR_NO_CONNECTION_TO_PHONE        = 1,
 	CME_ERROR_OPERATION_NOT_ALLOWED         = 3,
 	CME_ERROR_OPERATION_NOT_SUPPORTED       = 4,

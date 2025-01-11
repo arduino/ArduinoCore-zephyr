@@ -97,6 +97,30 @@ static inline int flash_erase(const struct device * dev, off_t offset, size_t si
 #endif
 
 
+extern int z_impl_flash_get_size(const struct device * dev, uint64_t * size);
+
+__pinned_func
+static inline int flash_get_size(const struct device * dev, uint64_t * size)
+{
+#ifdef CONFIG_USERSPACE
+	if (z_syscall_trap()) {
+		union { uintptr_t x; const struct device * val; } parm0 = { .val = dev };
+		union { uintptr_t x; uint64_t * val; } parm1 = { .val = size };
+		return (int) arch_syscall_invoke2(parm0.x, parm1.x, K_SYSCALL_FLASH_GET_SIZE);
+	}
+#endif
+	compiler_barrier();
+	return z_impl_flash_get_size(dev, size);
+}
+
+#if defined(CONFIG_TRACING_SYSCALL)
+#ifndef DISABLE_SYSCALL_TRACING
+
+#define flash_get_size(dev, size) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_FLASH_GET_SIZE, flash_get_size, dev, size); 	syscall__retval = flash_get_size(dev, size); 	sys_port_trace_syscall_exit(K_SYSCALL_FLASH_GET_SIZE, flash_get_size, dev, size, syscall__retval); 	syscall__retval; })
+#endif
+#endif
+
+
 extern int z_impl_flash_fill(const struct device * dev, uint8_t val, off_t offset, size_t size);
 
 __pinned_func
@@ -339,6 +363,39 @@ static inline int flash_ex_op(const struct device * dev, uint16_t code, const ui
 #ifndef DISABLE_SYSCALL_TRACING
 
 #define flash_ex_op(dev, code, in, out) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_FLASH_EX_OP, flash_ex_op, dev, code, in, out); 	syscall__retval = flash_ex_op(dev, code, in, out); 	sys_port_trace_syscall_exit(K_SYSCALL_FLASH_EX_OP, flash_ex_op, dev, code, in, out, syscall__retval); 	syscall__retval; })
+#endif
+#endif
+
+
+extern int z_impl_flash_copy(const struct device * src_dev, off_t src_offset, const struct device * dst_dev, off_t dst_offset, off_t size, uint8_t * buf, size_t buf_size);
+
+__pinned_func
+static inline int flash_copy(const struct device * src_dev, off_t src_offset, const struct device * dst_dev, off_t dst_offset, off_t size, uint8_t * buf, size_t buf_size)
+{
+#ifdef CONFIG_USERSPACE
+	if (z_syscall_trap()) {
+		union { uintptr_t x; const struct device * val; } parm0 = { .val = src_dev };
+		union { uintptr_t x; off_t val; } parm1 = { .val = src_offset };
+		union { uintptr_t x; const struct device * val; } parm2 = { .val = dst_dev };
+		union { uintptr_t x; off_t val; } parm3 = { .val = dst_offset };
+		union { uintptr_t x; off_t val; } parm4 = { .val = size };
+		union { uintptr_t x; uint8_t * val; } parm5 = { .val = buf };
+		union { uintptr_t x; size_t val; } parm6 = { .val = buf_size };
+		uintptr_t more[] = {
+			parm5.x,
+			parm6.x
+		};
+		return (int) arch_syscall_invoke6(parm0.x, parm1.x, parm2.x, parm3.x, parm4.x, (uintptr_t) &more, K_SYSCALL_FLASH_COPY);
+	}
+#endif
+	compiler_barrier();
+	return z_impl_flash_copy(src_dev, src_offset, dst_dev, dst_offset, size, buf, buf_size);
+}
+
+#if defined(CONFIG_TRACING_SYSCALL)
+#ifndef DISABLE_SYSCALL_TRACING
+
+#define flash_copy(src_dev, src_offset, dst_dev, dst_offset, size, buf, buf_size) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_FLASH_COPY, flash_copy, src_dev, src_offset, dst_dev, dst_offset, size, buf, buf_size); 	syscall__retval = flash_copy(src_dev, src_offset, dst_dev, dst_offset, size, buf, buf_size); 	sys_port_trace_syscall_exit(K_SYSCALL_FLASH_COPY, flash_copy, src_dev, src_offset, dst_dev, dst_offset, size, buf, buf_size, syscall__retval); 	syscall__retval; })
 #endif
 #endif
 

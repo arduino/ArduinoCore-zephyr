@@ -399,31 +399,6 @@ static inline int zsock_ioctl_impl(int sock, unsigned long request, va_list ap)
 #endif
 
 
-extern int z_impl_zsock_poll(struct zsock_pollfd * fds, int nfds, int timeout);
-
-__pinned_func
-static inline int zsock_poll(struct zsock_pollfd * fds, int nfds, int timeout)
-{
-#ifdef CONFIG_USERSPACE
-	if (z_syscall_trap()) {
-		union { uintptr_t x; struct zsock_pollfd * val; } parm0 = { .val = fds };
-		union { uintptr_t x; int val; } parm1 = { .val = nfds };
-		union { uintptr_t x; int val; } parm2 = { .val = timeout };
-		return (int) arch_syscall_invoke3(parm0.x, parm1.x, parm2.x, K_SYSCALL_ZSOCK_POLL);
-	}
-#endif
-	compiler_barrier();
-	return z_impl_zsock_poll(fds, nfds, timeout);
-}
-
-#if defined(CONFIG_TRACING_SYSCALL)
-#ifndef DISABLE_SYSCALL_TRACING
-
-#define zsock_poll(fds, nfds, timeout) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_ZSOCK_POLL, zsock_poll, fds, nfds, timeout); 	syscall__retval = zsock_poll(fds, nfds, timeout); 	sys_port_trace_syscall_exit(K_SYSCALL_ZSOCK_POLL, zsock_poll, fds, nfds, timeout, syscall__retval); 	syscall__retval; })
-#endif
-#endif
-
-
 extern int z_impl_zsock_getsockopt(int sock, int level, int optname, void * optval, socklen_t * optlen);
 
 __pinned_func

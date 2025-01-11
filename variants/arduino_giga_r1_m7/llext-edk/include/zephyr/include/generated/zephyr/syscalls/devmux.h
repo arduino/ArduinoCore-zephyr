@@ -20,15 +20,15 @@
 extern "C" {
 #endif
 
-extern ssize_t z_impl_devmux_select_get(const struct device * dev);
+extern int z_impl_devmux_select_get(const struct device * dev);
 
 __pinned_func
-static inline ssize_t devmux_select_get(const struct device * dev)
+static inline int devmux_select_get(const struct device * dev)
 {
 #ifdef CONFIG_USERSPACE
 	if (z_syscall_trap()) {
 		union { uintptr_t x; const struct device * val; } parm0 = { .val = dev };
-		return (ssize_t) arch_syscall_invoke1(parm0.x, K_SYSCALL_DEVMUX_SELECT_GET);
+		return (int) arch_syscall_invoke1(parm0.x, K_SYSCALL_DEVMUX_SELECT_GET);
 	}
 #endif
 	compiler_barrier();
@@ -38,7 +38,7 @@ static inline ssize_t devmux_select_get(const struct device * dev)
 #if defined(CONFIG_TRACING_SYSCALL)
 #ifndef DISABLE_SYSCALL_TRACING
 
-#define devmux_select_get(dev) ({ 	ssize_t syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_DEVMUX_SELECT_GET, devmux_select_get, dev); 	syscall__retval = devmux_select_get(dev); 	sys_port_trace_syscall_exit(K_SYSCALL_DEVMUX_SELECT_GET, devmux_select_get, dev, syscall__retval); 	syscall__retval; })
+#define devmux_select_get(dev) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_DEVMUX_SELECT_GET, devmux_select_get, dev); 	syscall__retval = devmux_select_get(dev); 	sys_port_trace_syscall_exit(K_SYSCALL_DEVMUX_SELECT_GET, devmux_select_get, dev, syscall__retval); 	syscall__retval; })
 #endif
 #endif
 

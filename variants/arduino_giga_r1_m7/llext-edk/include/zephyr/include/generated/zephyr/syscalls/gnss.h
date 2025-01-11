@@ -68,54 +68,6 @@ static inline int gnss_get_fix_rate(const struct device * dev, uint32_t * fix_in
 #endif
 
 
-extern int z_impl_gnss_set_periodic_config(const struct device * dev, const struct gnss_periodic_config * config);
-
-__pinned_func
-static inline int gnss_set_periodic_config(const struct device * dev, const struct gnss_periodic_config * config)
-{
-#ifdef CONFIG_USERSPACE
-	if (z_syscall_trap()) {
-		union { uintptr_t x; const struct device * val; } parm0 = { .val = dev };
-		union { uintptr_t x; const struct gnss_periodic_config * val; } parm1 = { .val = config };
-		return (int) arch_syscall_invoke2(parm0.x, parm1.x, K_SYSCALL_GNSS_SET_PERIODIC_CONFIG);
-	}
-#endif
-	compiler_barrier();
-	return z_impl_gnss_set_periodic_config(dev, config);
-}
-
-#if defined(CONFIG_TRACING_SYSCALL)
-#ifndef DISABLE_SYSCALL_TRACING
-
-#define gnss_set_periodic_config(dev, config) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_GNSS_SET_PERIODIC_CONFIG, gnss_set_periodic_config, dev, config); 	syscall__retval = gnss_set_periodic_config(dev, config); 	sys_port_trace_syscall_exit(K_SYSCALL_GNSS_SET_PERIODIC_CONFIG, gnss_set_periodic_config, dev, config, syscall__retval); 	syscall__retval; })
-#endif
-#endif
-
-
-extern int z_impl_gnss_get_periodic_config(const struct device * dev, struct gnss_periodic_config * config);
-
-__pinned_func
-static inline int gnss_get_periodic_config(const struct device * dev, struct gnss_periodic_config * config)
-{
-#ifdef CONFIG_USERSPACE
-	if (z_syscall_trap()) {
-		union { uintptr_t x; const struct device * val; } parm0 = { .val = dev };
-		union { uintptr_t x; struct gnss_periodic_config * val; } parm1 = { .val = config };
-		return (int) arch_syscall_invoke2(parm0.x, parm1.x, K_SYSCALL_GNSS_GET_PERIODIC_CONFIG);
-	}
-#endif
-	compiler_barrier();
-	return z_impl_gnss_get_periodic_config(dev, config);
-}
-
-#if defined(CONFIG_TRACING_SYSCALL)
-#ifndef DISABLE_SYSCALL_TRACING
-
-#define gnss_get_periodic_config(dev, config) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_GNSS_GET_PERIODIC_CONFIG, gnss_get_periodic_config, dev, config); 	syscall__retval = gnss_get_periodic_config(dev, config); 	sys_port_trace_syscall_exit(K_SYSCALL_GNSS_GET_PERIODIC_CONFIG, gnss_get_periodic_config, dev, config, syscall__retval); 	syscall__retval; })
-#endif
-#endif
-
-
 extern int z_impl_gnss_set_navigation_mode(const struct device * dev, enum gnss_navigation_mode mode);
 
 __pinned_func
@@ -232,6 +184,30 @@ static inline int gnss_get_supported_systems(const struct device * dev, gnss_sys
 #ifndef DISABLE_SYSCALL_TRACING
 
 #define gnss_get_supported_systems(dev, systems) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_GNSS_GET_SUPPORTED_SYSTEMS, gnss_get_supported_systems, dev, systems); 	syscall__retval = gnss_get_supported_systems(dev, systems); 	sys_port_trace_syscall_exit(K_SYSCALL_GNSS_GET_SUPPORTED_SYSTEMS, gnss_get_supported_systems, dev, systems, syscall__retval); 	syscall__retval; })
+#endif
+#endif
+
+
+extern int z_impl_gnss_get_latest_timepulse(const struct device * dev, k_ticks_t * timestamp);
+
+__pinned_func
+static inline int gnss_get_latest_timepulse(const struct device * dev, k_ticks_t * timestamp)
+{
+#ifdef CONFIG_USERSPACE
+	if (z_syscall_trap()) {
+		union { uintptr_t x; const struct device * val; } parm0 = { .val = dev };
+		union { uintptr_t x; k_ticks_t * val; } parm1 = { .val = timestamp };
+		return (int) arch_syscall_invoke2(parm0.x, parm1.x, K_SYSCALL_GNSS_GET_LATEST_TIMEPULSE);
+	}
+#endif
+	compiler_barrier();
+	return z_impl_gnss_get_latest_timepulse(dev, timestamp);
+}
+
+#if defined(CONFIG_TRACING_SYSCALL)
+#ifndef DISABLE_SYSCALL_TRACING
+
+#define gnss_get_latest_timepulse(dev, timestamp) ({ 	int syscall__retval; 	sys_port_trace_syscall_enter(K_SYSCALL_GNSS_GET_LATEST_TIMEPULSE, gnss_get_latest_timepulse, dev, timestamp); 	syscall__retval = gnss_get_latest_timepulse(dev, timestamp); 	sys_port_trace_syscall_exit(K_SYSCALL_GNSS_GET_LATEST_TIMEPULSE, gnss_get_latest_timepulse, dev, timestamp, syscall__retval); 	syscall__retval; })
 #endif
 #endif
 

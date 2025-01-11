@@ -38,6 +38,8 @@
 #include <stm32l5xx_ll_exti.h>
 #elif defined(CONFIG_SOC_SERIES_STM32MP1X)
 #include <stm32mp1xx_ll_exti.h>
+#elif defined(CONFIG_SOC_SERIES_STM32U0X)
+#include <stm32u0xx_ll_exti.h>
 #elif defined(CONFIG_SOC_SERIES_STM32U5X)
 #include <stm32u5xx_ll_exti.h>
 #elif defined(CONFIG_SOC_SERIES_STM32WBAX)

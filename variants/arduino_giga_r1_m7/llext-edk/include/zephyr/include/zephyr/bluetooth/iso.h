@@ -5,7 +5,7 @@
 
 /*
  * Copyright (c) 2020 Intel Corporation
- * Copyright (c) 2021 Nordic Semiconductor ASA
+ * Copyright (c) 2021-2024 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -23,10 +23,18 @@
  * @{
  */
 
-#include <zephyr/sys/atomic.h>
+#include <stdint.h>
+
+#include <zephyr/bluetooth/addr.h>
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/buf.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci.h>
+#include <zephyr/net_buf.h>
+#include <zephyr/sys/atomic.h>
+#include <zephyr/sys/slist.h>
+#include <zephyr/sys/util_macro.h>
+#include <zephyr/sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +54,16 @@ extern "C" {
  *  @return Needed buffer size to match the requested ISO SDU MTU.
  */
 #define BT_ISO_SDU_BUF_SIZE(mtu) BT_BUF_ISO_SIZE(mtu)
+
+/**
+ * Convert BIS index to bit
+ *
+ * The BIS indexes start from 0x01, so the lowest allowed bit is
+ * BIT(0) that represents index 0x01. To synchronize to e.g. BIS
+ * indexes 0x01 and 0x02, the bitfield value should be BIT(0) | BIT(1).
+ * As a general notation, to sync to BIS index N use BIT(N - 1).
+ */
+#define BT_ISO_BIS_INDEX_BIT(x) (BIT((x) - 1))
 
 /** Value to set the ISO data path over HCi. */
 #define BT_ISO_DATA_PATH_HCI        0x00
@@ -122,6 +140,14 @@ extern "C" {
 #define BT_ISO_PTO_MIN              0x00U
 /** Maximum pre-transmission offset */
 #define BT_ISO_PTO_MAX              0x0FU
+
+/**
+ * @brief Check if ISO BIS bitfield is valid (BT_ISO_BIS_INDEX_BIT(1)|..|BT_ISO_BIS_INDEX_BIT(31))
+ *
+ * @param _bis_bitfield BIS index bitfield (uint32)
+ */
+#define BT_ISO_VALID_BIS_BITFIELD(_bis_bitfield)                                                   \
+	((_bis_bitfield) != 0U && (_bis_bitfield) <= BIT_MASK(BT_ISO_BIS_INDEX_MAX))
 
 /**
  * @brief Life-span states of ISO channel. Used only by internal APIs dealing with setting channel
@@ -548,9 +574,10 @@ struct bt_iso_big_sync_param {
 	/**
 	 * @brief Bitfield of the BISes to sync to
 	 *
-	 * The BIS indexes start from 0x01, so the lowest allowed bit is
-	 * BIT(1) that represents index 0x01. To synchronize to e.g. BIS
-	 * indexes 0x01 and 0x02, the bitfield value should be BIT(1) | BIT(2).
+	 * Use @ref BT_ISO_BIS_INDEX_BIT to convert BIS indexes to a bitfield.
+	 *
+	 * To synchronize to e.g. BIS indexes 0x01 and 0x02, this can be set to
+	 * BT_ISO_BIS_INDEX_BIT(0x01) | BT_ISO_BIS_INDEX_BIT(0x02).
 	 */
 	uint32_t bis_bitfield;
 
@@ -1075,6 +1102,42 @@ int bt_iso_chan_get_info(const struct bt_iso_chan *chan, struct bt_iso_info *inf
  * @return Zero on success or (negative) error code on failure.
  */
 int bt_iso_chan_get_tx_sync(const struct bt_iso_chan *chan, struct bt_iso_tx_info *info);
+
+/**
+ * @brief Struct to hold the Broadcast Isochronous Group callbacks
+ *
+ * These can be registered for usage with bt_iso_big_register_cb().
+ */
+struct bt_iso_big_cb {
+	/**
+	 * @brief The BIG has started and all of the streams are ready for data
+	 *
+	 * @param big The started BIG
+	 */
+	void (*started)(struct bt_iso_big *big);
+
+	/**
+	 * @brief The BIG has stopped and none of the streams are ready for data
+	 *
+	 * @param big The stopped BIG
+	 * @param reason The reason why the BIG stopped (see the BT_HCI_ERR_* values)
+	 */
+	void (*stopped)(struct bt_iso_big *big, uint8_t reason);
+
+	/** @internal Internally used field for list handling */
+	sys_snode_t _node;
+};
+
+/**
+ * @brief Registers callbacks for Broadcast Sources
+ *
+ * @param cb Pointer to the callback structure.
+ *
+ * @retval 0 on success
+ * @retval -EINVAL if @p cb is NULL
+ * @retval -EEXIST if @p cb is already registered
+ */
+int bt_iso_big_register_cb(struct bt_iso_big_cb *cb);
 
 /**
  * @brief Creates a BIG as a broadcaster

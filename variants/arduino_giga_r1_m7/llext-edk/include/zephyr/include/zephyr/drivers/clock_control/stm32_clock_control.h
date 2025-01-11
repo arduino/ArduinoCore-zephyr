@@ -17,12 +17,17 @@
 #elif defined(CONFIG_SOC_SERIES_STM32F0X)
 #include <zephyr/dt-bindings/clock/stm32f0_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32F1X)
+#if defined(CONFIG_SOC_STM32F10X_CONNECTIVITY_LINE_DEVICE)
+#include <zephyr/dt-bindings/clock/stm32f10x_clock.h>
+#else
 #include <zephyr/dt-bindings/clock/stm32f1_clock.h>
+#endif
 #elif defined(CONFIG_SOC_SERIES_STM32F3X)
 #include <zephyr/dt-bindings/clock/stm32f3_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32F2X) || \
 	defined(CONFIG_SOC_SERIES_STM32F4X)
 #include <zephyr/dt-bindings/clock/stm32f4_clock.h>
+#include <zephyr/dt-bindings/clock/stm32f410_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32F7X)
 #include <zephyr/dt-bindings/clock/stm32f7_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32G0X)
@@ -38,6 +43,8 @@
 #include <zephyr/dt-bindings/clock/stm32l4_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32WBX)
 #include <zephyr/dt-bindings/clock/stm32wb_clock.h>
+#elif defined(CONFIG_SOC_SERIES_STM32WB0X)
+#include <zephyr/dt-bindings/clock/stm32wb0_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32WLX)
 #include <zephyr/dt-bindings/clock/stm32wl_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32H5X)
@@ -46,6 +53,8 @@
 #include <zephyr/dt-bindings/clock/stm32h7_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32H7RSX)
 #include <zephyr/dt-bindings/clock/stm32h7rs_clock.h>
+#elif defined(CONFIG_SOC_SERIES_STM32U0X)
+#include <zephyr/dt-bindings/clock/stm32u0_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32U5X)
 #include <zephyr/dt-bindings/clock/stm32u5_clock.h>
 #elif defined(CONFIG_SOC_SERIES_STM32WBAX)
@@ -142,6 +151,7 @@
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32g0_pll_clock, okay)  || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32g4_pll_clock, okay)  || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32l4_pll_clock, okay)  || \
+	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32u0_pll_clock, okay)  || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32u5_pll_clock, okay)  || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32wb_pll_clock, okay)  || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32wba_pll_clock, okay) || \
@@ -174,6 +184,8 @@
 #define STM32_PLLI2S_ENABLED	1
 #define STM32_PLLI2S_M_DIVISOR		DT_PROP(DT_NODELABEL(plli2s), div_m)
 #define STM32_PLLI2S_N_MULTIPLIER	DT_PROP(DT_NODELABEL(plli2s), mul_n)
+#define STM32_PLLI2S_Q_ENABLED		DT_NODE_HAS_PROP(DT_NODELABEL(plli2s), div_q)
+#define STM32_PLLI2S_Q_DIVISOR		DT_PROP_OR(DT_NODELABEL(plli2s), div_q, 1)
 #define STM32_PLLI2S_R_ENABLED		DT_NODE_HAS_PROP(DT_NODELABEL(plli2s), div_r)
 #define STM32_PLLI2S_R_DIVISOR		DT_PROP_OR(DT_NODELABEL(plli2s), div_r, 1)
 #endif
@@ -241,7 +253,7 @@
 #endif
 
 /** PLL/PLL1 clock source */
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(pll), okay) && \
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(pll)) && \
 	DT_NODE_HAS_PROP(DT_NODELABEL(pll), clocks)
 #define DT_PLL_CLOCKS_CTRL	DT_CLOCKS_CTLR(DT_NODELABEL(pll))
 #if DT_SAME_NODE(DT_PLL_CLOCKS_CTRL, DT_NODELABEL(clk_msi))
@@ -266,7 +278,7 @@
 #endif
 
 /** PLL2 clock source */
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(pll2), okay) && \
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(pll2)) && \
 	DT_NODE_HAS_PROP(DT_NODELABEL(pll2), clocks)
 #define DT_PLL2_CLOCKS_CTRL	DT_CLOCKS_CTLR(DT_NODELABEL(pll2))
 #if DT_SAME_NODE(DT_PLL2_CLOCKS_CTRL, DT_NODELABEL(clk_msis))
@@ -282,7 +294,7 @@
 #endif
 
 /** PLL3 clock source */
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(pll3), okay) && \
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(pll3)) && \
 	DT_NODE_HAS_PROP(DT_NODELABEL(pll3), clocks)
 #define DT_PLL3_CLOCKS_CTRL	DT_CLOCKS_CTLR(DT_NODELABEL(pll3))
 #if DT_SAME_NODE(DT_PLL3_CLOCKS_CTRL, DT_NODELABEL(clk_msis))
@@ -422,7 +434,8 @@
 /** Driver structure definition */
 
 struct stm32_pclken {
-	uint32_t bus;
+	uint32_t bus : STM32_CLOCK_DIV_SHIFT;
+	uint32_t div : (32 - STM32_CLOCK_DIV_SHIFT);
 	uint32_t enr;
 };
 
@@ -431,7 +444,9 @@ struct stm32_pclken {
 #define STM32_CLOCK_INFO(clk_index, node_id)				\
 	{								\
 	.enr = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bits),		\
-	.bus = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus)		\
+	.bus = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) & 0xff,	\
+	.div = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) >>	\
+		STM32_CLOCK_DIV_SHIFT,					\
 	}
 #define STM32_DT_CLOCKS(node_id)					\
 	{								\
@@ -484,6 +499,38 @@ struct stm32_pclken {
 #define STM32_CLOCK_VAL_GET(clock) \
 	(((clock) >> STM32_CLOCK_VAL_SHIFT) & STM32_CLOCK_VAL_MASK)
 
+/**
+ * @brief Obtain register field from MCO configuration.
+ *
+ * @param mco_cfgr MCO configuration bit field value.
+ */
+#define STM32_MCO_CFGR_REG_GET(mco_cfgr) \
+	(((mco_cfgr) >> STM32_MCO_CFGR_REG_SHIFT) & STM32_MCO_CFGR_REG_MASK)
+
+/**
+ * @brief Obtain position field from MCO configuration.
+ *
+ * @param mco_cfgr MCO configuration bit field value.
+ */
+#define STM32_MCO_CFGR_SHIFT_GET(mco_cfgr) \
+	(((mco_cfgr) >> STM32_MCO_CFGR_SHIFT_SHIFT) & STM32_MCO_CFGR_SHIFT_MASK)
+
+/**
+ * @brief Obtain mask field from MCO configuration.
+ *
+ * @param mco_cfgr MCO configuration bit field value.
+ */
+#define STM32_MCO_CFGR_MASK_GET(mco_cfgr) \
+	(((mco_cfgr) >> STM32_MCO_CFGR_MASK_SHIFT) & STM32_MCO_CFGR_MASK_MASK)
+
+/**
+ * @brief Obtain value field from MCO configuration.
+ *
+ * @param mco_cfgr MCO configuration bit field value.
+ */
+#define STM32_MCO_CFGR_VAL_GET(mco_cfgr) \
+	(((mco_cfgr) >> STM32_MCO_CFGR_VAL_SHIFT) & STM32_MCO_CFGR_VAL_MASK)
+
 #if defined(STM32_HSE_CSS)
 /**
  * @brief Called if the HSE clock security system detects a clock fault.
@@ -495,5 +542,26 @@ struct stm32_pclken {
  */
 void stm32_hse_css_callback(void);
 #endif
+
+#ifdef CONFIG_SOC_SERIES_STM32WB0X
+/**
+ * @internal
+ * @brief Type definition for LSI frequency update callbacks
+ */
+typedef void (*lsi_update_cb_t)(uint32_t new_lsi_frequency);
+
+/**
+ * @internal
+ * @brief Registers a callback to invoke after each runtime measure and
+ * update of the LSI frequency is completed.
+ *
+ * @param cb		Callback to invoke
+ * @return 0		Registration successful
+ * @return ENOMEM	Too many callbacks registered
+ *
+ * @note Callbacks are NEVER invoked if runtime LSI measurement is disabled
+ */
+int stm32wb0_register_lsi_update_callback(lsi_update_cb_t cb);
+#endif /* CONFIG_SOC_SERIES_STM32WB0X */
 
 #endif /* ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_STM32_CLOCK_CONTROL_H_ */
