@@ -282,11 +282,11 @@ void analogWrite(pin_size_t pinNumber, int value)
 {
   size_t idx = pwm_pin_index(pinNumber);
 
-  if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
+  if (idx >= ARRAY_SIZE(arduino_pwm) ) {
     return;
   }
 
-  if (idx >= ARRAY_SIZE(arduino_pwm) ) {
+  if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
     return;
   }
 
