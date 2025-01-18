@@ -100,6 +100,9 @@ enum digitalPins {
 enum analogPins { DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user),
 				       adc_pin_gpios, AN_ENUMS) };
 
+// We provide analogReadResolution APIs
+void analogReadResolution(int bits);
+
 #endif
 
 void interrupts(void);

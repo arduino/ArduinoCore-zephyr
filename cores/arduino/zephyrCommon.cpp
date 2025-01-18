@@ -282,11 +282,11 @@ void analogWrite(pin_size_t pinNumber, int value)
 {
   size_t idx = pwm_pin_index(pinNumber);
 
-  if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
+  if (idx >= ARRAY_SIZE(arduino_pwm) ) {
     return;
   }
 
-  if (idx >= ARRAY_SIZE(arduino_pwm) ) {
+  if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
     return;
   }
 
@@ -319,10 +319,21 @@ void analogReference(uint8_t mode)
   }
 }
 
+// Note: We can not update the arduino_adc structure as it is read only...
+static int read_resolution = 10;
+
+void analogReadResolution(int bits)
+{
+  read_resolution = bits;
+  //for(size_t i=0; i<ARRAY_SIZE(arduino_analog_pins); i++) {
+  //  arduino_adc[i].resolution = bits;
+  // }
+ }
+
 int analogRead(pin_size_t pinNumber)
 {
   int err;
-  int16_t buf;
+  uint16_t buf;
   struct adc_sequence seq = { .buffer = &buf, .buffer_size = sizeof(buf) };
   size_t idx = analog_pin_index(pinNumber);
 
@@ -344,7 +355,8 @@ int analogRead(pin_size_t pinNumber)
   }
 
   seq.channels = BIT(arduino_adc[idx].channel_id);
-  seq.resolution = arduino_adc[idx].resolution;
+  //seq.resolution = arduino_adc[idx].resolution;
+  seq.resolution = read_resolution;
   seq.oversampling = arduino_adc[idx].oversampling;
 
   err = adc_read(arduino_adc[idx].dev, &seq);
