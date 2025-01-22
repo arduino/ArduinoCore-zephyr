@@ -27,6 +27,7 @@
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/crypto.h>
 #include <zephyr/bluetooth/classic/classic.h>
+#include <zephyr/bluetooth/hci_types.h>
 
 #ifdef __cplusplus
 extern "C" {

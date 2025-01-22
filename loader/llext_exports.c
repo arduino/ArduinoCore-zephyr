@@ -22,7 +22,12 @@ EXPORT_SYMBOL(strcmp);
 EXPORT_SYMBOL(strlen);
 EXPORT_SYMBOL(strchr);
 EXPORT_SYMBOL(strcat);
+EXPORT_SYMBOL(strtok);
+EXPORT_SYMBOL(strtol);
+
 EXPORT_SYMBOL(memmove);
+EXPORT_SYMBOL(memcpy);
+EXPORT_SYMBOL(memset);
 
 EXPORT_SYMBOL(k_malloc);
 EXPORT_SYMBOL(malloc);

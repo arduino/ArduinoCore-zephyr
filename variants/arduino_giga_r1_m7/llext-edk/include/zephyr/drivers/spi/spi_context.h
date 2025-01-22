@@ -30,6 +30,10 @@ struct spi_context {
 	const struct spi_config *owner;
 	const struct gpio_dt_spec *cs_gpios;
 	size_t num_cs_gpios;
+  
+  /* how to test if the config changed? */
+  uint32_t config_frequency;
+  spi_operation_t config_operation;
 
 	struct k_sem lock;
 	struct k_sem sync;
@@ -78,7 +82,7 @@ struct spi_context {
 static inline bool spi_context_configured(struct spi_context *ctx,
 					  const struct spi_config *config)
 {
-	return !!(ctx->config == config);
+  return !!((ctx->config == config) && (ctx->config_frequency == config->frequency) && (ctx->config_operation == config->operation));
 }
 
 static inline bool spi_context_is_slave(struct spi_context *ctx)
