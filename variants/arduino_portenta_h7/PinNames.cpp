@@ -19,6 +19,8 @@ void pinMode(PinName pinNumber, PinMode mode) {
     return;
   }
 
+  if (pinNumber & DUAL_PAD) return;
+
   if (mode == INPUT) {  // input mode
     gpio_pin_configure(arduino_ports[pinNumber >> 4].port, pinNumber & 0xf,
                        GPIO_INPUT | GPIO_ACTIVE_HIGH);
@@ -35,11 +37,13 @@ void pinMode(PinName pinNumber, PinMode mode) {
 }
 
 void digitalWrite(PinName pinNumber, PinStatus status) {
+  if (pinNumber & DUAL_PAD) return;
   gpio_pin_set(arduino_ports[pinNumber >> 4].port, pinNumber & 0xf, status);
 }
 
 
 PinStatus digitalRead(PinName pinNumber) {
+  if (pinNumber & DUAL_PAD) return LOW;
   return (gpio_pin_get(arduino_ports[pinNumber >> 4].port, pinNumber & 0xf) == 1) ? HIGH : LOW;
 }
 
@@ -47,8 +51,19 @@ int analogRead(PinName pinNumber) {
   // Not sure what to do here, does anyone do something like:
   // analogRead(PA_0c); or analogRead(PC2_ALT0)?
   // first pass only support ones on pins.
+  if (pinNumber & DUAL_PAD) {
+    switch (pinNumber & 0xf) {
+    case 0: Serial.print("<A0>"); return analogRead(A0);
+    case 1: Serial.print("<A1>"); return analogRead(A1);
+    case 2: Serial.print("<A2>"); return analogRead(A2);
+    case 3: Serial.print("<A3>"); return analogRead(A3);
+    default: return -1;
+    }
+
+  }
   int pin_index = PinNameToIndex(pinNumber);
   if (pin_index != -1) {
+    Serial.write('<'); Serial.print(pin_index); Serial.write('>');
     return analogRead(pin_index);
   }
   return -1;
@@ -57,6 +72,7 @@ int analogRead(PinName pinNumber) {
 
 void analogWrite(PinName pinNumber, int value) {
   // first pass only support ones on pins.
+  if (pinNumber & DUAL_PAD) return;
   int pin_index = PinNameToIndex(pinNumber);
   if (pin_index != -1) {
     analogWrite(pin_index, value);
@@ -66,6 +82,7 @@ void analogWrite(PinName pinNumber, int value) {
 
 
 int PinNameToIndex(PinName P) {
+  if (P & DUAL_PAD) return -1;
   for (size_t i = 0; i < ARRAY_SIZE(arduino_pins); i++) {
     if ((arduino_ports[P >> 4].port == arduino_pins[i].port) && ((P & 0xf) == arduino_pins[i].pin)) {
       return i;

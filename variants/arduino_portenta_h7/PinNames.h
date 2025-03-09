@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+#define DUAL_PAD 0x800
+
 typedef enum {
     PA_0       = 0x00,
     PA_1       = 0x01,
@@ -175,6 +177,13 @@ typedef enum {
     PK_5       = 0xA5,
     PK_6       = 0xA6,
     PK_7       = 0xA7,
+
+    // Lets add the Analog only pins, will name them like the schematic, but number like  
+    PA_0C      = 0X00 | DUAL_PAD,
+    PA_1C      = 0X01 | DUAL_PAD,
+    PC_2C      = 0X02 | DUAL_PAD,
+    PC_3C      = 0X03 | DUAL_PAD,
+
 
     WL_REG_ON = PJ_1,
     WL_HOST_WAKE = PJ_5,
