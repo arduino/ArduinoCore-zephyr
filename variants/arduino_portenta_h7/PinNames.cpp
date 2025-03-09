@@ -53,17 +53,16 @@ int analogRead(PinName pinNumber) {
   // first pass only support ones on pins.
   if (pinNumber & DUAL_PAD) {
     switch (pinNumber & 0xf) {
-    case 0: Serial.print("<A0>"); return analogRead(A0);
-    case 1: Serial.print("<A1>"); return analogRead(A1);
-    case 2: Serial.print("<A2>"); return analogRead(A2);
-    case 3: Serial.print("<A3>"); return analogRead(A3);
+    case 0: return analogRead(A0);
+    case 1: return analogRead(A1);
+    case 2: return analogRead(A2);
+    case 3: return analogRead(A3);
     default: return -1;
     }
 
   }
   int pin_index = PinNameToIndex(pinNumber);
   if (pin_index != -1) {
-    Serial.write('<'); Serial.print(pin_index); Serial.write('>');
     return analogRead(pin_index);
   }
   return -1;
