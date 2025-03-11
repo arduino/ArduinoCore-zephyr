@@ -107,7 +107,7 @@
 		compatible = "pwm-clock";
 		clock-frequency = <0>;
 		#clock-cells = <1>;
-		pwms = <&pwm1 1 PWM_HZ(11000000) PWM_POLARITY_NORMAL>;
+		pwms = <&pwm1 1 PWM_HZ(12000000) PWM_POLARITY_NORMAL>;
     //12mhz for 7670, default is also 12MHz
 	};
 };
@@ -529,13 +529,15 @@
 				<&gpioc 2 0>,
 				<&gpioc 3 0>,
 				<&gpioa 4 0>,
-				<&gpioa 6 0>;
+				<&gpioa 6 0>,
+				<&gpioz 4 0>,			/* Hack for D19  */
+				<&gpioz 5 0>;			/* Hack for D20 */
                     
 		serials = <&cdc_acm_uart0>,<&usart6>, <&usart1>, <&uart4>;
 		cdc-acm = <&cdc_acm_uart0>;
 		i2cs = <&i2c3>, <&i2c1>, <&i2c4>;
 		spis = <&spi2>;
-		pwms = <&pwm1 1 PWM_HZ(11000000) PWM_POLARITY_NORMAL>,  //12mhz default
+		pwms = <&pwm1 1 PWM_HZ(12000000) PWM_POLARITY_NORMAL>,  //12mhz default
 				<&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
 				<&pwm3 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
 				<&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>, 
@@ -551,6 +553,8 @@
 				<&adc1 12>,
 				<&adc1 13>,
 				<&adc1 18>,
-				<&adc1 3>;        
+				<&adc1 3>,        
+				<&adc1 12>, /* Hack for D19 */
+				<&adc1 13>; /* Hack for D20 */
 	};
 };
