@@ -309,8 +309,10 @@
   					<&gpioz 1 0>,  		/* A1    ADC2_INP1 */
   					<&gpioz 2 0>,  		/* A2    ADC3_INP0 */
   					<&gpioz 3 0>,  		/* A3    ADC3_INP1 */
-  					<&gpioc 2 0>,  		/* A4 _ALT0?   ADC1_INP12 */
-  					<&gpioc 3 0>,    	/* A5 _ALT0?   ADC1_INP13 */
+  					<&gpioz 4 0>, 		/* A4 hack for duplicate PC_2 */
+  					<&gpioz 5 0>, 		/* A5 hack for duplicate PC_3 */
+  					/* <&gpioc 2 0>,  		A4 _ALT0?   ADC1_INP12 */
+  					/* <&gpioc 3 0>,    	A5 _ALT0?   ADC1_INP13 */
   					<&gpioa 4 0>,       /* A6    ADC1_INP18 */
   					<&gpioa 6 0>,       /* A7    ADC1_INP7 */
 
