@@ -7,8 +7,6 @@
 -DK_HEAP_MEM_POOL_SIZE=16384
 -DLL_EXTENSION_BUILD
 -fno-strict-aliasing
--fstack-protector
--mstack-protector-guard=global
 -fno-common
 -mcpu=cortex-m4
 -mthumb
@@ -33,7 +31,6 @@
 -fno-reorder-functions
 --param=min-pagesize=0
 -fno-defer-pop
--fstack-usage
 -specs=picolibc.specs
 -D_POSIX_THREADS
 -std=c99
