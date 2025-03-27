@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #ifndef ZEPHYR_PINNAMES_H
 #define ZEPHYR_PINNAMES_H

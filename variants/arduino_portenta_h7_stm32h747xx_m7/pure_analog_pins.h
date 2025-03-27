@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 #ifndef _PURE_ANALOG_PINS_
 #define _PURE_ANALOG_PINS_
 

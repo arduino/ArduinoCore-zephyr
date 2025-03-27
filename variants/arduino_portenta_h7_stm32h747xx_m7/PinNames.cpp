@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include <Arduino.h>
 #include "zephyrInternal.h"
 #include "PinNames.h"
