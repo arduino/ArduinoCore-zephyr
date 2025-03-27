@@ -14,20 +14,243 @@
 	status = "okay";
 };
 
+&i2c3 {
+	status = "okay";
+	gc2145: gc2145@3c {
+		compatible = "galaxycore,gc2145";
+		reg = <0x3c>;
+	//ov7670: ov7670@21 {
+	//	compatible = "ovti,ov7670";
+	//	reg = <0x21>;
+		reset-gpios = <&gpioe 3 GPIO_ACTIVE_LOW>;
+		pwdn-gpios = <&gpiod 5 GPIO_ACTIVE_LOW>;
+     
+		port {
+			gc2145_ep_out: endpoint {
+      //ov7670_ep_out: endpoint {
+				remote-endpoint = <&dcmi_ep_in>;
+			};
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+};
+
 &i2c4 {
 	status = "okay";
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_sck_pi1
+		     &spi2_miso_pc2 &spi2_mosi_pc3>;
+	pinctrl-names = "default";
+};
+
+&timers1 {
+	status = "okay";
+	st,prescaler = <0>;
+
+	pwm1: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pj11>;
+		pinctrl-names = "default";
+	};
+};
+
+&timers3 {
+	status = "okay";
+	st,prescaler = <100>;
+
+	pwm3: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim3_ch1_pc6 &tim3_ch2_pc7>;
+		pinctrl-names = "default";
+	};
+};
+
+&timers8 {
+	status = "okay";
+	st,prescaler = <100>;
+
+	pwm8: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
+		pinctrl-names = "default";
+	};
+};
+
+&timers12 {
+	status = "okay";
+	st,prescaler = <100>;
+
+	pwm12: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim12_ch1_ph6>;
+		pinctrl-names = "default";
+	};
+};
+
+&pwm1 {
+	/* Use the pwmclock node to start the clock generation */
+	pwmclock: pwmclock {
+		status = "okay";
+		compatible = "pwm-clock";
+		clock-frequency = <0>;
+		#clock-cells = <1>;
+		pwms = <&pwm1 1 PWM_HZ(12000000) PWM_POLARITY_NORMAL>;
+    //12mhz for 7670, default is also 12MHz
+	};
 };
 
 &rng {
 	status = "okay";
 };
 
+&dmamux1 {
+    status = "okay";
+};
+
+&dma1 {
+	status = "okay";
+};
+
+&dcmi {
+	status = "okay";
+	sensor = <&gc2145>;
+  //sensor = <&ov7670>;
+	/* ext-sdram = <&sdram1>; */
+	pinctrl-0 = <&dcmi_hsync_pa4 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
+				&dcmi_d0_ph9 &dcmi_d1_ph10 &dcmi_d2_ph11 &dcmi_d3_ph12
+				&dcmi_d4_ph14 &dcmi_d5_pi4 &dcmi_d6_pi6 &dcmi_d7_pi7>;
+	pinctrl-names = "default";
+	bus-width = <8>;
+	hsync-active = <0>;
+	vsync-active = <0>;
+	pixelclk-active = <0>;
+	capture-rate = <1>;
+	dmas = <&dma1 0 75 (STM32_DMA_PERIPH_TO_MEMORY | STM32_DMA_PERIPH_NO_INC |
+			STM32_DMA_MEM_INC | STM32_DMA_PERIPH_32BITS | STM32_DMA_MEM_32BITS |
+			STM32_DMA_PRIORITY_HIGH) STM32_DMA_FIFO_FULL>;
+      //FULL for 7670, default FIFO_1_4
+
+	port {
+		dcmi_ep_in: endpoint {
+			remote-endpoint = <&gc2145_ep_out>;
+      //remote-endpoint = <&ov7670_ep_out>;
+		};
+	};
+};
+
+
+&adc1 {
+	pinctrl-0 = <&adc1_inp12_pc2
+    &adc1_inp13_pc3
+    &adc1_inp18_pa4
+    &adc1_inp3_pa6
+		&adc1_inp0_pa0_c
+		&adc1_inp1_pa1_c>;
+	pinctrl-names = "default";
+	st,adc-clock-source = "SYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@c {
+		reg = <12>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+	channel@d {
+		reg = <13>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+	channel@12 {
+		reg = <18>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+
+	/* PA0_C and PA1_C */
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+};
+
+&adc3 {
+	pinctrl-0 = <&adc3_inp0_pc2_c
+		&adc3_inp1_pc3_c>;
+	pinctrl-names = "default";
+	st,adc-clock-source = "SYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <16>;
+	};
+};
+
+
 / {
 	chosen {
+		zephyr,camera = &dcmi;
 		zephyr,console = &usart6;
 		zephyr,shell-uart = &usart6;
 		zephyr,cdc-acm-uart0 = &usart6;
 	};
+
+	/* used to overcome problems with _C analog pins */
+	gpioz: gpio@deadbeef {
+		compatible = "vnd,gpio";
+		gpio-controller;
+		reg = <0xdeadbeef 0x1000>;
+		#gpio-cells = <0x2>;
+		status = "okay";
+	};
+
 };
 
 / {
@@ -59,29 +282,272 @@
 
 / {
 	zephyr,user {
-		digital-pin-gpios = <&gpioh 15 GPIO_ACTIVE_LOW>,
-				    <&gpiok 1 GPIO_ACTIVE_LOW>,
-				    <&gpioj 11 GPIO_ACTIVE_LOW>,
-				    <&gpiog 7 GPIO_ACTIVE_LOW>,
-				    <&gpioc 7 GPIO_ACTIVE_LOW>,
-				    <&gpioc 6 GPIO_ACTIVE_LOW>,
-				    <&gpioa 8 GPIO_ACTIVE_LOW>,
-				    <&gpioi 0 GPIO_ACTIVE_LOW>,
-				    <&gpioc 3 GPIO_ACTIVE_LOW>,
-				    <&gpioi 1 GPIO_ACTIVE_LOW>,
-				    <&gpioc 2 GPIO_ACTIVE_LOW>,
-				    <&gpioh 8 GPIO_ACTIVE_LOW>,
-				    <&gpioh 7 GPIO_ACTIVE_LOW>,
-				    <&gpioa 10 GPIO_ACTIVE_LOW>,
-				    <&gpioa 9 GPIO_ACTIVE_LOW>,
-					<&gpiok 5 GPIO_ACTIVE_LOW>;	// LEDR
+		digital-pin-gpios = <&gpioh 15 GPIO_ACTIVE_LOW>, /* D0 */
+				    <&gpiok 1 GPIO_ACTIVE_LOW>,		/* D1 */
+				    <&gpioj 11 GPIO_ACTIVE_LOW>,	/* D2 */
+				    <&gpiog 7 GPIO_ACTIVE_LOW>,		/* D3 */
+				    <&gpioc 7 GPIO_ACTIVE_LOW>,		/* D4 */
+				    <&gpioc 6 GPIO_ACTIVE_LOW>,		/* D5 */
+				    <&gpioa 8 GPIO_ACTIVE_LOW>,		/* D6 */
+				    <&gpioi 0 GPIO_ACTIVE_LOW>,		/* D7 */
+				    <&gpioc 3 GPIO_ACTIVE_LOW>,		/* D8 */
+				    <&gpioi 1 GPIO_ACTIVE_LOW>,		/* D9 */
+				    <&gpioc 2 GPIO_ACTIVE_LOW>,		/* D10 */
+				    <&gpioh 8 GPIO_ACTIVE_LOW>,		/* D11 */
+				    <&gpioh 7 GPIO_ACTIVE_LOW>,		/* D12 */
+				    <&gpioa 10 GPIO_ACTIVE_LOW>,	/* D13 */
+				    <&gpioa 9 GPIO_ACTIVE_LOW>,		/* D14 */
+
+  					<&gpioz 0 GPIO_ACTIVE_LOW>,  	/* A0    ADC2_INP0 */
+  					<&gpioz 1 GPIO_ACTIVE_LOW>,  	/* A1    ADC2_INP1 */
+  					<&gpioz 2 GPIO_ACTIVE_LOW>,  	/* A2    ADC3_INP0 */
+  					<&gpioz 3 GPIO_ACTIVE_LOW>,  	/* A3    ADC3_INP1 */
+  					<&gpioz 4 GPIO_ACTIVE_LOW>, 	/* A4 hack for duplicate PC_2 */
+  					<&gpioz 5 GPIO_ACTIVE_LOW>, 	/* A5 hack for duplicate PC_3 */
+  					/* <&gpioc 2 GPIO_ACTIVE_LOW>,  	A4 _ALT0?   ADC1_INP12 */
+  					/* <&gpioc 3 GPIO_ACTIVE_LOW>,   	A5 _ALT0?   ADC1_INP13 */
+  					<&gpioa 4 GPIO_ACTIVE_LOW>,     /* A6    ADC1_INP18 */
+  					<&gpioa 6 GPIO_ACTIVE_LOW>,     /* A7    ADC1_INP7 */
+
+
+					<&gpiok 5 GPIO_ACTIVE_LOW>,		// LEDR
+					<&gpiok 6 GPIO_ACTIVE_LOW>,		// LEDG
+					<&gpiok 7 GPIO_ACTIVE_LOW>,		// LEDB
+
+  					<&gpioa 0 GPIO_ACTIVE_LOW>,
+  					/* <&gpioa 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioa 2 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioa 3 GPIO_ACTIVE_LOW>, */
+  					/* D21 <&gpioa 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioa 5 GPIO_ACTIVE_LOW>, */
+  					/* D22 <&gpioa 6 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioa 7 GPIO_ACTIVE_LOW>, */
+  					/* D6 <&gpioa 8 GPIO_ACTIVE_LOW>, */
+  					/* D14<&gpioa 9 GPIO_ACTIVE_LOW>, */
+  					/* D13 <&gpioa 10 GPIO_ACTIVE_LOW>, */
+  					<&gpioa 11 GPIO_ACTIVE_LOW>,
+  					<&gpioa 12 GPIO_ACTIVE_LOW>,
+  					<&gpioa 13 GPIO_ACTIVE_LOW>,
+  					<&gpioa 14 GPIO_ACTIVE_LOW>,
+  					/* <&gpioa 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiob 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiob 1 GPIO_ACTIVE_LOW>, */
+  					<&gpiob 2 GPIO_ACTIVE_LOW>,
+  					<&gpiob 3 GPIO_ACTIVE_LOW>,
+  					<&gpiob 4 GPIO_ACTIVE_LOW>,
+  					/* <&gpiob 5 GPIO_ACTIVE_LOW>, */
+  					<&gpiob 6 GPIO_ACTIVE_LOW>,
+  					<&gpiob 7 GPIO_ACTIVE_LOW>,
+  					<&gpiob 8 GPIO_ACTIVE_LOW>,
+  					<&gpiob 9 GPIO_ACTIVE_LOW>,
+  					/* <&gpiob 10 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiob 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiob 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiob 13 GPIO_ACTIVE_LOW>, */
+  					<&gpiob 14 GPIO_ACTIVE_LOW>,
+  					<&gpiob 15 GPIO_ACTIVE_LOW>,
+  					/* <&gpioc 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 1 GPIO_ACTIVE_LOW>, */
+  					/* D10 <&gpioc 2 GPIO_ACTIVE_LOW>, */
+  					/* D8 <&gpioc 3 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 4 GPIO_ACTIVE_LOW>, */ 
+  					/* <&gpioc 5 GPIO_ACTIVE_LOW>, */
+  					/* D5<&gpioc 6 GPIO_ACTIVE_LOW>, */
+  					/* D4<&gpioc 7 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 8 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 9 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 10 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioc 12 GPIO_ACTIVE_LOW>, */
+  					<&gpioc 13 GPIO_ACTIVE_LOW>,
+  					/* <&gpioc 14 GPIO_ACTIVE_LOW>, */
+  					<&gpioc 15 GPIO_ACTIVE_LOW>,
+  					/* <&gpiod 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 2 GPIO_ACTIVE_LOW>, */
+  					<&gpiod 3 GPIO_ACTIVE_LOW>,
+  					<&gpiod 4 GPIO_ACTIVE_LOW>,
+  					<&gpiod 5 GPIO_ACTIVE_LOW>,
+  					<&gpiod 6 GPIO_ACTIVE_LOW>,
+  					<&gpiod 7 GPIO_ACTIVE_LOW>,
+  					/* <&gpiod 8 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 9 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 10 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 13 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 14 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiod 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 1 GPIO_ACTIVE_LOW>, */
+  					<&gpioe 2 GPIO_ACTIVE_LOW>,
+  					<&gpioe 3 GPIO_ACTIVE_LOW>,
+  					/* <&gpioe 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 5 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 6 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 7 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 8 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 9 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 10 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 13 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 14 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioe 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 2 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 3 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 5 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 6 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 7 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 8 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 9 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 10 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 13 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 14 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiof 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 2 GPIO_ACTIVE_LOW>, */
+  					<&gpiog 3 GPIO_ACTIVE_LOW>,
+  					/* <&gpiog 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 5 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 6 GPIO_ACTIVE_LOW>, */
+  					/* D3 <&gpiog 7 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 8 GPIO_ACTIVE_LOW>, */
+  					<&gpiog 9 GPIO_ACTIVE_LOW>,
+  					<&gpiog 10 GPIO_ACTIVE_LOW>,
+  					/* <&gpiog 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiog 13 GPIO_ACTIVE_LOW>, */
+  					<&gpiog 14 GPIO_ACTIVE_LOW>,
+  					/* <&gpiog 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 2 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 3 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioh 5 GPIO_ACTIVE_LOW>, */
+  					<&gpioh 6 GPIO_ACTIVE_LOW>,
+  					/* D12 <&gpioh 7 GPIO_ACTIVE_LOW>, */
+  					/* D11 <&gpioh 8 GPIO_ACTIVE_LOW>, */
+  					<&gpioh 9 GPIO_ACTIVE_LOW>,
+  					<&gpioh 10 GPIO_ACTIVE_LOW>,
+  					<&gpioh 11 GPIO_ACTIVE_LOW>,
+  					<&gpioh 12 GPIO_ACTIVE_LOW>,
+  					<&gpioh 13 GPIO_ACTIVE_LOW>,
+  					<&gpioh 14 GPIO_ACTIVE_LOW>,
+  					/* D0 <&gpioh 15 GPIO_ACTIVE_LOW>, */
+  					/* D7 <&gpioi 0 GPIO_ACTIVE_LOW>, */
+  					/* D9<&gpioi 1 GPIO_ACTIVE_LOW>, */
+  					<&gpioi 2 GPIO_ACTIVE_LOW>,
+  					<&gpioi 3 GPIO_ACTIVE_LOW>,
+  					<&gpioi 4 GPIO_ACTIVE_LOW>,
+  					<&gpioi 5 GPIO_ACTIVE_LOW>,
+  					<&gpioi 6 GPIO_ACTIVE_LOW>,
+  					<&gpioi 7 GPIO_ACTIVE_LOW>,
+  					<&gpioi 8 GPIO_ACTIVE_LOW>,
+  					<&gpioi 9 GPIO_ACTIVE_LOW>,
+  					<&gpioi 10 GPIO_ACTIVE_LOW>,
+  					/* <&gpioi 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioi 12 GPIO_ACTIVE_LOW>, */
+  					<&gpioi 13 GPIO_ACTIVE_LOW>,
+  					<&gpioi 14 GPIO_ACTIVE_LOW>,
+  					<&gpioi 15 GPIO_ACTIVE_LOW>,
+  					/* <&gpioj 0 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 1 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 2 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 3 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 4 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 5 GPIO_ACTIVE_LOW>, */
+  					<&gpioj 6 GPIO_ACTIVE_LOW>,
+  					<&gpioj 7 GPIO_ACTIVE_LOW>,
+  					<&gpioj 8 GPIO_ACTIVE_LOW>,
+  					<&gpioj 9 GPIO_ACTIVE_LOW>,
+  					<&gpioj 10 GPIO_ACTIVE_LOW>;
+  					/* D2 <&gpioj 11 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 12 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 13 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 14 GPIO_ACTIVE_LOW>, */
+  					/* <&gpioj 15 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiok 0 GPIO_ACTIVE_LOW>, */
+  					/* D1 <&gpiok 1 GPIO_ACTIVE_LOW>; */
+
+  					/* <&gpiok 2 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiok 3 GPIO_ACTIVE_LOW>, */
+  					/* <&gpiok 4 GPIO_ACTIVE_LOW>; */
+  					
+					/* commented out for now to allow LEDs to work
+					/* LEDR <&gpiok 5 GPIO_ACTIVE_LOW>, */
+  					/* LEDG <&gpiok 6 GPIO_ACTIVE_LOW>, */
+  					/* LEDB <&gpiok 7 GPIO_ACTIVE_LOW>; */
+
+
 
 		builtin-led-gpios = <&gpiok 5 GPIO_ACTIVE_LOW>,
                         <&gpiok 6 GPIO_ACTIVE_LOW>,
                         <&gpiok 7 GPIO_ACTIVE_LOW>;
+		pwm-pin-gpios =	<&gpioa 8 0>,
+					<&gpioc 6 0>,
+					<&gpioc 7 0>,
+					//<&gpiog 7 0>,
+					<&gpioj 11 0>,
+					//<&gpiok 1 0>,
+					<&gpioh 15 0>,
+					<&gpioj 7 0>,
+					<&gpioj 10 0>,
+					<&gpioh 6 0>;
+
+		port-pin-gpios =	<&gpioa 0 0>,
+					<&gpiob 0 0>,
+					<&gpioc 0 0>,
+					<&gpiod 0 0>,
+					<&gpioe 0 0>,
+					<&gpiof 0 0>,
+					<&gpiog 0 0>,
+					<&gpioh 0 0>,
+					<&gpioi 0 0>,
+					<&gpioj 0 0>,
+					<&gpiok 0 0>;
+                    
+		adc-pin-gpios =	<&gpioz 0 0>,			/* analog only */
+				<&gpioz 1 0>,			/* analog only */
+				<&gpioz 2 0>,			/* analog only */
+				<&gpioz 3 0>,			/* analog only */
+				<&gpioc 2 0>,
+				<&gpioc 3 0>,
+				<&gpioa 4 0>,
+				<&gpioa 6 0>,
+				<&gpioz 4 0>,			/* Hack for D19  */
+				<&gpioz 5 0>;			/* Hack for D20 */
+ 
 
 		serials = <&board_cdc_acm_uart>,<&usart6>, <&usart1>, <&uart4>;
 		cdc-acm = <&board_cdc_acm_uart>;
-		i2cs = <&i2c4>;
+		i2cs = <&i2c3>, <&i2c1>, <&i2c4>;
+		spis = <&spi2>;
+		pwms = <&pwm1 1 PWM_HZ(12000000) PWM_POLARITY_NORMAL>,  //12mhz default
+				<&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+				<&pwm3 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+				<&pwm1 2 PWM_HZ(5000) PWM_POLARITY_NORMAL>, 
+				<&pwm8 3 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+				<&pwm8 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+				<&pwm8 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+				<&pwm12 1 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+          
+  io-channels =	<&adc1 0>,
+				<&adc1 1>,
+				<&adc3 0>,
+				<&adc3 1>,
+				<&adc1 12>,
+				<&adc1 13>,
+				<&adc1 18>,
+				<&adc1 3>,        
+				<&adc1 12>, /* Hack for D19 */
+				<&adc1 13>; /* Hack for D20 */
 	};
 };
