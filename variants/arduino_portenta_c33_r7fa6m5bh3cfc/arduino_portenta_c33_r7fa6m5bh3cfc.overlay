@@ -22,6 +22,61 @@
 	};
 };
 
+&pinctrl {
+	sci7_default: sci7_default {
+		group1 {
+			/* tx rx */
+			psels = <RA_PSEL(RA_PSEL_SCI_7, 6, 13)>,
+				<RA_PSEL(RA_PSEL_SCI_7, 6, 14)>,
+				<RA_PSEL(RA_PSEL_SCI_7, 6, 11)>,
+				<RA_PSEL(RA_PSEL_SCI_7, 4, 4)>;
+		};
+	};
+	sci6_default: sci6_default {
+		group1 {
+			/* tx rx */
+			psels = <RA_PSEL(RA_PSEL_SCI_6, 5, 6)>,
+				<RA_PSEL(RA_PSEL_SCI_6, 3, 4)>,
+				<RA_PSEL(RA_PSEL_SCI_6, 5, 3)>,
+				<RA_PSEL(RA_PSEL_SCI_6, 5, 2)>;
+		};
+	};
+
+};
+
+
+&sci7 {
+	pinctrl-0 = <&sci7_default>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	uart7: uart {
+		status = "okay";
+		current-speed = <115200>;
+	};
+};
+
+&sci6 {
+	status = "okay";
+	pinctrl-0 = <&sci6_default>;
+	pinctrl-names = "default";
+
+	uart6: uart {
+		status = "okay";
+		current-speed = <115200>;
+	};
+};
+
+&sci5 {
+	status = "okay";
+
+	uart5: uart {
+		status = "okay";
+		current-speed = <115200>;
+	};
+};
+
+
 / {
 	zephyr,user {
 		digital-pin-gpios = <&ioport1 5 GPIO_ACTIVE_HIGH>,
@@ -64,7 +119,78 @@
 
 					<&ioport1 7 GPIO_ACTIVE_HIGH>,	// LEDR
 					<&ioport4 0 GPIO_ACTIVE_HIGH>,
-					<&ioport8 0 GPIO_ACTIVE_HIGH>;
+					<&ioport8 0 GPIO_ACTIVE_HIGH>,
+
+  					// I2C pins
+  					<&ioport5 11 GPIO_ACTIVE_HIGH>, /*   D37    |     SDA1     */
+  					<&ioport5 12 GPIO_ACTIVE_HIGH>, /*   D38    |     SCL1     */
+  					<&ioport3 2 GPIO_ACTIVE_HIGH>, /*   D39    |     SDA2    */
+  					<&ioport3 1 GPIO_ACTIVE_HIGH>, /*   D40    |     SCL2    */
+
+  					// CAN pins
+  					<&ioport2 2 GPIO_ACTIVE_HIGH>, /*   D41    |   CAN RX    */
+  					<&ioport2 3 GPIO_ACTIVE_HIGH>, /*   D42    |   CAN TX    */
+  					<&ioport6 10 GPIO_ACTIVE_HIGH>, /*   D43    |   CAN1 RX   */
+  					<&ioport6 9 GPIO_ACTIVE_HIGH>, /*   D44    |   CAN1 TX   */
+
+  					// SPI pins
+  					<&ioport1 0 GPIO_ACTIVE_HIGH>, /*   D45    |   MISO1  */
+  					<&ioport1 1 GPIO_ACTIVE_HIGH>, /*   D46    |   MOSI1  */
+  					<&ioport1 2 GPIO_ACTIVE_HIGH>, /*   D47    |   SCLK1  */
+  					<&ioport1 3 GPIO_ACTIVE_HIGH>, /*   D48    |   CS1    */
+
+  					// UART pins
+  					<&ioport6 13 GPIO_ACTIVE_HIGH>, /*   D49    |   TX2    */
+  					<&ioport6 14 GPIO_ACTIVE_HIGH>, /*   D50    |   RX2    */
+  					<&ioport6 11 GPIO_ACTIVE_HIGH>, /*   D51    |   RTS2   */
+  					<&ioport4 4 GPIO_ACTIVE_HIGH>, /*   D52    |   CTS2   */
+  					<&ioport5 6 GPIO_ACTIVE_HIGH>, /*   D53    |   TX3    */
+  					<&ioport3 4 GPIO_ACTIVE_HIGH>, /*   D54    |   RX3    */
+  					<&ioport5 3 GPIO_ACTIVE_HIGH>, /*   D55    |   RTS3   */
+  					<&ioport5 2 GPIO_ACTIVE_HIGH>, /*   D56    |   CTS3   */
+  					<&ioport8 5 GPIO_ACTIVE_HIGH>, /*   D57    |   TX4    */
+  					<&ioport5 13 GPIO_ACTIVE_HIGH>, /*   D58    |   RX4    */
+  					<&ioport5 8 GPIO_ACTIVE_HIGH>, /*   D59    |   RTS4   */
+  					<&ioport5 5 GPIO_ACTIVE_HIGH>, /*   D60    |   CTS4   */
+  					<&ioport6 3 GPIO_ACTIVE_HIGH>, /*   D61    |   RTS0   */
+  					<&ioport6 4 GPIO_ACTIVE_HIGH>, /*   D62    |   CTS0   */
+
+  					// SSI (Audio)
+  					<&ioport1 12 GPIO_ACTIVE_HIGH>, /*   D63    |   SSI CK    */
+  					<&ioport1 13 GPIO_ACTIVE_HIGH>, /*   D64    |   SSI WS    */
+  					<&ioport1 14 GPIO_ACTIVE_HIGH>, /*   D65    |   SSI SDI   */
+  					<&ioport1 15 GPIO_ACTIVE_HIGH>, /*   D66    |   SSI SDO   */
+
+  					// Generic GPIO pins
+  					<&ioport9 8 GPIO_ACTIVE_HIGH>, /*   D67    |          */
+  					<&ioport4 3 GPIO_ACTIVE_HIGH>, /*   D68    |          */
+  					<&ioport9 1 GPIO_ACTIVE_HIGH>, /*   D69    |          */
+  					<&ioport6 12 GPIO_ACTIVE_HIGH>, /*   D70    |          */
+  					<&ioport3 12 GPIO_ACTIVE_HIGH>, /*   D71    |          */
+  					<&ioport3 13 GPIO_ACTIVE_HIGH>, /*   D72    |          */
+  					<&ioport3 14 GPIO_ACTIVE_HIGH>, /*   D73    |          */
+  					<&ioporta 1 GPIO_ACTIVE_HIGH>, /*   D74    |          */
+  					<&ioporta 8 GPIO_ACTIVE_HIGH>, /*   D75    |          */
+  					<&ioporta 9 GPIO_ACTIVE_HIGH>, /*   D76    |          */
+  					<&ioporta 10 GPIO_ACTIVE_HIGH>, /*   D77    |          */
+  					<&ioport5 7 GPIO_ACTIVE_HIGH>, /*   D78    |          */
+  					<&ioportb 0 GPIO_ACTIVE_HIGH>, /*   D79    |          */
+  					<&ioport6 15 GPIO_ACTIVE_HIGH>, /*   D80    |          */
+  					<&ioport0 3 GPIO_ACTIVE_HIGH>, /*   D81    |          */
+  					<&ioport0 7 GPIO_ACTIVE_HIGH>, /*   D82    |          */
+  					<&ioport0 8 GPIO_ACTIVE_HIGH>, /*   D83    |          */
+
+  					// SDCARD
+  					<&ioport4 13 GPIO_ACTIVE_HIGH>, /*   D84    |   SDHI CLK  */
+  					<&ioport4 12 GPIO_ACTIVE_HIGH>, /*   D85    |   SDHI CMD  */
+  					<&ioport4 11 GPIO_ACTIVE_HIGH>, /*   D86    |   SDHI D0   */
+  					<&ioport4 10 GPIO_ACTIVE_HIGH>, /*   D87    |   SDHI D1   */
+  					<&ioport2 6 GPIO_ACTIVE_HIGH>, /*   D88    |   SDHI D2   */
+  					<&ioport2 5 GPIO_ACTIVE_HIGH>, /*   D89    |   SDHI D3   */
+  					<&ioport4 15 GPIO_ACTIVE_HIGH>, /*   D90    |   SDHI CD   */
+  					<&ioport4 14 GPIO_ACTIVE_HIGH>; /*   D91    |   SDHI WP   */
+
+
 
 		builtin-led-gpios = <&ioport1 7 GPIO_ACTIVE_LOW>,
                         <&ioport4 0 GPIO_ACTIVE_LOW>,
@@ -72,7 +198,7 @@
 
 		pwm-pin-gpios =	<&ioport6 0 0>;
 
-		serials = <&board_cdc_acm_uart>, <&uart9>;
+		serials = <&board_cdc_acm_uart>, <&uart9>, <&uart7>, <&uart6>, <&uart5>;
 		cdc-acm = <&board_cdc_acm_uart>;
 		i2cs = <&iic1>;
 		spis = <&spi1>;
