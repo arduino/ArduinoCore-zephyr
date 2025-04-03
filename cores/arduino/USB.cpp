@@ -24,62 +24,47 @@ void __attribute__((weak)) _on_1200_bps() {
     NVIC_SystemReset();
 }
 
-void arduino::SerialUSB_::_baudChangeHandler()
-{
-    uart_line_ctrl_get(uart, UART_LINE_CTRL_BAUD_RATE, &baudrate);
-    if (baudrate == 1200) {
-        usb_disable();
-        _on_1200_bps();
-    }
-}
-
-static void _baudChangeHandler(const struct device *dev, uint32_t rate)
+void arduino::SerialUSB_::_baudChangeHandler(const struct device *dev, uint32_t rate)
 {
     (void)dev; // unused
     if (rate == 1200) {
+        k_sleep(K_MSEC(100));
         usb_disable();
+        k_sleep(K_MSEC(10));
         _on_1200_bps();
     }
 }
 
 #if defined(CONFIG_USB_DEVICE_STACK_NEXT)
 
-extern "C" {
-    #include <zephyr/usb/usbd.h>
-    struct usbd_context *usbd_init_device(usbd_msg_cb_t msg_cb);
+int arduino::SerialUSB_::usb_disable() {
+    return usbd_disable(Serial._usbd);
 }
 
-struct usbd_context *_usbd;
-
-int usb_disable() {
-    return usbd_disable(_usbd);
-}
-
-static void usbd_next_cb(struct usbd_context *const ctx, const struct usbd_msg *msg)
+void arduino::SerialUSB_::usbd_next_cb(struct usbd_context *const ctx, const struct usbd_msg *msg)
 {
-	if (usbd_can_detect_vbus(ctx)) {
-		if (msg->type == USBD_MSG_VBUS_READY) {
-			usbd_enable(ctx);
-		}
+    if (usbd_can_detect_vbus(ctx)) {
+        if (msg->type == USBD_MSG_VBUS_READY) {
+            usbd_enable(ctx);
+        }
 
-		if (msg->type == USBD_MSG_VBUS_REMOVED) {
-			usbd_disable(ctx);
-		}
-	}
+        if (msg->type == USBD_MSG_VBUS_REMOVED) {
+            usbd_disable(ctx);
+        }
+    }
 
-	if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
+    if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
         uint32_t baudrate;
-		uart_line_ctrl_get(ctx->dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
-        _baudChangeHandler(nullptr, baudrate);
-	}
+        uart_line_ctrl_get(Serial.uart, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+        Serial._baudChangeHandler(nullptr, baudrate);
+    }
 }
 
-static int enable_usb_device_next(void)
+int arduino::SerialUSB_::enable_usb_device_next(void)
 {
 	int err;
 
-	//_usbd = usbd_init_device(usbd_next_cb);
-	_usbd = usbd_init_device(nullptr);
+	_usbd = usbd_init_device(arduino::SerialUSB_::usbd_next_cb);
 	if (_usbd == NULL) {
 		return -ENODEV;
 	}
@@ -94,22 +79,14 @@ static int enable_usb_device_next(void)
 }
 #endif /* defined(CONFIG_USB_DEVICE_STACK_NEXT) */
 
-void arduino::SerialUSB_::_baudChangeDispatch(struct k_timer *timer) {
-    arduino::SerialUSB_* dev = (arduino::SerialUSB_*)k_timer_user_data_get(timer);
-    dev->_baudChangeHandler();
-}
-
-
 void arduino::SerialUSB_::begin(unsigned long baudrate, uint16_t config) {
     if (!started) {
         #ifndef CONFIG_USB_DEVICE_STACK_NEXT
         usb_enable(NULL);
         #ifndef CONFIG_CDC_ACM_DTE_RATE_CALLBACK_SUPPORT
-        k_timer_init(&baud_timer, SerialUSB_::_baudChangeDispatch, NULL);
-        k_timer_user_data_set(&baud_timer, this);
-        k_timer_start(&baud_timer, K_MSEC(100), K_MSEC(100));
+        #warning "Can't read CDC baud change, please enable CONFIG_CDC_ACM_DTE_RATE_CALLBACK_SUPPORT"
         #else
-        cdc_acm_dte_rate_callback_set(usb_dev, ::_baudChangeHandler);
+        cdc_acm_dte_rate_callback_set(usb_dev, SerialUSB_::_baudChangeHandler);
         #endif
         #else
         enable_usb_device_next();
