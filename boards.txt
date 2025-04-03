@@ -38,12 +38,13 @@ giga.upload.vid=0x2341
 giga.upload.pid=0x0366
 giga.upload.interface=0
 giga.upload.use_1200bps_touch=true
-giga.upload.wait_for_upload_port=true
+giga.upload.wait_for_upload_port=false
 giga.upload.native_usb=true
 giga.upload.maximum_size=1966080
 giga.upload.maximum_data_size=523624
 
 giga.upload.address=0x080E0000
+giga.upload.wait_for_device=-w
 
 giga.upload.maximum_size=786432
 giga.upload.maximum_data_size=523624
@@ -263,12 +264,13 @@ portentah7.upload.vid=0x2341
 portentah7.upload.pid=0x035b
 portentah7.upload.interface=0
 portentah7.upload.use_1200bps_touch=true
-portentah7.upload.wait_for_upload_port=true
+portentah7.upload.wait_for_upload_port=false
 portentah7.upload.native_usb=true
 portentah7.upload.maximum_size=1966080
 portentah7.upload.maximum_data_size=523624
 
 portentah7.upload.address=0x080E0000
+portentah7.upload.wait_for_device=-w
 
 portentah7.upload.maximum_size=786432
 portentah7.upload.maximum_data_size=523624
@@ -449,7 +451,7 @@ portentac33.upload.native_usb=true
 portentac33.upload.maximum_size=1966080
 portentac33.upload.maximum_data_size=523624
 portentac33.upload.address=0x100000
-portentac33.upload.dfuse=-Q
+portentac33.upload.dfuse=-Q -w
 
 portentac33.bootloader.tool=dfu-util
 portentac33.bootloader.tool.default=dfu-util
@@ -495,12 +497,13 @@ opta.upload.vid=0x2341
 opta.upload.pid=0x0364
 opta.upload.interface=0
 opta.upload.use_1200bps_touch=true
-opta.upload.wait_for_upload_port=true
+opta.upload.wait_for_upload_port=false
 opta.upload.native_usb=true
 opta.upload.maximum_size=1966080
 opta.upload.maximum_data_size=523624
 
 opta.upload.address=0x080E0000
+opta.upload.wait_for_device=-w
 
 opta.upload.maximum_size=786432
 opta.upload.maximum_data_size=523624

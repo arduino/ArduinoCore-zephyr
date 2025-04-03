@@ -220,12 +220,13 @@ tools.stm32flash.erase.pattern="{path}/{cmd}" {serial.port} -e 1024 -b 2400
 
 upload.dfuse=--dfuse-address={upload.address}:leave
 bootloader.dfuse=--dfuse-address={bootloader.address}:leave
+upload.wait_for_device=
 
 tools.dfu-util.path={runtime.tools.dfu-util.path}
 tools.dfu-util.cmd=dfu-util
 tools.dfu-util.upload.params.verbose=-d
 tools.dfu-util.upload.params.quiet=
-tools.dfu-util.upload.pattern="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{build.path}/{build.project_name}.{upload.extension}" -a{upload.interface} {upload.dfuse}
+tools.dfu-util.upload.pattern="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{build.path}/{build.project_name}.{upload.extension}" -a{upload.interface} {upload.dfuse} {upload.wait_for_device}
 
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
