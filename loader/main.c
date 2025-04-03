@@ -33,11 +33,32 @@ struct sketch_header_v1 {
 #define SKETCH_FLAG_LINKED 0x02
 
 #define TARGET_HAS_USB_CDC_SHELL                                                                   \
-	DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) && CONFIG_SHELL &&CONFIG_USB_DEVICE_STACK
+	DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm) && CONFIG_SHELL &&                             \
+		(CONFIG_USB_DEVICE_STACK || CONFIG_USB_DEVICE_STACK_NEXT)
 
 #if TARGET_HAS_USB_CDC_SHELL
 const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm, 0));
+
+#if CONFIG_USB_DEVICE_STACK_NEXT
+#include <zephyr/usb/usbd.h>
+struct usbd_context *usbd_init_device(usbd_msg_cb_t msg_cb);
+
+int usb_enable(usb_dc_status_callback status_cb) {
+	int err;
+	struct usbd_context *_usbd = usbd_init_device(NULL);
+	if (_usbd == NULL) {
+		return -ENODEV;
+	}
+	if (!usbd_can_detect_vbus(_usbd)) {
+		err = usbd_enable(_usbd);
+		if (err) {
+			return err;
+		}
+	}
+	return 0;
+}
+#endif
 
 static int enable_shell_usb(void) {
 	bool log_backend = CONFIG_SHELL_BACKEND_SERIAL_LOG_LEVEL > 0;
