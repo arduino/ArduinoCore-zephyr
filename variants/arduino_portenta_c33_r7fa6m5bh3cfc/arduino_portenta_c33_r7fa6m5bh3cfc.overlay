@@ -22,28 +22,6 @@
 	};
 };
 
-&pinctrl {
-	sci7_default: sci7_default {
-		group1 {
-			/* tx rx */
-			psels = <RA_PSEL(RA_PSEL_SCI_7, 6, 13)>,
-				<RA_PSEL(RA_PSEL_SCI_7, 6, 14)>,
-				<RA_PSEL(RA_PSEL_SCI_7, 6, 11)>,
-				<RA_PSEL(RA_PSEL_SCI_7, 4, 4)>;
-		};
-	};
-	sci6_default: sci6_default {
-		group1 {
-			/* tx rx */
-			psels = <RA_PSEL(RA_PSEL_SCI_6, 5, 6)>,
-				<RA_PSEL(RA_PSEL_SCI_6, 3, 4)>,
-				<RA_PSEL(RA_PSEL_SCI_6, 5, 3)>,
-				<RA_PSEL(RA_PSEL_SCI_6, 5, 2)>;
-		};
-	};
-
-};
-
 
 &sci7 {
 	pinctrl-0 = <&sci7_default>;
@@ -69,6 +47,8 @@
 
 &sci5 {
 	status = "okay";
+	pinctrl-0 = <&sci5_default>;
+	pinctrl-names = "default";
 
 	uart5: uart {
 		status = "okay";
