@@ -56,6 +56,29 @@
 	};
 };
 
+&pinctrl {
+	iic0_default: iic0_default {
+		group1 {
+			/* SCL0 SDA0 */
+			psels = <RA_PSEL(RA_PSEL_I2C, 4, 8)>,
+			<RA_PSEL(RA_PSEL_I2C, 4, 7)>;
+			drive-strength = "medium";
+		};
+	};
+};
+
+&iic0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	interrupts = <87 1>, <88 1>, <89 1>, <90 1>;
+	interrupt-names = "rxi", "txi", "tei", "eri";
+	clock-frequency = <DT_FREQ_M(1)>;
+	pinctrl-0 = <&iic0_default>;
+	pinctrl-names = "default";
+};
+
+
 
 / {
 	zephyr,user {
@@ -180,7 +203,7 @@
 
 		serials = <&board_cdc_acm_uart>, <&uart9>, <&uart7>, <&uart6>, <&uart5>;
 		cdc-acm = <&board_cdc_acm_uart>;
-		i2cs = <&iic1>;
+		i2cs = <&iic0>, <&iic1>;
 		spis = <&spi1>;
 		pwms = <&pwm6 1 PWM_HZ(25000000) PWM_POLARITY_NORMAL>;
 	};
