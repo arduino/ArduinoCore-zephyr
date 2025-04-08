@@ -60,7 +60,7 @@ jobs:
           path: ${{ env.CORE_ARTIFACT }}.tar.bz2
 
   test-core:
-    name: Test arduino:zephyr:${{ matrix.board }}
+    name: Test ${{ matrix.board }} board
     runs-on: ubuntu-latest
     needs: package-core
     strategy:
@@ -83,7 +83,7 @@ jobs:
           mkdir Blink/
           wget -nv https://raw.githubusercontent.com/arduino/arduino-examples/refs/heads/main/examples/01.Basics/Blink/Blink.ino -P Blink/
 
-      - name: Compile Blink for ${{ env.FQBN }}
+      - name: Compile Blink for ${{ matrix.board }}
         uses: pillo79/compile-sketches@main
         with:
           fqbn: ${{ env.FQBN }}
@@ -159,6 +159,9 @@ jobs:
     needs:
       - package-core
       - test-core
+    permissions:
+      id-token: write
+      contents: read
     env:
       CORE_ARTIFACT: ${{ needs.package-core.outputs.CORE_ARTIFACT }}
       CORE_TAG: ${{ needs.package-core.outputs.CORE_TAG }}
