@@ -10,4 +10,4 @@ FOLDER=`basename $PWD`
 VERSION=$1
 
 cd ..
-tar  --exclude=extras/** --exclude=.git* --exclude=build --exclude=venv --exclude=samples -cjhf arduino-core-zephyr-llext-${VERSION}.tar.bz2 $FOLDER
+tar  --exclude=extras/** --exclude=.git* --exclude=build --exclude=venv --exclude=samples -cjhf ArduinoCore-zephyr-${VERSION}.tar.bz2 $FOLDER

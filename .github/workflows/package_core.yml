@@ -1,53 +1,187 @@
-name: Package core
+name: Package, test and upload core
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - arduino
+  pull_request:
 
 jobs:
-  build:
+
+  package-core:
+    name: Build and package core
     runs-on: ubuntu-latest
     env:
       ZEPHYR_SDK_INSTALL_DIR: /opt/zephyr-sdk-0.16.8
+      CCACHE_IGNOREOPTIONS: -specs=*
+    outputs:
+      CORE_TAG: ${{ env.CORE_TAG }}
+      CORE_ARTIFACT: ${{ env.CORE_ARTIFACT }}
+      BOARD_NAMES: ${{ env.BOARD_NAMES }}
     steps:
       - name: Install toolchain
         working-directory: /opt
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build
-          wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_linux-x86_64_minimal.tar.xz
+          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache
+          wget -nv https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.8/zephyr-sdk-0.16.8_linux-x86_64_minimal.tar.xz
           tar xf zephyr-sdk-0.16.8_linux-x86_64_minimal.tar.xz && cd zephyr-sdk-0.16.8 && ./setup.sh -t arm-zephyr-eabi -c
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Initialize
         run: |
-          ./extra/bootstrap.sh
-          ./extra/build_all.sh
-          ./extra/package.sh `git describe --always`
-          mv ../arduino-core-zephyr-llext* .
+          ./extra/bootstrap.sh -o=--filter=tree:0
+          echo "CORE_TAG=$(git describe --always)" >> "$GITHUB_ENV"
+          echo "CORE_ARTIFACT=ArduinoCore-zephyr-$(git describe --always)" >> "$GITHUB_ENV"
+          echo "BOARD_NAMES=[ $(cat boards.txt | grep '^[^#]*\.build\.variant' | cut -d '.' -f 1 | xargs printf '"%s",' | sed -e 's/,$//') ]" >> "$GITHUB_ENV"
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          verbose: 1
+
+      - name: Build variants
+        run: |
+          ./extra/build_all.sh -f
+
+      - name: Package
+        run: |
+          ./extra/package.sh ${{ env.CORE_TAG }}
+          mv ../${{ env.CORE_ARTIFACT }}.tar.bz2 .
 
       - name: Archive core
         uses: actions/upload-artifact@v4
         with:
-          name: Core
-          path: arduino-core-zephyr-llext*
+          name: ${{ env.CORE_ARTIFACT }}
+          path: ${{ env.CORE_ARTIFACT }}.tar.bz2
+
+  test-core:
+    name: Test arduino:zephyr:${{ matrix.board }}
+    runs-on: ubuntu-latest
+    needs: package-core
+    strategy:
+      matrix:
+        board: ${{ fromJSON( needs.package-core.outputs.BOARD_NAMES ) }}
+      fail-fast: false
+    env:
+      FQBN: arduino:zephyr:${{ matrix.board }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.package-core.outputs.CORE_ARTIFACT }}
+
+      - name: Set up core
+        run: |
+          tar xf ${{ needs.package-core.outputs.CORE_ARTIFACT }}.tar.bz2
 
       - name: Create Blink sketch
         run: |
-          mkdir extra/Blink/
-          wget https://raw.githubusercontent.com/arduino/arduino-examples/refs/heads/main/examples/01.Basics/Blink/Blink.ino
-          mv Blink.ino extra/Blink/
+          mkdir Blink/
+          wget -nv https://raw.githubusercontent.com/arduino/arduino-examples/refs/heads/main/examples/01.Basics/Blink/Blink.ino -P Blink/
 
-      - name: Compile Blink
-        uses: arduino/compile-sketches@main
+      - name: Compile Blink for ${{ env.FQBN }}
+        uses: pillo79/compile-sketches@main
         with:
-          fqbn: arduino:zephyr:giga
+          fqbn: ${{ env.FQBN }}
           platforms: |
             # Use Board Manager to install the latest release of Arduino Zephyr Boards to get the toolchain
             - name: "arduino:zephyr"
               source-url: "https://downloads.arduino.cc/packages/package_zephyr_index.json"
-            - source-path: "./"
-              name: "arduino:zephyr"
-          sketch-paths: |
-            extra/Blink
+            - name: "arduino:zephyr"
+              source-path: "ArduinoCore-zephyr"
+          sketch-paths: Blink
           verbose: 'false'
           enable-deltas-report: 'false'
+          enable-warnings-report: 'true'
+          enable-warnings-log: 'true'
+
+      - name: Clean up log
+        run: |
+            sed -i -e 's!/home/runner/.arduino15/packages/arduino/hardware/zephyr/[^/]*/!!g' sketches-reports/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ needs.package-core.outputs.CORE_TAG }}-${{ matrix.board }}
+          path: sketches-reports/*
+
+  collect-logs:
+    name: Test summary
+    runs-on: ubuntu-latest
+    needs:
+      - package-core
+      - test-core
+    if: ${{ !cancelled() && needs.package-core.result == 'success' }}
+    env:
+      BOARD_NAMES: ${{ needs.package-core.outputs.BOARD_NAMES }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: .
+          pattern: test-report-*
+          merge-multiple: true
+
+      - run: |
+          echo "### Core test results" >> "$GITHUB_STEP_SUMMARY"
+          for BOARD in $(echo $BOARD_NAMES | jq -cr '.[]'); do
+            FQBN="arduino:zephyr:$BOARD"
+            REPORT_FILE="arduino-zephyr-$BOARD.json"
+            if [ ! -f $REPORT_FILE ]; then
+              echo ":x: $BOARD - No report found?" >> "$GITHUB_STEP_SUMMARY"
+            else
+              REPORT=$(jq -cr '.boards[0].sketches[0]' $REPORT_FILE)
+              if ! $(echo $REPORT | jq -cr '.compilation_success') ; then
+                echo ":x: $BOARD - **Build failed**" >> "$GITHUB_STEP_SUMMARY"
+              else
+                WARNINGS=$(echo $REPORT | jq -cr '.warnings.current.absolute // 0')
+                if [ $WARNINGS -eq 0 ]; then
+                  echo ":white_check_mark: $BOARD - Build successful" >> "$GITHUB_STEP_SUMMARY"
+                else
+                  echo "<details><summary>:warning: $BOARD - $WARNINGS Warnings:</summary>" >> "$GITHUB_STEP_SUMMARY"
+                  echo >> "$GITHUB_STEP_SUMMARY"
+                  echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo $REPORT | jq -cr '.warnings_log[]' >> "$GITHUB_STEP_SUMMARY"
+                  echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+                  echo >> "$GITHUB_STEP_SUMMARY"
+                  echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+                fi
+              fi
+            fi
+          done
+
+  publish-artifacts:
+    name: Publish artifacts
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.repository == 'arduino/ArduinoCore-zephyr' }}
+    needs:
+      - package-core
+      - test-core
+    env:
+      CORE_ARTIFACT: ${{ needs.package-core.outputs.CORE_ARTIFACT }}
+      CORE_TAG: ${{ needs.package-core.outputs.CORE_TAG }}
+      PACKAGE_INDEX_JSON: zephyr-core-${{ needs.package-core.outputs.CORE_TAG }}.json
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.CORE_ARTIFACT }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload artifact
+        run: aws s3 sync ${{ env.CORE_ARTIFACT }}.tar.bz2 s3://${{ secrets.S3_BUCKET }}
+
+      - name: Prepare package index snippet
+        run: ./extra/gen_package_index_json.sh
+
+      - name: Archive package index snippet
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE_INDEX_JSON }}
+          path: ${{ env.PACKAGE_INDEX_JSON }}

@@ -13,10 +13,11 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 fi
 
 if [[ $# -eq 0 ]]; then
-    board=arduino_giga_r1//m7
+	board=$(jq -cr '.[0].board' < ./extra/targets.json)
+	args=$(jq -cr '.[0].args' < ./extra/targets.json)
 else
-    board=$1
-    shift
+	board=$1
+	shift
 fi
 
 source venv/bin/activate
@@ -24,19 +25,12 @@ source venv/bin/activate
 ZEPHYR_BASE=$(west topdir)/zephyr
 
 # Get the variant name (NORMALIZED_BOARD_TARGET in Zephyr)
-tmpdir=$(mktemp -d)
-variant=$(cmake -DBOARD=$board -P extra/get_variant_name.cmake | grep 'VARIANT=' | cut -d '=' -f 2)
-rm -rf ${tmpdir}
+variant=$(extra/get_variant_name.sh $board)
 
 if [ -z "${variant}" ] ; then
 	echo "Failed to get variant name from '$board'"
 	exit 1
 fi
-
-echo && echo && echo
-echo ${variant}
-echo ${variant} | sed -e 's/./=/g'
-echo
 
 # Build the loader
 BUILD_DIR=build/${variant}

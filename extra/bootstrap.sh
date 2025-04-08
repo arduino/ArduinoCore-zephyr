@@ -9,7 +9,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install west
 west init -l .
-west update
+west update "$@"
 west zephyr-export
 pip install -r ../zephyr/scripts/requirements-base.txt
 # download slim toolchain from https://github.com/zephyrproject-rtos/sdk-ng/releases/tag/v0.16.8

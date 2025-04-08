@@ -1,0 +1,66 @@
+{
+  "packages": [
+    {
+      "platforms": [
+        {
+          "name": "Arduino Zephyr Boards",
+          "architecture": "zephyr",
+          "version": "$CORE_TAG",
+          "category": "Arduino",
+          "url": "https://downloads.arduino.cc/cores/zephyr/${CORE_ARTIFACT}.tar.bz2",
+          "archiveFileName": "${CORE_ARTIFACT}.tar.bz2",
+          "checksum": "SHA-256:${ARTIFACT_HASH}",
+          "size": "${ARTIFACT_SIZE}",
+          "help": {
+            "online": "https://www.arduino.cc/en/Reference/HomePage"
+          },
+          "boards": [
+            {
+              "name": "Arduino Giga"
+            },
+            {
+              "name": "Arduino Nano 33 BLE"
+            },
+            {
+              "name": "Arduino Portenta H7"
+            },
+            {
+              "name": "Arduino Portenta C33"
+            },
+            {
+              "name": "Renesas EK_RA8D1"
+            },
+            {
+              "name": "NXP FRDM MCXN947"
+            },
+            {
+              "name": "NXP FRDM RW612"
+            }
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "zephyr",
+              "name": "arm-zephyr-eabi",
+              "version": "0.16.8"
+            },
+            {
+              "packager": "arduino",
+              "name": "dfu-util",
+              "version": "0.11.0-arduino5"
+            },
+            {
+              "packager": "arduino",
+              "name": "bossac",
+              "version": "1.9.1-arduino2"
+            },
+            {
+              "packager": "arduino",
+              "name": "zephyr-post-build-tool",
+              "version": "0.1.0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,24 +1,28 @@
-name: Build
+name: Build native Zephyr samples
 
 on: [push, pull_request]
 
 jobs:
   build:
+    name: Build native Zephyr samples
     runs-on: ubuntu-latest
     container: zephyrprojectrtos/ci:latest
     env:
       CMAKE_PREFIX_PATH: /opt/toolchains
-      PR_NUMBER: ${{ github.event.number }}
+      CCACHE_IGNOREOPTIONS: -specs=*
+      REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+      BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
     steps:
       - name: Initialize
         run: |
           mkdir build && cd build
-          west init -m https://github.com/${{ github.repository }}
-          cd modules/lib/ArduinoCore-zephyr/
-          git fetch origin ${{ github.ref }}
-          git checkout FETCH_HEAD
-          cd -
-          west update
+          west init -m https://github.com/${{ env.REPOSITORY }} --mr ${{ env.BRANCH }}
+          west update -o=--filter=tree:0
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          verbose: 1
 
       - name: Build fade
         working-directory: build
