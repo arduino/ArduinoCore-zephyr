@@ -159,6 +159,7 @@ jobs:
     needs:
       - package-core
       - test-core
+    environment: production
     permissions:
       id-token: write
       contents: read
