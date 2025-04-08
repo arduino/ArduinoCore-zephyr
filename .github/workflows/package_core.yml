@@ -179,7 +179,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Upload artifact
-        run: aws s3 sync ${{ env.CORE_ARTIFACT }}.tar.bz2 s3://${{ secrets.S3_BUCKET }}
+        run: aws s3 cp ${{ env.CORE_ARTIFACT }}.tar.bz2 s3://${{ secrets.S3_BUCKET }}
 
       - name: Prepare package index snippet
         run: ./extra/gen_package_index_json.sh
