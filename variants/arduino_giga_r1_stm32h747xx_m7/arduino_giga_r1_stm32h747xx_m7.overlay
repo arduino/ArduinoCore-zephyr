@@ -476,6 +476,18 @@
 				    <&arduino_header 18 0>,
 				    <&arduino_header 19 0>;
 
+		port-pin-gpios =	<&gpioa 0 0>,
+					<&gpiob 0 0>,
+					<&gpioc 0 0>,
+					<&gpiod 0 0>,
+					<&gpioe 0 0>,
+					<&gpiof 0 0>,
+					<&gpiog 0 0>,
+					<&gpioh 0 0>,
+					<&gpioi 0 0>,
+					<&gpioj 0 0>,
+					<&gpiok 0 0>;
+
 		adc-pin-gpios =	<&gpioc 4 0>,
 					<&gpioc 5 0>,
 					<&gpiob 0 0>,

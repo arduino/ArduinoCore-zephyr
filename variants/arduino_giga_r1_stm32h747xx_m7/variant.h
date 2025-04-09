@@ -5,6 +5,7 @@
  */
 
 #include "pure_analog_pins.h"
+#include "PinNames.h"
 
 // TODO: correctly handle these legacy defines
 #define MOSI    0
