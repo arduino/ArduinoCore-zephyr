@@ -24,20 +24,21 @@ if [ ! -z "$GITHUB_STEP_SUMMARY" ] ; then
 	echo "### Variant build results:" >> "$GITHUB_STEP_SUMMARY"
 fi
 
-jq -cr '.[]' < ./extra/targets.json | while read -r item; do
-	board=$(jq -cr '.board // ""' <<< "$item")
+extra/get_board_details.sh | jq -cr 'sort_by(.variant) | .[]' | while read -r item; do
+	board=$(jq -cr '.board' <<< "$item")
+	variant=$(jq -cr '.variant' <<< "$item")
+	target=$(jq -cr '.target' <<< "$item")
 	args=$(jq -cr '.args // ""' <<< "$item")
 
-	variant=$(extra/get_variant_name.sh "$board" || echo "$board")
 	if [ -z "$GITHUB_STEP_SUMMARY" ] ; then
 		echo && echo
-		echo ${variant}
-		echo ${variant} | sed -e 's/./=/g'
+		echo "${board} (${variant})"
+		echo "${board} (${variant})" | sed -e 's/./=/g'
 	else
-		echo "::group::=== ${variant} ==="
+		echo "::group::=== ${board} (${variant}) ==="
 	fi
 
-	./extra/build.sh "$board" $args
+	./extra/build.sh "$target" $args
 	result=$?
 
 	if [ -z "$GITHUB_STEP_SUMMARY" ] ; then

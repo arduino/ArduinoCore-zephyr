@@ -12,6 +12,8 @@ giga.menu.debug.true=Debug
 giga.menu.debug.false.postbuild_debug=
 giga.menu.debug.true.postbuild_debug=-debug
 
+giga.build.zephyr_target=arduino_giga_r1//m7
+giga.build.zephyr_args=--shield giga_display_shield
 giga.build.variant=arduino_giga_r1_stm32h747xx_m7
 giga.build.mcu=cortex-m7
 giga.build.fpu=-mfpu=fpv5-d16
@@ -75,6 +77,8 @@ nano33ble.menu.debug.true=Debug
 nano33ble.menu.debug.false.postbuild_debug=
 nano33ble.menu.debug.true.postbuild_debug=-debug
 
+nano33ble.build.zephyr_target=arduino_nano_33_ble//sense
+nano33ble.build.zephyr_args=
 nano33ble.build.variant=arduino_nano_33_ble_nrf52840_sense
 nano33ble.build.mcu=cortex-m4
 nano33ble.build.fpu=-mfpu=fpv4-sp-d16
@@ -136,6 +140,8 @@ ek_ra8d1.menu.debug.true=Debug
 ek_ra8d1.menu.debug.false.postbuild_debug=
 ek_ra8d1.menu.debug.true.postbuild_debug=-debug
 
+ek_ra8d1.build.zephyr_target=ek_ra8d1
+ek_ra8d1.build.zephyr_args=
 ek_ra8d1.build.variant=ek_ra8d1_r7fa8d1bhecbd
 ek_ra8d1.build.mcu=cortex-m85+nomve
 ek_ra8d1.build.fpu=-mfpu=fpv5-d16
@@ -192,6 +198,8 @@ frdm_mcxn947.menu.debug.true=Debug
 frdm_mcxn947.menu.debug.false.postbuild_debug=
 frdm_mcxn947.menu.debug.true.postbuild_debug=-debug
 
+frdm_mcxn947.build.zephyr_target=frdm_mcxn947//cpu0
+frdm_mcxn947.build.zephyr_args=
 frdm_mcxn947.build.variant=frdm_mcxn947_mcxn947_cpu0
 frdm_mcxn947.build.mcu=cortex-m33
 frdm_mcxn947.build.fpu=-mfpu=fpv5-sp-d16
@@ -243,6 +251,8 @@ portentah7.menu.debug.true=Debug
 portentah7.menu.debug.false.postbuild_debug=
 portentah7.menu.debug.true.postbuild_debug=-debug
 
+portentah7.build.zephyr_target=arduino_portenta_h7@1.0.0//m7
+portentah7.build.zephyr_args=
 portentah7.build.variant=arduino_portenta_h7_stm32h747xx_m7
 portentah7.build.mcu=cortex-m7
 portentah7.build.fpu=-mfpu=fpv5-d16
@@ -306,6 +316,8 @@ frdm_rw612.menu.debug.true=Debug
 frdm_rw612.menu.debug.false.postbuild_debug=
 frdm_rw612.menu.debug.true.postbuild_debug=-debug
 
+frdm_rw612.build.zephyr_target=frdm_rw612
+frdm_rw612.build.zephyr_args=
 frdm_rw612.build.variant=frdm_rw612_rw612
 frdm_rw612.build.mcu=cortex-m33+nodsp
 frdm_rw612.build.fpu=-mfpu=fpv5-sp-d16
@@ -356,6 +368,8 @@ niclasense.menu.debug.true=Debug
 niclasense.menu.debug.false.postbuild_debug=
 niclasense.menu.debug.true.postbuild_debug=-debug
 
+niclasense.build.zephyr_target=arduino_nicla_sense_me
+niclasense.build.zephyr_args=
 niclasense.build.variant=arduino_nicla_sense_me_nrf52832
 niclasense.build.mcu=cortex-m4
 niclasense.build.fpu=-mfpu=fpv4-sp-d16
@@ -429,10 +443,12 @@ portentac33.menu.mode.linked=linked
 portentac33.menu.mode.linked.build.extra_ldflags=-lc -lm -lgcc -L{build.variant.path} -Wl,--wrap=random -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=malloc -Wl,--wrap=realloc 
 portentac33.menu.mode.linked.build.llext_link_flags=
 portentac33.menu.mode.linked.build.suffix=_linked
-portentac33.menu.mode.linked.build.ldscript={runtime.platform.path}/variants/linked/linker_script.ld
+portentac33.menu.mode.linked.build.ldscript={runtime.platform.path}/variants/_linked/linker_script.ld
 portentac33.menu.mode.linked.upload.extension=bin-zsk.bin
 portentac33.menu.mode.linked.postbuild_mode=-prelinked
 
+portentac33.build.zephyr_target=arduino_portenta_c33
+portentac33.build.zephyr_args=
 portentac33.build.variant=arduino_portenta_c33_r7fa6m5bh3cfc
 portentac33.build.mcu=cortex-m33
 portentac33.build.fpu=-mfpu=fpv5-sp-d16

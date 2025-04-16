@@ -35,7 +35,7 @@ jobs:
           ./extra/bootstrap.sh -o=--filter=tree:0
           echo "CORE_TAG=$(git describe --always)" >> "$GITHUB_ENV"
           echo "CORE_ARTIFACT=ArduinoCore-zephyr-$(git describe --always)" >> "$GITHUB_ENV"
-          echo "BOARD_VARIANTS=[ $(cat boards.txt | grep '^[^#]*\.build\.variant' | sed -e 's/^\([^#]*\)\.build\.variant=\(.*\)/{ \"variant\": \"\2\", \"board\": \"\1\" },/' | sort | tr '\r\n' ' ' | sed -e 's/,\s*$//') ]" >> "$GITHUB_ENV"
+          echo "BOARD_VARIANTS=$(extra/get_board_details.sh | jq -cr 'sort_by(.variant)')" >> "$GITHUB_ENV"
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -50,7 +50,6 @@ jobs:
       - name: Package
         run: |
           ./extra/package.sh ${{ env.CORE_TAG }}
-          mv ../${{ env.CORE_ARTIFACT }}.tar.bz2 .
 
       - name: Archive core
         uses: actions/upload-artifact@v4
@@ -221,6 +220,7 @@ jobs:
     if: ${{ github.event_name == 'push' && github.repository == 'arduino/ArduinoCore-zephyr' }}
     needs:
       - package-core
+      - test-core
       - publish-core
     env:
       CORE_ARTIFACT: ${{ needs.package-core.outputs.CORE_ARTIFACT }}

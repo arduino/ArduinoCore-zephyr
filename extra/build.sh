@@ -13,11 +13,13 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 fi
 
 if [[ $# -eq 0 ]]; then
-	board=$(jq -cr '.[0].board' < ./extra/targets.json)
-	args=$(jq -cr '.[0].args' < ./extra/targets.json)
+	first_board=$(extra/get_board_details.sh | jq -cr '.[0]')
+	target=$(jq -cr '.target' <<< "$first_board")
+	args=$(jq -cr '.args' <<< "$first_board")
 else
-	board=$1
+	target=$1
 	shift
+	args="$*"
 fi
 
 source venv/bin/activate
@@ -25,10 +27,10 @@ source venv/bin/activate
 ZEPHYR_BASE=$(west topdir)/zephyr
 
 # Get the variant name (NORMALIZED_BOARD_TARGET in Zephyr)
-variant=$(extra/get_variant_name.sh $board)
+variant=$(extra/get_variant_name.sh $target)
 
 if [ -z "${variant}" ] ; then
-	echo "Failed to get variant name from '$board'"
+	echo "Failed to get variant name from '$target'"
 	exit 1
 fi
 
@@ -36,7 +38,7 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${board} loader -t llext-edk $*
+west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk ${args}
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares

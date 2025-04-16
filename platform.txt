@@ -51,7 +51,7 @@ build.extra_flags=
 build.extra_ldflags=
 compiler.zephyr=
 
-build.ldscript={runtime.platform.path}/variants/llext/linker_script.ld
+build.ldscript={runtime.platform.path}/variants/_llext/linker_script.ld
 build.llext_link_flags=-r -e main
 build.extra_extra_ldflags=
 build.suffix=
