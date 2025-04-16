@@ -49,6 +49,10 @@ EXPORT_SYMBOL(islower);
 EXPORT_SYMBOL(isxdigit);
 
 EXPORT_SYMBOL(atan2);
+EXPORT_SYMBOL(atan2);
+EXPORT_SYMBOL(atan2f);
+EXPORT_SYMBOL(asinf);
+EXPORT_SYMBOL(acosf);
 
 EXPORT_SYMBOL(k_sched_lock);
 EXPORT_SYMBOL(k_sched_unlock);
