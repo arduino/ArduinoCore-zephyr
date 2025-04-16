@@ -49,10 +49,11 @@ EXPORT_SYMBOL(islower);
 EXPORT_SYMBOL(isxdigit);
 
 EXPORT_SYMBOL(atan2);
-EXPORT_SYMBOL(atan2);
 EXPORT_SYMBOL(atan2f);
+EXPORT_SYMBOL(atanf);
 EXPORT_SYMBOL(asinf);
 EXPORT_SYMBOL(acosf);
+EXPORT_SYMBOL(sqrt);
 
 EXPORT_SYMBOL(k_sched_lock);
 EXPORT_SYMBOL(k_sched_unlock);
@@ -227,4 +228,5 @@ FORCE_EXPORT_SYM(__aeabi_f2d);
 FORCE_EXPORT_SYM(__aeabi_idivmod);
 FORCE_EXPORT_SYM(__aeabi_ldivmod);
 FORCE_EXPORT_SYM(__aeabi_ul2f);
+FORCE_EXPORT_SYM(__aeabi_dcmpge);
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
