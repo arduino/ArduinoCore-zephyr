@@ -54,6 +54,7 @@ EXPORT_SYMBOL(atanf);
 EXPORT_SYMBOL(asinf);
 EXPORT_SYMBOL(acosf);
 EXPORT_SYMBOL(sqrt);
+EXPORT_SYMBOL(sqrtf);
 
 EXPORT_SYMBOL(k_sched_lock);
 EXPORT_SYMBOL(k_sched_unlock);
