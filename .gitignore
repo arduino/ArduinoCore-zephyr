@@ -7,3 +7,5 @@ cflags.txt
 cxxflags.txt
 includes.txt
 provides.ld
+cores/arduino/api
+/extra/zephyr-sketch-tool/distrib
