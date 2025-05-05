@@ -16,6 +16,11 @@ project(app LANGUAGES C CXX)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
 
+# for USB device stack NEXT
+target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/../cores/arduino/usb_device_descriptor.c
+)
+
 FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
 
