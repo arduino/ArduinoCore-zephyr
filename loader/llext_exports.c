@@ -134,6 +134,9 @@ FORCE_EXPORT_SYM(video_buffer_alloc);
 FORCE_EXPORT_SYM(video_buffer_release);
 FORCE_EXPORT_SYM(video_set_ctrl);
 #endif
+#if defined(CONFIG_BOARD_ARDUINO_GIGA_R1) && defined(CONFIG_INPUT_GT911_INTERRUPT)
+FORCE_EXPORT_SYM(registerGigaTouchCallback);
+#endif
 
 #if defined(CONFIG_SHARED_MULTI_HEAP)
 FORCE_EXPORT_SYM(shared_multi_heap_aligned_alloc);
