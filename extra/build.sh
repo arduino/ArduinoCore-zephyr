@@ -82,7 +82,7 @@ line_comment_only='^\s*\/\*' # match lines starting with comment
 line_continuation='\\$' # match lines ending with '\'
 c_comment='\s*\/\*.*?\*\/' # match C-style comments and any preceding space
 perl -i -pe "s/${c_comment}//gs unless /${line_preproc_ok}/ || (/${line_comment_only}/ && !/${line_continuation}/)" $(find ${VARIANT_DIR}/llext-edk/include/ -type f)
-for ext in elf bin hex; do
+for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
     if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
         cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
