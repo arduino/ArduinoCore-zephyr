@@ -78,7 +78,8 @@
 				<&adc 1>,
 				<&adc 2>;
 
-		serials = <&pico_serial>;
+		serials = <&board_cdc_acm_uart>, <&pico_serial>;
+		cdc-acm = <&board_cdc_acm_uart>;
 		i2cs = <&pico_i2c0>;
 		spis = <&pico_spi>;
 	};
@@ -197,6 +198,13 @@
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
 		zephyr,resolution = <12>;
 	};
+};
+
+&zephyr_udc0 {
+    board_cdc_acm_uart: board_cdc_acm_uart {
+	    compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+    };
 };
 
 &flash0 {
