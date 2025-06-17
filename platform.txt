@@ -222,7 +222,15 @@ tools.picotool.path={runtime.tools.rp2040tools.path}
 tools.picotool.cmd=rp2040load
 tools.picotool.upload.params.verbose=-v
 tools.picotool.upload.params.quiet=
-tools.picotool.upload.pattern="{path}/{cmd}" {upload.verbose} -D "{build.path}/{build.project_name}.elf"
+tools.picotool.upload.pattern="{path}/{cmd}" {upload.verbose} -D "{build.path}/{build.project_name}"
+
+tools.picotool.erase.params.verbose=
+tools.picotool.erase.params.quiet=
+tools.picotool.erase.pattern=
+
+tools.picotool.bootloader.params.verbose=-v
+tools.picotool.bootloader.params.quiet=
+tools.picotool.bootloader.pattern="{path}/{cmd}" {upload.verbose} -D "{runtime.platform.path}/firmwares/{bootloader.file}"
 
 #
 # IMGTOOL
