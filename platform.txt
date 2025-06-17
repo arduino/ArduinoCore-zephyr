@@ -44,7 +44,7 @@ compiler.zephyr.common_cxxflags=-fdata-sections -ffunction-sections -fno-unwind-
 compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -lstdc++ -lsupc++ -lnosys -nostdlib
 
 compiler.zephyr.extra_cxxflags=
-compiler.zephyr.extra_ldflags=
+compiler.zephyr.extra_ldflags=-lgcc
 
 # this can be overriden in boards.txt
 build.extra_flags=
