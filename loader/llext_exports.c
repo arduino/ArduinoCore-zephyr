@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include <zephyr/kernel.h>
 
 #define FORCE_EXPORT_SYM(name) \
@@ -48,6 +49,11 @@ EXPORT_SYMBOL(isupper);
 EXPORT_SYMBOL(islower);
 EXPORT_SYMBOL(isxdigit);
 
+EXPORT_SYMBOL(sin);
+EXPORT_SYMBOL(cos);
+EXPORT_SYMBOL(tan);
+EXPORT_SYMBOL(atan);
+EXPORT_SYMBOL(pow);
 EXPORT_SYMBOL(atan2);
 EXPORT_SYMBOL(atan2f);
 EXPORT_SYMBOL(atanf);
@@ -55,6 +61,9 @@ EXPORT_SYMBOL(asinf);
 EXPORT_SYMBOL(acosf);
 EXPORT_SYMBOL(sqrt);
 EXPORT_SYMBOL(sqrtf);
+EXPORT_SYMBOL(ldexp);
+
+EXPORT_SYMBOL(mktime);
 
 EXPORT_SYMBOL(k_sched_lock);
 EXPORT_SYMBOL(k_sched_unlock);
@@ -187,19 +196,15 @@ EXPORT_SYMBOL(k_work_schedule);
 //FORCE_EXPORT_SYM(k_timer_user_data_set);
 //FORCE_EXPORT_SYM(k_timer_start);
 
-EXPORT_SYMBOL(sin);
-EXPORT_SYMBOL(cos);
-EXPORT_SYMBOL(tan);
-EXPORT_SYMBOL(atan);
-EXPORT_SYMBOL(pow);
-
 EXPORT_SYMBOL(puts);
 EXPORT_SYMBOL(putchar);
 EXPORT_SYMBOL(printf);
 EXPORT_SYMBOL(sprintf);
 EXPORT_SYMBOL(snprintf);
 EXPORT_SYMBOL(cbvprintf);
-;
+EXPORT_SYMBOL(sscanf);
+EXPORT_SYMBOL(vsnprintf);
+
 FORCE_EXPORT_SYM(abort);
 #if defined(CONFIG_RING_BUFFER)
 EXPORT_SYMBOL(ring_buf_get);
@@ -240,3 +245,5 @@ FORCE_EXPORT_SYM(__aeabi_dcmpge);
 #if defined (CONFIG_CPP)
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
+
+FORCE_EXPORT_SYM(__assert_no_args);
