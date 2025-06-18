@@ -8,6 +8,9 @@
 
 #include <zephyr/net/socket.h>
 
+#include <api/Common.h>
+#include <api/IPAddress.h>
+
 class ZephyrSocketWrapper {
 protected:
     int sock_fd;
