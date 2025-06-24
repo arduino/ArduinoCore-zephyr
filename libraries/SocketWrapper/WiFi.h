@@ -75,14 +75,12 @@ public:
     }
 
     int status() {
-        struct wifi_iface_status status = { 0 };
-
-        if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, netif, &status,
+        if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, netif, &sta_state,
                 sizeof(struct wifi_iface_status))) {
             return WL_NO_SHIELD;
         }
 
-	    if (status.state >= WIFI_STATE_ASSOCIATED) {
+	    if (sta_state.state >= WIFI_STATE_ASSOCIATED) {
             return WL_CONNECTED;
         } else {
             return WL_DISCONNECTED;
@@ -94,12 +92,28 @@ public:
         // TODO: borrow code from mbed core for scan results handling
     }
 
+    char* SSID() {
+        if (status() == WL_CONNECTED) {
+            return (char *)sta_state.ssid;
+        }
+        return nullptr;
+    }
+
+    int32_t RSSI() {
+        if (status() == WL_CONNECTED) {
+            return sta_state.rssi;
+        }
+        return 0;
+    }
+
 private:
     struct net_if *sta_iface = nullptr;
     struct net_if *ap_iface = nullptr;
 
     struct wifi_connect_req_params ap_config;
     struct wifi_connect_req_params sta_config;
+
+    struct wifi_iface_status sta_state = { 0 };
 };
 
 extern WiFiClass WiFi;
