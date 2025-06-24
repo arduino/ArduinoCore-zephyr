@@ -75,6 +75,8 @@ public:
     }
 
     int status() {
+        sta_iface = net_if_get_wifi_sta();
+        netif = sta_iface;
         if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, netif, &sta_state,
                 sizeof(struct wifi_iface_status))) {
             return WL_NO_SHIELD;
