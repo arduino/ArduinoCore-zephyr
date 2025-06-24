@@ -16,7 +16,7 @@ public:
     WiFiClass() {}
     ~WiFiClass() {}
 
-    bool begin(const char* ssid, const char* passphrase, wl_enc_type security = ENC_TYPE_UNKNOWN, bool blocking = true) {
+    int begin(const char* ssid, const char* passphrase, wl_enc_type security = ENC_TYPE_UNKNOWN, bool blocking = true) {
         sta_iface = net_if_get_wifi_sta();
         netif = sta_iface;
         sta_config.ssid = (const uint8_t *)ssid;
@@ -40,7 +40,7 @@ public:
             net_mgmt_event_wait_on_iface(sta_iface, NET_EVENT_WIFI_CONNECT_RESULT, NULL, NULL, NULL, K_FOREVER);
         }
 
-        return true;
+        return status();
     }
 
     bool beginAP(char* ssid, char* passphrase, int channel = WIFI_CHANNEL_ANY, bool blocking = false) {
