@@ -16,7 +16,7 @@ public:
     WiFiClass() {}
     ~WiFiClass() {}
 
-    bool begin(const char* ssid, const char* passphrase, wl_enc_type security = ENC_TYPE_UNKNOWN, bool blocking = false) {
+    bool begin(const char* ssid, const char* passphrase, wl_enc_type security = ENC_TYPE_UNKNOWN, bool blocking = true) {
         sta_iface = net_if_get_wifi_sta();
         netif = sta_iface;
         sta_config.ssid = (const uint8_t *)ssid;
