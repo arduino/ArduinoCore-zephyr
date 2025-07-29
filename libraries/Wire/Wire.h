@@ -15,6 +15,11 @@ typedef void (*voidFuncPtrParamInt)(int);
 
 namespace arduino {
 
+struct i2c_ring {
+  struct ring_buf rb;
+  uint8_t buffer[256];
+};
+
 class ZephyrI2C : public HardwareI2C {
 public:
   ZephyrI2C(const struct device* i2c);
@@ -43,16 +48,24 @@ public:
   virtual void flush();
   virtual int available();
 
+  // I2C target callbacks
+  int writeRequestedCallback(struct i2c_target_config *config);
+  int writeReceivedCallback(struct i2c_target_config *config, uint8_t val);
+  int readRequestedCallback(struct i2c_target_config *config, uint8_t *val);
+  int readProcessedCallback(struct i2c_target_config *config, uint8_t *val);
+  int stopCallback(struct i2c_target_config *config);
+
+  struct i2c_target_config i2c_cfg;
+
 private:
   int _address;
-  uint8_t txBuffer[256];
-  uint32_t usedTxBuffer;
-  struct rx_ring_buf{
-    struct ring_buf rb;
-    uint8_t buffer[256];
-  };
-  struct rx_ring_buf rxRingBuffer;
-  const struct device* i2c_dev;
+
+  struct i2c_ring txRingBuffer;
+  struct i2c_ring rxRingBuffer;
+  const struct device *i2c_dev;
+
+  voidFuncPtr onRequestCb = NULL;
+  voidFuncPtrParamInt onReceiveCb = NULL;
 };
 
 } // namespace arduino

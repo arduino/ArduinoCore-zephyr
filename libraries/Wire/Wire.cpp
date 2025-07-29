@@ -5,104 +5,148 @@
  */
 
 #include <Wire.h>
+#include <stddef.h>
 #include <zephyr/sys/util_macro.h>
 
-arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_dev(i2c)
-{
+// Helper function to get ZephyrI2C instance from config pointer.
+static arduino::ZephyrI2C* getInstance(struct i2c_target_config *config) {
+    return reinterpret_cast<arduino::ZephyrI2C*>(
+        reinterpret_cast<char*>(config) - offsetof(arduino::ZephyrI2C, i2c_cfg)
+    );
+}
+
+static int i2c_target_stop_cb(struct i2c_target_config *config) {
+    arduino::ZephyrI2C *instance = getInstance(config);
+    return instance->stopCallback(config);
+}
+
+static int i2c_target_write_requested_cb(struct i2c_target_config *config) {
+    arduino::ZephyrI2C *instance = getInstance(config);
+    return instance->writeRequestedCallback(config);
+}
+
+static int i2c_target_write_received_cb(struct i2c_target_config *config, uint8_t val) {
+    arduino::ZephyrI2C *instance = getInstance(config);
+    return instance->writeReceivedCallback(config, val);
+}
+
+static int i2c_target_read_requested_cb(struct i2c_target_config *config, uint8_t *val) {
+    arduino::ZephyrI2C *instance = getInstance(config);
+    return instance->readRequestedCallback(config, val);
+}
+
+static int i2c_target_read_processed_cb(struct i2c_target_config *config, uint8_t *val) {
+    arduino::ZephyrI2C *instance = getInstance(config);
+    return instance->readProcessedCallback(config, val);
+}
+
+// I2C target callback structure.
+static struct i2c_target_callbacks target_callbacks = {
+    .write_requested = i2c_target_write_requested_cb,
+    .read_requested = i2c_target_read_requested_cb,
+    .write_received = i2c_target_write_received_cb,
+    .read_processed = i2c_target_read_processed_cb,
+    .stop = i2c_target_stop_cb,
+};
+
+arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_dev(i2c), i2c_cfg({0}) {
+    ring_buf_init(&txRingBuffer.rb, sizeof(txRingBuffer.buffer), txRingBuffer.buffer);
+    ring_buf_init(&rxRingBuffer.rb, sizeof(rxRingBuffer.buffer), rxRingBuffer.buffer);
 }
 
 void arduino::ZephyrI2C::begin() {
-  ring_buf_init(&rxRingBuffer.rb, sizeof(rxRingBuffer.buffer), rxRingBuffer.buffer);
+
 }
 
 void arduino::ZephyrI2C::begin(uint8_t slaveAddr) {
-
+    i2c_cfg.address = slaveAddr;
+    i2c_cfg.callbacks = &target_callbacks;
+    
+    // Register I2C target
+    i2c_target_register(i2c_dev, &i2c_cfg);
 }
 
-void arduino::ZephyrI2C::end() {}
+void arduino::ZephyrI2C::end() {
+    // Unregister I2C target
+    if (i2c_cfg.address) {
+        i2c_target_unregister(i2c_dev, &i2c_cfg);
+        memset(&i2c_cfg, 0, sizeof(i2c_cfg));
+    }
+}
 
 void arduino::ZephyrI2C::setClock(uint32_t freq) {
-    uint8_t speed = 	I2C_SPEED_STANDARD;
-	if(freq >  0x06u ) {
-		if(freq == 100000) {
-		  speed = I2C_SPEED_STANDARD;
-		} else if(freq == 400000) {
-		  speed = I2C_SPEED_FAST;
-		} else if(freq == 1000000) {
-		  speed = I2C_SPEED_FAST_PLUS;
-		} else {
-		  speed = I2C_SPEED_STANDARD;
-		}
-	} else {
-		speed = (uint8_t) freq;
-	}
-	uint32_t i2c_cfg = I2C_MODE_CONTROLLER |
-					I2C_SPEED_SET(speed);
+    uint8_t speed;
 
-	if (i2c_configure(i2c_dev, i2c_cfg)) {
-		//Serial.println("Failed to configure i2c interface.");
-	}
+    if (freq == 100000) {
+      speed = I2C_SPEED_STANDARD;
+    } else if (freq == 400000) {
+      speed = I2C_SPEED_FAST;
+    } else if (freq == 1000000) {
+      speed = I2C_SPEED_FAST_PLUS;
+    } else {
+      speed = I2C_SPEED_STANDARD;
+    }
+
+    i2c_configure(i2c_dev, I2C_SPEED_SET(speed) | I2C_MODE_CONTROLLER);
 }
 
-void arduino::ZephyrI2C::beginTransmission(uint8_t address) { // TODO for ADS1115
+void arduino::ZephyrI2C::beginTransmission(uint8_t address) {
   _address = address;
-  usedTxBuffer = 0;
+  ring_buf_reset(&txRingBuffer.rb);
+  ring_buf_reset(&rxRingBuffer.rb);
 }
 
 uint8_t arduino::ZephyrI2C::endTransmission(bool stopBit) {
-  int ret = i2c_write(i2c_dev, txBuffer, usedTxBuffer, _address);
-  if (ret) {
-    return 1; // fail
+  int ret = 0;
+  uint8_t *buf = NULL;
+  size_t max = ring_buf_capacity_get(&txRingBuffer.rb);
+  size_t len = ring_buf_get_claim(&txRingBuffer.rb, &buf, max);
+
+  if (len && buf) {
+    ret = i2c_write(i2c_dev, buf, len, _address);
   }
-  return 0;
+
+  // Must be called even if 0 bytes claimed.
+  ring_buf_get_finish(&txRingBuffer.rb, len);
+
+  return ret ? 1 : 0;
 }
 
-uint8_t arduino::ZephyrI2C::endTransmission(void) { // TODO for ADS1115
+uint8_t arduino::ZephyrI2C::endTransmission(void) {
   return endTransmission(true);
 }
 
-size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len,
-                                       bool stopBit) {
-  uint8_t buf[len];
-  int ret = i2c_read(i2c_dev, buf, len, address);
-  if (ret != 0)
-  {
-    return 0;
+size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len_in, bool stopBit) {
+  int ret = 0;
+  uint8_t *buf = NULL;
+  size_t len = ring_buf_put_claim(&rxRingBuffer.rb, &buf, len_in);
+
+  if (len && buf) {
+    ret = i2c_read(i2c_dev, buf, len, address);
   }
-  ret = ring_buf_put(&rxRingBuffer.rb, buf, len);
-  if (ret == 0)
-  {
-    return 0;
-  }
-  return len;
+
+  // Must be called even if 0 bytes claimed.
+  ring_buf_put_finish(&rxRingBuffer.rb, len);
+
+  return ret ? 1 : 0;
 }
 
-size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len) { // TODO for ADS1115
+size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len) {
   return requestFrom(address, len, true);
 }
 
-size_t arduino::ZephyrI2C::write(uint8_t data) {  // TODO for ADS1115
-  txBuffer[usedTxBuffer++] = data;
-  return 1;
+size_t arduino::ZephyrI2C::write(uint8_t data) {
+  return ring_buf_put(&txRingBuffer.rb, &data, 1);
 }
 
 size_t arduino::ZephyrI2C::write(const uint8_t *buffer, size_t size) {
-    if (usedTxBuffer + size > 256) {
-    size = 256 - usedTxBuffer;
-  }
-	memcpy(txBuffer + usedTxBuffer, buffer, size);
-	usedTxBuffer += size;	
-  return size;
+  return ring_buf_put(&txRingBuffer.rb, buffer, size);
 }
 
 int arduino::ZephyrI2C::read() {
-  uint8_t buf[1];
-  if (ring_buf_size_get(&rxRingBuffer.rb)) {
-        int ret = ring_buf_get(&rxRingBuffer.rb, buf, 1);
-        if (ret == 0) {
-            return -1;
-        }
-		return (int)buf[0];
+  uint8_t buf;
+  if (ring_buf_get(&rxRingBuffer.rb, &buf, 1)) {
+    return (int) buf;
   }
   return -1;
 }
@@ -112,18 +156,74 @@ int arduino::ZephyrI2C::available() {
 }
 
 int arduino::ZephyrI2C::peek() {
-  uint8_t buf[1];
-  int bytes_read = ring_buf_peek(&rxRingBuffer.rb, buf, 1);
-  if (bytes_read == 0){
-    return 0;
+  uint8_t buf;
+  if (ring_buf_peek(&rxRingBuffer.rb, &buf, 1)) {
+    return (int) buf;
   } 
-  return (int)buf[0];
+  return -1;
 }
 
-void arduino::ZephyrI2C::flush() {}
+void arduino::ZephyrI2C::flush() {
 
-void arduino::ZephyrI2C::onReceive(voidFuncPtrParamInt cb) {}
-void arduino::ZephyrI2C::onRequest(voidFuncPtr cb) {}
+}
+
+void arduino::ZephyrI2C::onReceive(voidFuncPtrParamInt cb) {
+  onReceiveCb = cb;
+}
+
+void arduino::ZephyrI2C::onRequest(voidFuncPtr cb) {
+  onRequestCb = cb;
+}
+
+int arduino::ZephyrI2C::writeRequestedCallback(struct i2c_target_config *config) {
+  // Reset the buffer on write requests. 
+  ring_buf_reset(&rxRingBuffer.rb);
+  return 0;
+}
+
+int arduino::ZephyrI2C::writeReceivedCallback(struct i2c_target_config *config, uint8_t val) {
+  size_t len = ring_buf_size_get(&rxRingBuffer.rb);
+  size_t max = ring_buf_capacity_get(&rxRingBuffer.rb);
+
+  // If the buffer is about to overflow, invoke the callback
+  // with the current length.
+  if (onReceiveCb && ((len + 1) > max)) {
+    onReceiveCb(len);
+  }
+
+  return ring_buf_put(&rxRingBuffer.rb, &val, 1) ? 0 : -1;
+}
+
+int arduino::ZephyrI2C::readRequestedCallback(struct i2c_target_config *config, uint8_t *val) {
+  // Reset the buffer on read requests. 
+  ring_buf_reset(&txRingBuffer.rb);
+
+  if (onRequestCb) {
+    onRequestCb();
+  }
+
+  return readProcessedCallback(config, val);
+}
+
+int arduino::ZephyrI2C::readProcessedCallback(struct i2c_target_config *config, uint8_t *val) {
+  *val = 0xFF;
+  ring_buf_get(&txRingBuffer.rb, val, 1);
+  // Returning a negative value here is not handled gracefully and
+  // causes the target/board to stop responding (at least with ST).
+  return 0;
+}
+
+int arduino::ZephyrI2C::stopCallback(struct i2c_target_config *config) {
+  // If the RX buffer is not empty invoke the callback with the
+  // remaining data length.
+  if (onReceiveCb) {
+    size_t len = ring_buf_size_get(&rxRingBuffer.rb);
+    if (len) {
+        onReceiveCb(len);
+    }
+  }
+  return 0;
+}
 
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), i2cs)
 #if (DT_PROP_LEN(DT_PATH(zephyr_user), i2cs) > 1)
