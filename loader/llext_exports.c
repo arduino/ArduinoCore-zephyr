@@ -199,13 +199,16 @@ EXPORT_SYMBOL(printf);
 EXPORT_SYMBOL(sprintf);
 EXPORT_SYMBOL(snprintf);
 EXPORT_SYMBOL(cbvprintf);
-;
 FORCE_EXPORT_SYM(abort);
+
 #if defined(CONFIG_RING_BUFFER)
 EXPORT_SYMBOL(ring_buf_get);
 EXPORT_SYMBOL(ring_buf_peek);
 EXPORT_SYMBOL(ring_buf_put);
+EXPORT_SYMBOL(ring_buf_area_claim);
+EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
+
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
 FORCE_EXPORT_SYM(__aeabi_dcmpun);
 FORCE_EXPORT_SYM(__aeabi_dcmple);
