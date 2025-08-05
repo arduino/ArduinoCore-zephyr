@@ -108,6 +108,8 @@ public:
         return 0;
     }
 
+    String firmwareVersion();
+
 private:
     struct net_if *sta_iface = nullptr;
     struct net_if *ap_iface = nullptr;
