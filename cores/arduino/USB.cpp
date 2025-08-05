@@ -56,6 +56,7 @@ void arduino::SerialUSB_::usbd_next_cb(struct usbd_context *const ctx, const str
     if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
         uint32_t baudrate;
         uart_line_ctrl_get(Serial.uart, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+        printf("Baud rate changed to %d\n", baudrate);
         Serial._baudChangeHandler(nullptr, baudrate);
     }
 }
