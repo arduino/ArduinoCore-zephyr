@@ -31,21 +31,30 @@ uint32_t FrameBuffer::getBufferSize() {
 	if (this->vbuf) {
 		return this->vbuf->bytesused;
 	}
+	return 0;
 }
 
 uint8_t *FrameBuffer::getBuffer() {
 	if (this->vbuf) {
 		return this->vbuf->buffer;
 	}
+	return nullptr;
 }
 
-Camera::Camera() : vdev(NULL), byte_swap(false), yuv_to_gray(false) {
+Camera::Camera()
+	: vdev(NULL), byte_swap(false), yuv_to_gray(false),
+	  snapshot_mode(CONFIG_VIDEO_BUFFER_POOL_NUM_MAX <= 1) {
 	for (size_t i = 0; i < ARRAY_SIZE(this->vbuf); i++) {
 		this->vbuf[i] = NULL;
 	}
 }
 
 bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byte_swap) {
+	return begin(width, height, width, height, pixformat, byte_swap);
+}
+
+bool Camera::begin(uint32_t width, uint32_t height, uint32_t crop_width, uint32_t crop_height,
+				   uint32_t pixformat, bool byte_swap) {
 #if DT_HAS_CHOSEN(zephyr_camera)
 	this->vdev = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 #endif
@@ -74,13 +83,13 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 		return false;
 	}
 
-	for (size_t i = 0; caps.format_caps[i].pixelformat != NULL; i++) {
+	for (size_t i = 0; caps.format_caps[i].pixelformat != 0; i++) {
 		const struct video_format_cap *fcap = &caps.format_caps[i];
-		if (fcap->width_min == width && fcap->height_min == height &&
-			fcap->pixelformat == pixformat) {
+		if (fcap->width_min <= width && fcap->width_max >= width && fcap->height_min <= height &&
+			fcap->height_max >= height && fcap->pixelformat == pixformat) {
 			break;
 		}
-		if (caps.format_caps[i + 1].pixelformat == NULL) {
+		if (caps.format_caps[i + 1].pixelformat == 0) {
 			Serial.println("The specified format is not supported");
 			return false;
 		}
@@ -88,6 +97,7 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 
 	// Set format.
 	static struct video_format fmt = {
+		.type = VIDEO_BUF_TYPE_OUTPUT,
 		.pixelformat = pixformat,
 		.width = width,
 		.height = height,
@@ -97,6 +107,34 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	if (video_set_format(this->vdev, &fmt)) {
 		Serial.println("Failed to set video format");
 		return false;
+	}
+
+	// optionally set the crop values
+	if (width != crop_width || height != crop_height) {
+		struct video_selection vselCrop;
+		vselCrop.type = VIDEO_BUF_TYPE_OUTPUT;
+		vselCrop.target = VIDEO_SEL_TGT_CROP;
+		vselCrop.rect.left = (width - crop_width) / 2;
+		vselCrop.rect.top = (height - crop_height) / 2;
+		vselCrop.rect.width = crop_width;
+		vselCrop.rect.height = crop_height;
+		;
+
+		int ret;
+		if ((ret = setSelection(&vselCrop)) != 0) {
+			printk("ERROR: %d\n", ret);
+		}
+	}
+	// this should compute the sizes needed.
+	video_get_format(this->vdev, &fmt);
+
+	// If we are in snapshot mode, try starting the video stream with no buffers
+	// to tell it that we want snapshot...
+	if (snapshot_mode) {
+		if (video_stream_start(this->vdev, VIDEO_BUF_TYPE_OUTPUT)) {
+			Serial.println("Snapshot mode Failed to start capture");
+			// return false;
+		}
 	}
 
 	// Allocate video buffers.
@@ -111,11 +149,12 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	}
 
 	// Start video capture
-	if (video_stream_start(this->vdev, VIDEO_BUF_TYPE_OUTPUT)) {
-		Serial.println("Failed to start capture");
-		return false;
+	if (!snapshot_mode) {
+		if (video_stream_start(this->vdev, VIDEO_BUF_TYPE_OUTPUT)) {
+			Serial.println("Failed to start capture");
+			return false;
+		}
 	}
-
 	return true;
 }
 
@@ -123,11 +162,11 @@ bool Camera::grabFrame(FrameBuffer &fb, uint32_t timeout) {
 	if (this->vdev == NULL) {
 		return false;
 	}
-
+	// printk("Camera::grabFrame called\n");
 	if (video_dequeue(this->vdev, &fb.vbuf, K_MSEC(timeout))) {
 		return false;
 	}
-
+	// printk("video_dequeue returned :%p\n", fb.vbuf->buffer);
 	if (this->byte_swap) {
 		uint16_t *pixels = (uint16_t *)fb.vbuf->buffer;
 		for (size_t i = 0; i < fb.vbuf->bytesused / 2; i++) {
@@ -151,6 +190,13 @@ bool Camera::releaseFrame(FrameBuffer &fb) {
 		return false;
 	}
 
+	int ret;
+	// printk("Camera::ReleaseFrame called\n");
+	if ((ret = video_enqueue(this->vdev, fb.vbuf)) != 0) {
+		printk("Failed to enqueue buffer %d\n", ret);
+		return false;
+	}
+
 	if (video_enqueue(this->vdev, fb.vbuf)) {
 		return false;
 	}
@@ -166,4 +212,59 @@ bool Camera::setVerticalFlip(bool flip_enable) {
 bool Camera::setHorizontalMirror(bool mirror_enable) {
 	struct video_control ctrl = {.id = VIDEO_CID_HFLIP, .val = mirror_enable};
 	return video_set_ctrl(this->vdev, &ctrl) == 0;
+}
+
+int Camera::setSelection(struct video_selection *sel) {
+	return video_set_selection(vdev, sel);
+}
+
+/**
+ * @brief Get video selection (crop/compose).
+ *
+ * Retrieve the current settings related to the crop and compose of the video device.
+ * This can also be used to read the native size of the input stream of the video
+ * device.
+ * This function can be used to read crop / compose capabilities of the device prior
+ * to performing configuration via the @ref video_set_selection api.
+ *
+ * @param sel Pointer to a video selection structure, @c type and @c target set by the caller
+ *
+ * @retval 0 Is successful.
+ * @retval -EINVAL If parameters are invalid.
+ * @retval -ENOTSUP If format is not supported.
+ * @retval -EIO General input / output error.
+ */
+int Camera::getSelection(struct video_selection *sel) {
+	return video_get_selection(vdev, sel);
+}
+
+/**
+ * @brief returns if snapshot mode is turned on or off.
+ *
+ * @param snapshot_mode pointer to Turn Snaphsot mode on or off..
+ */
+bool Camera::getSnapshotMode() {
+	return snapshot_mode;
+}
+
+/**
+ * @brief returns if snapshot mode is turned on or off.
+ *
+ * Must be called before begin to take effect.
+ *
+ * @param snap_shot mode if true.
+ *
+ * @retval 0 is successful.
+ */
+int Camera::setSnapshotMode(bool snap_shot) {
+	if (snap_shot) {
+		snapshot_mode = snap_shot;
+		return 0;
+	} else {
+#if CONFIG_VIDEO_BUFFER_POOL_NUM_MAX <= 1
+		return -EINVAL;
+#endif
+		snapshot_mode = snap_shot;
+		return 0;
+	}
 }
