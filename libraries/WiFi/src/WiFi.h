@@ -27,7 +27,7 @@ public:
         sta_config.security = WIFI_SECURITY_TYPE_PSK;
         sta_config.channel = WIFI_CHANNEL_ANY;
         sta_config.band = WIFI_FREQ_BAND_2_4_GHZ;
-	    sta_config.bandwidth = WIFI_FREQ_BANDWIDTH_20MHZ;
+        sta_config.bandwidth = WIFI_FREQ_BANDWIDTH_20MHZ;
 
         int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &sta_config,
                 sizeof(struct wifi_connect_req_params));
@@ -56,7 +56,7 @@ public:
         ap_config.security = WIFI_SECURITY_TYPE_PSK;
         ap_config.channel = channel;
         ap_config.band = WIFI_FREQ_BAND_2_4_GHZ;
-	    ap_config.bandwidth = WIFI_FREQ_BANDWIDTH_20MHZ;
+        ap_config.bandwidth = WIFI_FREQ_BANDWIDTH_20MHZ;
 
         int ret = net_mgmt(NET_REQUEST_WIFI_AP_ENABLE, ap_iface, &ap_config,
                 sizeof(struct wifi_connect_req_params));
@@ -82,7 +82,7 @@ public:
             return WL_NO_SHIELD;
         }
 
-	    if (sta_state.state >= WIFI_STATE_ASSOCIATED) {
+        if (sta_state.state >= WIFI_STATE_ASSOCIATED) {
             return WL_CONNECTED;
         } else {
             return WL_DISCONNECTED;
