@@ -33,11 +33,11 @@ int WiFiClass::begin(const char* ssid, const char* passphrase, wl_enc_type secur
         return false;
     }
 
-    // FIXME verify that non in blocking version dhcp can be called even if connect is not completed
-    NetworkInterface::begin(false, NET_EVENT_WIFI_MASK);
     if (blocking) {
         net_mgmt_event_wait_on_iface(sta_iface, NET_EVENT_WIFI_CONNECT_RESULT, NULL, NULL, NULL, K_FOREVER);
     }
+    // FIXME verify that non in blocking version dhcp can be called even if connect is not completed
+    NetworkInterface::begin(blocking, NET_EVENT_WIFI_MASK);
 
     return status();
 }
