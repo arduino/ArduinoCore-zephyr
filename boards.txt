@@ -449,7 +449,7 @@ portentac33.upload.native_usb=true
 portentac33.upload.maximum_size=1966080
 portentac33.upload.maximum_data_size=523624
 portentac33.upload.address=0x100000
-portentac33.upload.dfuse=-Q
+portentac33.upload.dfuse=-Q -w
 
 portentac33.bootloader.tool=dfu-util
 portentac33.bootloader.tool.default=dfu-util
