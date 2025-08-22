@@ -104,7 +104,7 @@ void setInterruptHandler(pin_size_t pinNumber, voidFuncPtr func) {
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
-		pcb->handlers[BIT(arduino_pins[pinNumber].pin)].handler = func;
+		pcb->handlers[arduino_pins[pinNumber].pin].handler = func;
 	}
 }
 
@@ -113,8 +113,8 @@ void handleGpioCallback(const struct device *port, struct gpio_callback *cb, uin
 	struct gpio_port_callback *pcb = (struct gpio_port_callback *)cb;
 
 	for (uint32_t i = 0; i < max_ngpios; i++) {
-		if (pins & BIT(i) && pcb->handlers[BIT(i)].enabled) {
-			pcb->handlers[BIT(i)].handler();
+		if (pins & BIT(i) && pcb->handlers[i].enabled) {
+			pcb->handlers[i].handler();
 		}
 	}
 }
@@ -531,7 +531,7 @@ void enableInterrupt(pin_size_t pinNumber) {
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
-		pcb->handlers[BIT(arduino_pins[pinNumber].pin)].enabled = true;
+		pcb->handlers[arduino_pins[pinNumber].pin].enabled = true;
 	}
 }
 
@@ -539,7 +539,7 @@ void disableInterrupt(pin_size_t pinNumber) {
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
-		pcb->handlers[BIT(arduino_pins[pinNumber].pin)].enabled = false;
+		pcb->handlers[arduino_pins[pinNumber].pin].enabled = false;
 	}
 }
 
