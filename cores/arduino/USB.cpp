@@ -29,6 +29,8 @@ void arduino::SerialUSB_::baudChangeHandler(const struct device *dev, uint32_t r
 
 #if defined(CONFIG_USB_DEVICE_STACK_NEXT)
 int arduino::SerialUSB_::usb_disable() {
+	// To avoid Cannot perform port reset: 1200-bps touch: setting DTR to OFF: protocol error
+	k_sleep(K_MSEC(100));
 	return usbd_disable(Serial._usbd);
 }
 
