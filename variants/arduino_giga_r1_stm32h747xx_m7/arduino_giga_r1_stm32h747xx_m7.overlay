@@ -336,8 +336,13 @@
 
 &flash0 {
 	partitions {
-		user_sketch: partition@e0000 {
-			reg = <0x0E0000 0x20000>;
+		slot0_partition: partition@40000 {
+			label = "image-0";
+			reg = <0x40000 0x00100000>;
+		};
+
+		user_sketch: partition@100000 {
+			reg = <0x140000 0x20000>;
 		};
 	};
 };
