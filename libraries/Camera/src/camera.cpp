@@ -50,16 +50,73 @@ Camera::Camera() : byte_swap(false), yuv_to_gray(false), vdev(NULL) {
 	}
 }
 
+#if defined(CONFIG_VIDEO)
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/clock_control.h>
+#include <zephyr/logging/log.h>
+
+int camera_ext_clock_enable(void) {
+	int ret;
+	uint32_t rate;
+	const struct device *cam_ext_clk_dev = DEVICE_DT_GET(DT_NODELABEL(pwmclock));
+
+	if (!cam_ext_clk_dev) {
+		return -ENODEV;		
+	}
+
+	(void)zephyr::arduino::init_dev_apply_pinctrl(cam_ext_clk_dev);
+
+	ret = clock_control_on(cam_ext_clk_dev, (clock_control_subsys_t)0);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = clock_control_get_rate(cam_ext_clk_dev, (clock_control_subsys_t)0, &rate);
+	if (ret < 0) {
+		return ret;
+	}
+
+	return 0;
+}
+#else
+#ERROR "CONFIG_VIDEO is not defined for this variant"
+#endif
+
 bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byte_swap) {
 #if DT_HAS_CHOSEN(zephyr_camera)
 	this->vdev = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 #endif
 
+	// start the clock
+	int ret;
+
 	if (!this->vdev) {
 		return false;
 	}
 
-	(void)zephyr::arduino::init_dev_apply_pinctrl(this->vdev);
+	if ((ret = camera_ext_clock_enable()) != 0) {
+		printk("Camera::begin failed = clock enable: %d\n", ret);
+		return false;
+	}
+
+	delay(50);
+
+	if ((ret = zephyr::arduino::init_dev_apply_pinctrl(this->vdev)) != 0) {
+		printk("Camera::begin failed = vedev: %d\n", ret);
+		return false;
+	}
+
+
+	// Now see if the actual camera is defined in choosen. And see if it is ready
+#if DT_HAS_CHOSEN(zephyr_camera_sensor)
+	const struct device *camera_sensor = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera_sensor));
+	if ((ret = zephyr::arduino::init_dev_apply_pinctrl(camera_sensor)) != 0) {
+		printk("Camera::begin failed = sensor: %d\n", ret);
+		return false;
+	}
+
+#endif
 
 	switch (pixformat) {
 	case CAMERA_RGB565:

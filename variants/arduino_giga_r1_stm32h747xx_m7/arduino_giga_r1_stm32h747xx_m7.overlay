@@ -54,6 +54,7 @@
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
 		reg = <0x3c>;
+		zephyr,deferred-init;
 		reset-gpios = <&gpiod 4 GPIO_ACTIVE_LOW>;
 		pwdn-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
 
@@ -193,6 +194,7 @@
 
 &dcmi {
 	status = "okay";
+	zephyr,deferred-init;
 	/* ext-sdram = <&sdram1>; */
 	pinctrl-0 = <&dcmi_hsync_ph8 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
 				&dcmi_d0_ph9 &dcmi_d1_ph10 &dcmi_d2_ph11 &dcmi_d3_pg11
@@ -380,6 +382,7 @@
 /{
 	chosen {
 		zephyr,camera = &dcmi;
+		zephyr,camera-sensor = &gc2145;
 		zephyr,log-uart = &log_uarts;
 		/* zephyr,console = &board_cdc_acm_uart; */
 	};
