@@ -1,14 +1,8 @@
 name: 'Format Check'
-
 on:
   push:
     branches:
       - 'main'
-    paths:
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hpp'
 
   pull_request:
     types:
@@ -18,11 +12,6 @@ on:
       - synchronize
     branches:
       - 'main'
-    paths:
-      - '**/*.c'
-      - '**/*.cpp'
-      - '**/*.h'
-      - '**/*.hpp'
 
   workflow_dispatch:
     inputs:
@@ -32,7 +21,27 @@ on:
         default: 'warning'
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should-check: ${{ steps.filter.outputs.src }}
+    steps:
+      # Only checkout for push events, not needed for PRs
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - '**/*.c'
+              - '**/*.cpp'
+              - '**/*.h'
+              - '**/*.hpp'
+
   format-check:
+    needs: check-changes
+    if: needs.check-changes.outputs.should-check == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,3 +67,14 @@ jobs:
           clang-format-version: '19'
           check-path: ${{ matrix.path['check'] }}
           exclude-regex: ${{ matrix.path['exclude'] }}
+
+  verify-format:
+    if: always()
+    needs: [check-changes, format-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report Status
+        run: |
+          if [[ "${{ needs.format-check.result }}" == "failure" ]]; then
+            exit 1
+          fi

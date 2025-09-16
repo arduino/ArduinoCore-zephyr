@@ -184,7 +184,6 @@ jobs:
           failOnError: false
 
   verify-core:
-    name: Collect job errors
     runs-on: ubuntu-latest
     if: cancelled() || contains(needs.*.result, 'failure')
     needs:
