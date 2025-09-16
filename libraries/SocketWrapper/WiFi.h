@@ -19,7 +19,7 @@ public:
     WiFiClass() {}
     ~WiFiClass() {}
 
-    int begin(const char* ssid, const char* passphrase, wl_enc_type security = ENC_TYPE_UNKNOWN, bool blocking = true) {
+    int begin(const char* ssid, const char* passphrase, wifi_security_type security = WIFI_SECURITY_TYPE_NONE, bool blocking = true) {
         sta_iface = net_if_get_wifi_sta();
         netif = sta_iface;
         sta_config.ssid = (const uint8_t *)ssid;
@@ -27,15 +27,28 @@ public:
         sta_config.psk = (const uint8_t *)passphrase;
         sta_config.psk_length = strlen(passphrase);
 
+        // The user might provide the security type as well
+        if(security != WIFI_SECURITY_TYPE_NONE){
+        	sta_config.security = security;
+        }else{
+        	sta_config.security = WIFI_SECURITY_TYPE_PSK;
+        }
+		sta_config.channel = WIFI_CHANNEL_ANY;
+		sta_config.band = WIFI_FREQ_BAND_2_4_GHZ;
+		sta_config.bandwidth = WIFI_FREQ_BANDWIDTH_20MHZ;
+
        	// Register the Wi-Fi event callback
 	    net_mgmt_init_event_callback(&wifiCb, scanEventDispatcher, NET_EVENT_WIFI_SCAN_RESULT | NET_EVENT_WIFI_SCAN_DONE);
 
 	    net_mgmt_add_event_callback(&wifiCb);
 
-	   	(void)scanNetworks();
+	    // If the network we are scanning for is found, the connection parameters will be updated automatically;
+	   	(void)scanNetworks(); // This is a blocking function call
+	   	
+	   	// Attempt to connect with either default parameters, or the updated ones after the scan completed
+	    if((sta_config.ssid != NULL) && (sta_config.ssid_length != 0u) &&
+	    	(sta_config.psk != NULL) && (sta_config.psk_length != 0u))
 
-	   	// Check if the network we were seekin was found and attempt to connect to it
-	    if(getSoughtNetworkFound() != true)
 	    {
 	        int ret = net_mgmt(NET_REQUEST_WIFI_CONNECT, sta_iface, &sta_config,
 	                sizeof(struct wifi_connect_req_params));
