@@ -37,13 +37,15 @@ jobs:
             libraries/examples/**
             libraries/extras/**
             libraries/ea_malloc/**
-          write_output_files: true
-      - name: List changed files
+          json: true
+      - name: Export changed files in a text file, one per line
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: cat .github/outputs/all_changed_files.txt
+        run: |
+          echo ${{ steps.changed-files.outputs.all_changed_files }} | jq -r '.[]' > all_changed_files.txt
+          cat all_changed_files.txt
       - name: Run clang-format check
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: pillo79/clang-format-action@05f671e71f0758aba4d3c9dbb0ee81bc5f0137c6
         with:
           clang-format-version: '19'
-          check-files-from: .github/outputs/all_changed_files.txt
+          check-files-from: all_changed_files.txt
