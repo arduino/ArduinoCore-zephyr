@@ -43,6 +43,6 @@ log_msg "group" "Installing Zephyr SDK 0.16.8"
 west sdk install --version 0.16.8 -t arm-zephyr-eabi
 log_msg "endgroup"
 
-log_msg "group" "Fetching blobs for: $NEEDED_HALS"
-west blobs fetch $NEEDED_HALS
+log_msg "group" "Fetching blobs for: $NEEDED_HALS arduinocore-zephyr"
+west blobs --auto-accept fetch $NEEDED_HALS arduinocore-zephyr
 log_msg "endgroup"

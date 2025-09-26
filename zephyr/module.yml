@@ -1,7 +1,422 @@
-name: arduino-api
+name: arduinocore-zephyr
 
 build:
   cmake: .
   kconfig: Kconfig
 samples:
   - samples
+blobs:
+  - path: ArduinoCore-API/api/ArduinoAPI.h
+    sha256: 421b66ccbbf038cef50df9860f7da13a6b4e92358b0550e52202b0aaabfc84ec
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/ArduinoAPI.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Binary.h
+    sha256: e424df9221d724316d151bb7b132d6448c3b100263ff2a5de78e7b22c1f515b4
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Binary.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/CanMsg.cpp
+    sha256: c488b4ad4b975153e9111aced3fc6f9506f97bc979945664a024034d13ba97d1
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/CanMsg.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/CanMsg.h
+    sha256: a32b3119f44ba32c352129344aa0792c36acd0f74aca60d7b89b86745a98981a
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/CanMsg.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/CanMsgRingbuffer.cpp
+    sha256: 094d7a15e3883ebe154c67222f38abde076b7f14813a725f8fd0b2c4837a3e2c
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/CanMsgRingbuffer.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/CanMsgRingbuffer.h
+    sha256: fb5445501ce011e1b9af2908e67b51fe2cd0571acebccae1e9db26728146e1c1
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/CanMsgRingbuffer.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Client.h
+    sha256: 8a50aacda9bf79c5df0453159571b5b33c2f81a91cb8a8286ea31d66daa41c62
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Client.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Common.cpp
+    sha256: f0194c591de2b66b4f702739a0fc83be2bad49b6907488f1ef371773dd9072a1
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Common.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Common.h
+    sha256: f50252fe58ee67f4d9ed4f38b91d718c129976b65f2e0eb726b80c51d31265f1
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Common.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Compat.h
+    sha256: cb940ac0d23e0ed6a591771e550527f2efd3dacafbaa37d1385da007b163a1ff
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Compat.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/DMAPool.h
+    sha256: 0f8f2e9c97a815958f091e2e15ab71f3c5d87f8d4c9ecbca32ccad06f4a6c2b3
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/DMAPool.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/HardwareCAN.h
+    sha256: 4a1f9d08dd99f430b8edc834e9015fb39695a727c12821995b33afc5e1593d73
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/HardwareCAN.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/HardwareI2C.h
+    sha256: 180ef79ccd4c71d8e5941f8ee25607d9a52d0c552fbce6b8fec31a3187db9f8d
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/HardwareI2C.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/HardwareSPI.h
+    sha256: 98ee3c7595140c29f96bb186cb0e08ee21cb3df95b315ec11970f1c8331b51d6
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/HardwareSPI.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/HardwareSerial.h
+    sha256: fcaaf0f9489baf2a2f0c60079f6807d1e896a2462ef82ecfdd6077472337f464
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/HardwareSerial.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/IPAddress.cpp
+    sha256: 8f72c8b5202a5e0df2512f22b61760feba1a40d457419aa0396f4fe45dfd43dd
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/IPAddress.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/IPAddress.h
+    sha256: 1cd22c5ca261cf96f375d7f81d62f540d8fc422ce44e2581b00f5632020f4e98
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/IPAddress.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Interrupts.h
+    sha256: e65784666f16d2fce53c3c06cb0f528f35e69b7b0bbf3e349708305accdc4db3
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Interrupts.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/PluggableUSB.cpp
+    sha256: 9198a9062f9df6d0e64152b7e5ab9b20aa7fc1a4e1cc0b15e5f5a8901a4f5ac8
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/PluggableUSB.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/PluggableUSB.h
+    sha256: 6c5ca4f28328a7c0cd0cc5f5b25892248af521dda737dde2f6f055532b4618d3
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/PluggableUSB.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Print.cpp
+    sha256: 49e04533150ed3e97799953e4ec830da51ed61d2440b302deae30dd150a25273
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Print.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Print.h
+    sha256: 963cc68cbe6cc635226797c83b8ebfc1a70254f13ddbd6ecdba6d35b120133bb
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Print.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Printable.h
+    sha256: f0e4430449dbb08940468ea3598816e6057c61783b75bda2dd9069d796fafd01
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Printable.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/RingBuffer.h
+    sha256: 56516afcd8703c89b3da68ea16a72f789e9b5aed990e3786594f6c049c31ef8c
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/RingBuffer.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Server.h
+    sha256: 58542091129cfa3ce873ba7f461b05281df4addfbe5d26cc684e52aafe4623c0
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Server.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Stream.cpp
+    sha256: ec269d975e383ab2ef40fc7aabb54a4eef798c314ddfe9006572f7a4522ef5ef
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Stream.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Stream.h
+    sha256: c6944b04e52f07c2383887e747c726977c5c86ab0bdf76330dfeb143ff843694
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Stream.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/String.cpp
+    sha256: aa056fa2aa79f267739ae5403d99ce13bd6cff9c05bd7e7ff45ce2ca11c63da4
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/String.cpp
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/String.h
+    sha256: 959929883f582a09f263f99e9aba0a24ce2efafc44e41692c76ff616185a8ba9
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/String.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/USBAPI.h
+    sha256: e98bc2119ebfd0f1c0026683ccd7ee65950ccdae9371194d64d664ee681ac7c7
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/USBAPI.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/Udp.h
+    sha256: e5bbe2b7c9c3434ddc39f242dbfc3285fad158463d64eb3d7477eeeb58a54ed3
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/Udp.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/WCharacter.h
+    sha256: d92830148b49de2f9b806847e5918f5c130aae20b05a01c3b0fb60e4d3719a67
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/WCharacter.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated-avr-comp/avr/dtostrf.c.impl
+    sha256: 90a276235838028de5e1731eccbf2b62b4b35194cc76f98e2991372db476b58f
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated-avr-comp/avr/dtostrf.c.impl
+    description: "Arduino Core API Source"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated-avr-comp/avr/dtostrf.h
+    sha256: 7137a464dc2f1f461eb0e1f9379546b05747d571b07d71d5731dd41efb446b26
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated-avr-comp/avr/dtostrf.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated-avr-comp/avr/interrupt.h
+    sha256: 647a88260e4b0545fce33900845c7961224c9c65db0fcf0202ddca658992bea0
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated-avr-comp/avr/interrupt.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated-avr-comp/avr/pgmspace.h
+    sha256: 65c7816bc442a775ddbcd9cb4fab04272d4dabfe9810455f5bee5b39d34cfc13
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated-avr-comp/avr/pgmspace.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Client.h
+    sha256: 94f7b9296db12f38eabcc98900354f70e71008af302b4b01abf745027a0906b7
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Client.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/HardwareSerial.h
+    sha256: 9ecf9348411fc5cfb758c7990e8afb47109b0fa0a64a4b8b828877713e2622ba
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/HardwareSerial.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/IPAddress.h
+    sha256: 56df6cc1590217fc6a6ba552f3bae27dc70ee8257ff2cb88f0a78a532dca21aa
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/IPAddress.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Print.h
+    sha256: d1dc25758645e5844f689c6a12acf82797948dcc4b9ed1c5f98fffb627fc3221
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Print.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Printable.h
+    sha256: 82c6c892a9cff931b608166e2f89f48faaf4b09046b5b82dc34358838535a2c3
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Printable.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Server.h
+    sha256: 910a6bbfa681d7fae79be67ae17590f9e28ef96f0cdee4d814b75cc53746a7f6
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Server.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Stream.h
+    sha256: b15261084ed766d8144b7c542c9e9c381ed0f39cd414fdafab433e5611821c4d
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Stream.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/Udp.h
+    sha256: 677ce38f59de2d3f7ae98e516161c0db3559c59b584d1245325341e817dd7fc0
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/Udp.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/deprecated/WString.h
+    sha256: 4c21b7bfc4ffb90450a4124329d29a54aed9c8fd4bfd27dc8d14656805a49377
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/deprecated/WString.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md
+  - path: ArduinoCore-API/api/itoa.h
+    sha256: 2eae998324bda3decb5d9901447aa4d722ce2b4424b668fe50dde6eee5fdff43
+    type: img
+    version: '1.5.2'
+    license-path: zephyr/blobs/ArduinoCore-API/LICENSE
+    click-through: true
+    url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/api/itoa.h
+    description: "Arduino Core API Header"
+    doc-url: https://raw.githubusercontent.com/arduino/ArduinoCore-API/refs/tags/1.5.2/README.md

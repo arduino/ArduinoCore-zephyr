@@ -16,3 +16,4 @@ doc/
 cores/
 libraries/
 variants/_ldscripts/
+zephyr/blobs/ArduinoCore-API/api/

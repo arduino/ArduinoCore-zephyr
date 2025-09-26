@@ -115,6 +115,7 @@ done
 
 mkdir -p $(dirname ${OUTPUT_FILE})
 tar -cjhf ${OUTPUT_FILE} -X ${TEMP_EXC} -T ${TEMP_INC} \
+	--transform "s,zephyr/blobs/ArduinoCore-API,cores/arduino," \
 	--transform "s,${TEMP_BOARDS},boards.txt," \
 	--transform "s,${TEMP_PLATFORM},platform.txt," \
 	--transform "s,^,ArduinoCore-zephyr/,"

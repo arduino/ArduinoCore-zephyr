@@ -32,7 +32,6 @@ jobs:
             loader/**/*.{c,cpp,h,hpp}
             libraries/**/*.{c,cpp,h,hpp}
           files_ignore: |
-            cores/arduino/api/**
             loader/llext_exports.c
             loader/blobs/4343WA1_*.c
             loader/blobs/wifi_nvram_image.h

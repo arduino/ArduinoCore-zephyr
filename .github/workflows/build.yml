@@ -50,6 +50,10 @@ jobs:
           west-project-filter: ${{ env.HAL_FILTER }}
           enable-ccache: false
 
+      - name: Fetch blobs
+        run: |
+          west blobs --auto-accept fetch arduinocore-zephyr
+
       - name: Add manifest path as module
         run: |
           echo EXTRA_ZEPHYR_MODULES="$(pwd)/$MODULE_PATH" >> $GITHUB_ENV

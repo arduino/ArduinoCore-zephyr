@@ -80,7 +80,7 @@ jobs:
           # Archive the build environment for later jobs
           (cd && tar cphf - .cmake work zephyr-sdk-* | zstd > build-env.tar.zstd)
           # The API is only needed for packaging, not for building, so it's separate
-          tar cphf - cores/arduino/api | zstd > arduino-api.tar.zstd
+          tar cphf - zephyr/blobs/ArduinoCore-API/api | zstd > arduino-api.tar.zstd
 
       - name: Archive build environment
         uses: actions/upload-artifact@v4
