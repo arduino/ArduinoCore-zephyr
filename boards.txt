@@ -1,5 +1,6 @@
 menu.debug=Debug
 menu.link_mode=Link mode
+menu.flash_mode=Flash mode
 
 ##########################################################################################
 
@@ -531,6 +532,11 @@ unoq.menu.link_mode.dynamic=Dynamic
 unoq.menu.link_mode.static=Static
 unoq.menu.link_mode.static.build.link_mode=static
 unoq.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+unoq.menu.flash_mode.flash=Flash
+unoq.menu.flash_mode.flash.openocd_cfg=flash_sketch.cfg
+unoq.menu.flash_mode.ram=RAM
+unoq.menu.flash_mode.ram.openocd_cfg=flash_sketch_ram.cfg
 
 unoq.build.zephyr_target=arduino_uno_q
 unoq.build.zephyr_args=

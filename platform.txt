@@ -269,7 +269,7 @@ tools.remoteocd.path={runtime.tools.remoteocd.path}
 tools.remoteocd.cmd=remoteocd
 tools.remoteocd.upload.params.verbose=--verbose
 tools.remoteocd.upload.params.quiet=
-tools.remoteocd.upload.pattern="{path}/{cmd}" upload --adb-path "{runtime.tools.adb.path}/adb" -s "{upload.port.properties.serialNumber}" -f "{build.variant.path}/flash_sketch.cfg" "{upload.verbose}" "{build.path}/{build.project_name}.{upload.extension}" 
+tools.remoteocd.upload.pattern="{path}/{cmd}" upload --adb-path "{runtime.tools.adb.path}/adb" -s "{upload.port.properties.serialNumber}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}" "{build.path}/{build.project_name}.{upload.extension}" 
 
 tools.remoteocd.bootloader.params.verbose=--verbose
 tools.remoteocd.bootloader.params.quiet=
@@ -283,7 +283,7 @@ tools.remoteocd_network.path={runtime.tools.remoteocd.path}
 tools.remoteocd_network.cmd=remoteocd
 tools.remoteocd_network.upload.params.verbose=--verbose
 tools.remoteocd_network.upload.params.quiet=
-tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.address}" --password "{upload.field.password}" -f "{build.variant.path}/flash_sketch.cfg" "{upload.verbose}" "{build.path}/{build.project_name}.{upload.extension}" 
+tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.address}" --password "{upload.field.password}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}" "{build.path}/{build.project_name}.{upload.extension}" 
 
 #
 # PYOCD WRAPPER
