@@ -36,7 +36,7 @@ SECTIONS {
         KEEP (*(.fini))
 
         __static_thread_data_list_start = .;
-        KEEP(*(SORT_BY_NAME(.__static_thread_data.static.*)));
+        KEEP(*(SORT_BY_NAME(.static_thread_data_area .__static_thread_data.static.*)));
         __static_thread_data_list_end = .;
     }
 
