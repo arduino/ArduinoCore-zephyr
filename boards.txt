@@ -272,7 +272,7 @@ portentah7.upload.native_usb=true
 portentah7.upload.maximum_size=1966080
 portentah7.upload.maximum_data_size=523624
 
-portentah7.upload.address=0x080E0000
+portentah7.upload.address=0x08140000
 
 portentah7.upload.maximum_size=786432
 portentah7.upload.maximum_data_size=523624
