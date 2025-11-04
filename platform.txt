@@ -46,7 +46,7 @@ compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics
 compiler.zephyr.extra_cxxflags=
 compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++
 
-# these can be overriden in boards.txt
+# these can be overridden in boards.txt
 build.extra_flags=
 build.extra_ldflags=
 build.link_mode=dynamic
@@ -90,7 +90,7 @@ compiler.objcopy.eep.extra_flags=
 compiler.elf2hex.extra_flags=
 
 # {build.library_discovery_phase} is set to 1 by the builder during library discovery.
-# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatiblity)
+# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatibility)
 build.library_discovery_phase=0
 build.library_discovery_phase_flag=-DARDUINO_LIBRARY_DISCOVERY_PHASE={build.library_discovery_phase}
 
