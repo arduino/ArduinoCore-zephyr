@@ -1,0 +1,109 @@
+/*
+ * Copyright (c) 2025 Arduino SA
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#include <zephyr/dt-bindings/adc/adc.h>
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&arduino_nano_header 0 0>,
+				    <&arduino_nano_header 1 0>,
+				    <&arduino_nano_header 2 0>,
+				    <&arduino_nano_header 3 0>,
+				    <&arduino_nano_header 4 0>,
+				    <&arduino_nano_header 5 0>,
+				    <&arduino_nano_header 6 0>,
+				    <&arduino_nano_header 7 0>,
+				    <&arduino_nano_header 8 0>,
+				    <&arduino_nano_header 9 0>,
+				    <&arduino_nano_header 10 0>,
+				    <&arduino_nano_header 11 0>,
+				    <&arduino_nano_header 12 0>,
+				    <&arduino_nano_header 13 0>,
+				    <&arduino_nano_header 14 0>,
+				    <&arduino_nano_header 15 0>,
+				    <&arduino_nano_header 16 0>,
+				    <&arduino_nano_header 17 0>,
+				    <&arduino_nano_header 18 0>,
+				    <&arduino_nano_header 19 0>,
+				    <&arduino_nano_header 20 0>,
+				    <&arduino_nano_header 21 0>;
+
+		pwm-pin-gpios =	    <&arduino_nano_header 0 0>,
+				    <&arduino_nano_header 1 0>,
+				    <&arduino_nano_header 2 0>,
+				    <&arduino_nano_header 3 0>,
+				    <&arduino_nano_header 4 0>,
+				    <&arduino_nano_header 5 0>,
+				    <&arduino_nano_header 6 0>,
+				    <&arduino_nano_header 7 0>,
+				    <&arduino_nano_header 8 0>,
+				    <&arduino_nano_header 9 0>,
+				    <&arduino_nano_header 10 0>,
+				    <&arduino_nano_header 11 0>,
+				    <&arduino_nano_header 12 0>,
+				    <&arduino_nano_header 13 0>,
+				    <&arduino_nano_header 14 0>,
+				    <&arduino_nano_header 15 0>,
+				    <&arduino_nano_header 16 0>,
+				    <&arduino_nano_header 17 0>,
+				    <&arduino_nano_header 18 0>,
+				    <&arduino_nano_header 19 0>,
+				    <&arduino_nano_header 20 0>,
+				    <&arduino_nano_header 21 0>;
+
+		adc-pin-gpios =     <&arduino_nano_header 14 0>,
+				    <&arduino_nano_header 15 0>,
+				    <&arduino_nano_header 16 0>,
+				    <&arduino_nano_header 17 0>,
+				    <&arduino_nano_header 18 0>,
+				    <&arduino_nano_header 19 0>,
+				    <&arduino_nano_header 20 0>,
+				    <&arduino_nano_header 21 0>;
+
+		io-channels =	<&adc0 0>,
+				<&adc0 1>,
+				<&adc0 2>,
+				<&adc0 3>,
+				<&adc1 0>,
+				<&adc1 1>,
+				<&adc1 2>,
+				<&adc1 3>;
+
+		serials = <&usb_serial>, <&uart0>;
+		i2cs = <&i2c0>;
+		builtin-led-gpios = <&gpio1 48 GPIO_ACTIVE_HIGH>,
+				<&gpio1 46 GPIO_ACTIVE_LOW>,
+				<&gpio0 0 GPIO_ACTIVE_LOW>,
+				<&gpio1 45 GPIO_ACTIVE_LOW>;
+
+	};
+};
+
+// &flash0 {
+// 	partitions {
+// 		compatible = "fixed-partitions";
+// 		#address-cells = <1>;
+// 		#size-cells = <1>;
+//
+// 		boot_partition: partition@0 {
+// 			label = "mcuboot";
+// 			reg = <0x0 DT_SIZE_K(64)>;
+// 		};
+//
+// 		sys_partition: partition@10000 {
+// 			label = "sys";
+// 			reg = <0x10000 DT_SIZE_K(64)>;
+// 		};
+//
+// 		user_sketch: partition@7e0000 {
+// 			label = "user_sketch";
+// 			reg = <0x7E0000 DT_SIZE_K(7936)>;
+// 		};
+//
+// 		storage_partition: partition@fb0000 {
+// 			label = "storage";
+// 			reg = <0xFB0000 DT_SIZE_K(192)>;
+// 		};
+// 	};
+// };
