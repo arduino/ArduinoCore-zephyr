@@ -17,13 +17,13 @@ compiler.warning_flags.all=-Wall -Wextra
 
 compiler.path={build.compiler_path}
 compiler.c.cmd={build.crossprefix}gcc
-compiler.c.flags=-g -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cflags_file}" -MMD -mcpu={build.mcu} {build.float-abi} {build.fpu}
+compiler.c.flags=-g -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cflags_file}" -MMD {build.float-abi} {build.fpu}
 compiler.c.elf.cmd={build.crossprefix}g++
-compiler.c.elf.flags=-Wl,--gc-sections -mcpu={build.mcu} {build.float-abi} {build.fpu} -std=gnu++17
+compiler.c.elf.flags=-Wl,--gc-sections {build.float-abi} {build.fpu} -std=gnu++17
 compiler.S.cmd={build.crossprefix}g++
-compiler.S.flags=-c -x assembler-with-cpp -mcpu={build.mcu} {build.fpu}
+compiler.S.flags=-c -x assembler-with-cpp {build.fpu}
 compiler.cpp.cmd={build.crossprefix}g++
-compiler.cpp.flags=-g -Os -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD -mcpu={build.mcu} {build.float-abi} {build.fpu}
+compiler.cpp.flags=-g -Os -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD {build.float-abi} {build.fpu}
 compiler.ar.cmd={build.crossprefix}ar
 compiler.ar.flags=rcs
 compiler.objcopy.cmd=
