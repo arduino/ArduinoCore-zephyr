@@ -24,14 +24,19 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/drivers/uart.h>
 #include <zephyr/usb/usb_device.h>
 
-#define HEADER_LEN 16
+typedef union {
+	struct {
+		uint8_t _padding[7];
+		uint8_t ver;    // @ 0x07
+		uint32_t len;   // @ 0x08
+		uint16_t magic; // @ 0x0c
+		uint8_t flags;  // @ 0x0e
+		// uint8_t _padding; last unused byte in header
+	} __attribute__((packed));
+	uint8_t bytes[16];
+} sketch_header_v1;
 
-struct sketch_header_v1 {
-	uint8_t ver;    // @ 0x07
-	uint32_t len;   // @ 0x08
-	uint16_t magic; // @ 0x0c
-	uint8_t flags;  // @ 0x0e
-} __attribute__((packed));
+#define HEADER_LEN sizeof(sketch_header_v1)
 
 #define SKETCH_FLAG_DEBUG     0x01
 #define SKETCH_FLAG_LINKED    0x02
@@ -106,8 +111,8 @@ static int loader(const struct shell *sh) {
 	uintptr_t base_addr =
 		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
 
-	char header[HEADER_LEN];
-	rc = flash_area_read(fa, 0, header, sizeof(header));
+	sketch_header_v1 sketch_hdr;
+	rc = flash_area_read(fa, 0, sketch_hdr.bytes, sizeof(sketch_hdr.bytes));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
@@ -115,13 +120,11 @@ static int loader(const struct shell *sh) {
 
 	bool sketch_valid = true;
 
-	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
-
 	// Ensure endianness is preserved in fields of header with more than 1 byte
-	sketch_hdr->len =   sys_le32_to_cpu(sketch_hdr.len);
-	sketch_hdr->magic = sys_le16_to_cpu(sketch_hdr.magic);
+	sketch_hdr.len =   sys_le32_to_cpu(sketch_hdr.len);
+	sketch_hdr.magic = sys_le16_to_cpu(sketch_hdr.magic);
 
-	if (sketch_hdr->ver != 0x1 || sketch_hdr->magic != 0x2341) {
+	if (sketch_hdr.ver != 0x1 || sketch_hdr.magic != 0x2341) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
@@ -160,7 +163,7 @@ static int loader(const struct shell *sh) {
 		_bootanimation_end = _bootanimation + user_bootanimation->len_loop;
 	}
 
-	if ((!sketch_valid) || !(sketch_hdr->flags & SKETCH_FLAG_IMMEDIATE)) {
+	if ((!sketch_valid) || !(sketch_hdr.flags & SKETCH_FLAG_IMMEDIATE)) {
 		// Start the bootanimation while waiting for the MPU to boot
 		const struct gpio_dt_spec spec =
 			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
@@ -194,7 +197,7 @@ static int loader(const struct shell *sh) {
 			__asm__("bkpt");
 			// poll the first bytes, if filled try to use them for booting
 			sketch_hdr = (struct sketch_header_v1 *)(ram_firmware + 7);
-			if (sketch_hdr->ver == 0x1 && sketch_hdr->magic == 0x2341) {
+			if (sketch_hdr.ver == 0x1 && sketch_hdr.magic == 0x2341) {
 				// Found valid data, use it for booting
 				base_addr = (uintptr_t)ram_firmware;
 				*ram_start = 0;
@@ -204,10 +207,10 @@ static int loader(const struct shell *sh) {
 	}
 #endif
 
-	size_t sketch_buf_len = sketch_hdr->len;
+	size_t sketch_buf_len = sketch_hdr.len;
 
 #if TARGET_HAS_USB_CDC_SHELL
-	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
+	int debug = (!sketch_valid) || (sketch_hdr.flags & SKETCH_FLAG_DEBUG);
 	if (debug && strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
 		// disables default shell on UART
 		shell_uninit(shell_backend_uart_get_ptr(), NULL);
@@ -224,7 +227,7 @@ static int loader(const struct shell *sh) {
 	}
 #endif
 
-	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
+	if (sketch_hdr.flags & SKETCH_FLAG_LINKED) {
 #ifdef CONFIG_BOARD_ARDUINO_PORTENTA_C33
 #if CONFIG_MPU
 		barrier_dmem_fence_full();
