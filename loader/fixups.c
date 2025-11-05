@@ -257,3 +257,13 @@ SYS_INIT(disable_vrefbuf, POST_KERNEL, 0);
 #endif
 
 #endif // ESP_PLATFORM
+
+#include <stdint.h>
+#include <zephyr/kernel.h>
+
+#define HEADER_LEN 16
+
+__attribute__((retain)) const uintptr_t base_addr =
+		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
+
+void* entry_point = base_addr + HEADER_LEN + 1;

@@ -99,6 +99,9 @@ __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
 
+typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
+extern entry_point_t entry_point;
+
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
@@ -263,8 +266,6 @@ static int loader(const struct shell *sh) {
 #endif
 
 		extern struct k_heap llext_heap;
-		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
-		entry_point_t entry_point = (entry_point_t)(base_addr + HEADER_LEN + 1);
 		entry_point(&llext_heap, llext_heap.heap.init_bytes);
 		// should never reach here
 		for (;;) {
