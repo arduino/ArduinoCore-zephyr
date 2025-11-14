@@ -15,6 +15,8 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/shell/shell.h>
 #include <zephyr/shell/shell_uart.h>
 
+#include <zephyr/sys/byteorder.h>
+
 #include <stdlib.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
@@ -112,7 +114,13 @@ static int loader(const struct shell *sh) {
 	}
 
 	bool sketch_valid = true;
+
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
+
+	// Ensure endianness is preserved in fields of header with more than 1 byte
+	sketch_hdr->len =   sys_le32_to_cpu(sketch_hdr.len);
+	sketch_hdr->magic = sys_le16_to_cpu(sketch_hdr.magic);
+
 	if (sketch_hdr->ver != 0x1 || sketch_hdr->magic != 0x2341) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
