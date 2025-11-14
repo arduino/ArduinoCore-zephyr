@@ -196,7 +196,7 @@ static int loader(const struct shell *sh) {
 		while (!sketch_valid) {
 			__asm__("bkpt");
 			// poll the first bytes, if filled try to use them for booting
-			sketch_hdr = (struct sketch_header_v1 *)(ram_firmware + 7);
+			memcpy(sketch_hdr.bytes, ram_firmware, sizeof(sketch_hdr));
 			if (sketch_hdr.ver == 0x1 && sketch_hdr.magic == 0x2341) {
 				// Found valid data, use it for booting
 				base_addr = (uintptr_t)ram_firmware;
