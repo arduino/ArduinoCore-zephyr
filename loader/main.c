@@ -193,6 +193,7 @@ static int loader(const struct shell *sh) {
 	void matrixSetGrayscaleBits(uint8_t _max);
 	void matrixGrayscaleWrite(uint8_t *buf);
 #include "bootanimation.h"
+#include "usbanimation.h"
 
 	uint8_t *_bootanimation = (uint8_t *)bootanimation;
 	size_t _bootanimation_len = bootanimation_len;
@@ -223,15 +224,30 @@ static int loader(const struct shell *sh) {
 
 	if ((!sketch_valid) || !(sketch_hdr->flags & SKETCH_FLAG_IMMEDIATE)) {
 		// Start the bootanimation while waiting for the MPU to boot
-		const struct gpio_dt_spec spec =
-			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
 
-		gpio_pin_configure_dt(&spec, GPIO_INPUT | GPIO_PULL_DOWN);
-		k_sleep(K_MSEC(200));
-		if (gpio_pin_get_dt(&spec) == 0) {
+		const struct gpio_dt_spec mpu_booted =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 0);
+		gpio_pin_configure_dt(&mpu_booted, GPIO_INPUT | GPIO_PULL_DOWN);
+		const struct gpio_dt_spec usb_mode =
+			GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), control_gpios, 1);
+		gpio_pin_configure_dt(&usb_mode, GPIO_INPUT | GPIO_PULL_UP);
+
+		k_sleep(K_MSEC(400));
+
+		if (gpio_pin_get_dt(&usb_mode) == 0) {
+			// USB mode, skip the animation
 			matrixBegin();
 			matrixSetGrayscaleBits(8);
-			while (gpio_pin_get_dt(&spec) == 0) {
+			while (1) {
+				matrixPlay(usbanimation_raw, usbanimation_raw_len);
+				k_sleep(K_MSEC(10));
+			}
+		}
+
+		if (gpio_pin_get_dt(&mpu_booted) == 0) {
+			matrixBegin();
+			matrixSetGrayscaleBits(8);
+			while (gpio_pin_get_dt(&mpu_booted) == 0) {
 				matrixPlay(_bootanimation, _bootanimation_len);
 			}
 			matrixPlay(_bootanimation_end, _bootanimation_end_len);

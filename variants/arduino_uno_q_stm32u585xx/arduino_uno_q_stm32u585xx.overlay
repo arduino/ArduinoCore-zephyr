@@ -414,7 +414,8 @@
 		       <&pwm5 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,   /* LED3_G/PH11 → TIM5_CH2 */
 		       <&pwm5 3 PWM_HZ(500) PWM_POLARITY_INVERTED>;   /* LED3_B/PH12 → TIM5_CH3 */
 
-		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>;    /* Internal SPI RDY */
+		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>,   /* Internal SPI RDY */
+				<&gpiog 15 GPIO_ACTIVE_HIGH>;   /* FORCED_USB_BOOT status */
 		analog-switch-gpios = <&gpioa 2 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
 
 		io-channels =	<&adc1 9>,     /* A0 - PA4 */
