@@ -17,3 +17,16 @@ config MAIN_STACK_REGION
 	depends on CODE_DATA_RELOCATION
 	help
 	  Specify the memory region for main stack.
+
+config ARDUINO_SERIAL_PRINTF
+	bool "Enable Serial.printf()"
+	default n
+	help
+	  Enable the Serial.printf() function.
+
+config ARDUINO_SERIAL_PRINTF_BUFFER_SIZE
+	int "Serial.printf() buffer size"
+	depends on ARDUINO_SERIAL_PRINTF
+	default 128
+	help
+	  Set the buffer size for the Serial.printf() function.

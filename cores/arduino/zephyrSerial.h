@@ -89,6 +89,10 @@ public:
 	int peek();
 	int read();
 
+#if CONFIG_ARDUINO_SERIAL_PRINTF
+	void printf(const char *fmt, ...);
+#endif
+
 	operator bool() {
 		return true;
 	}

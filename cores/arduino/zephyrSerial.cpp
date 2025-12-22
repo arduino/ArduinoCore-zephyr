@@ -187,6 +187,17 @@ void arduino::ZephyrSerial::flush() {
 	}
 }
 
+#if CONFIG_ARDUINO_SERIAL_PRINTF
+void arduino::ZephyrSerial::printf(const char *fmt, ...) {
+	char message[CONFIG_ARDUINO_SERIAL_PRINTF_BUFFER_SIZE];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(message, sizeof(message), fmt, args);
+	va_end(args);
+	this->write((uint8_t *)message, strlen(message));
+}
+#endif
+
 #if (DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm))
 #define FIRST_UART_INDEX 1
 #else
