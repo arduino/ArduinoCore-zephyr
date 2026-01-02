@@ -727,7 +727,6 @@ nano_nora.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 nano_nora.build.architecture=esp32s3
 nano_nora.build.board=nano_nora
 
-nano_nora.tools.esptool_py.program.pattern_args=--chip {build.mcu} --port "{serial.port}" --before default_reset --after hard_reset write_flash -z --flash_mode {build.flash_mode} --flash_freq {build.flash_freq} --flash_size {build.flash_size} {build.bootloader_addr} "{build.path}/{build.project_name}.bootloader.bin" 0x8000 "{build.path}/{build.project_name}.partitions.bin" 0xe000 "{runtime.platform.path}/tools/partitions/boot_app0.bin" 0xf70000 "{build.variant.path}/extra/nora_recovery/nora_recovery.ino.bin" 0x10000 "{build.path}/{build.project_name}.bin"
 nano_nora.tools.esptool_py.erase.pattern_args=--chip {build.mcu} --port "{serial.port}" --before default_reset --after hard_reset erase_flash
 
 nano_nora.vid.0=0x2341
@@ -775,7 +774,6 @@ nano_nora.build.flash_freq=80m
 nano_nora.build.flash_mode=dio
 nano_nora.build.boot=qio
 nano_nora.build.boot_freq=80m
-nano_nora.build.partitions=app3M_fat9M_16MB
 nano_nora.build.defines=
 nano_nora.build.loop_core=
 nano_nora.build.event_core=
@@ -799,9 +797,9 @@ nano_nora.upload.vid=0x2341
 nano_nora.upload.pid=0x0070
 nano_nora.upload.interface=0
 nano_nora.upload.native_usb=true
-nano_nora.upload.address=05f0000
+nano_nora.upload.address=0x7e0000
 
-nano_nora.upload.maximum_size=786432
+nano_nora.upload.maximum_size=8126464
 nano_nora.upload.maximum_data_size=523624
 
 nano_nora.bootloader.tool=esptool_py
@@ -809,7 +807,8 @@ nano_nora.bootloader.tool.default=esptool_py
 nano_nora.bootloader.vid=0x2341
 nano_nora.bootloader.pid=0x0070
 nano_nora.bootloader.file=zephyr-{build.variant}.bin
-nano_nora.bootloader.address=0x20000
+# TODO duplicate of nano_nora.build.bootloader_addr
+nano_nora.bootloader.address=0x0000
 
 # nano_nora.debug.tool=gdb
 # nano_nora.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
