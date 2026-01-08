@@ -184,7 +184,7 @@ int smh_init(void) {
 	}
 
 #if !defined(CONFIG_BOARD_ARDUINO_NICLA_VISION)
-	__stm32_sdram1_section static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
+	Z_GENERIC_SECTION(SDRAM1) static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
 
 	struct shared_multi_heap_region smh_sdram = {
 		.addr = (uintptr_t)smh_pool,
