@@ -303,6 +303,7 @@ FORCE_EXPORT_SYM(usbd_device_set_bcd_usb);
 FORCE_EXPORT_SYM(usbd_msg_register_cb);
 FORCE_EXPORT_SYM(usbd_device_set_code_triple);
 FORCE_EXPORT_SYM(usbd_register_all_classes);
+FORCE_EXPORT_SYM(usbd_register_class);
 FORCE_EXPORT_SYM(usbd_add_configuration);
 FORCE_EXPORT_SYM(usbd_caps_speed);
 FORCE_EXPORT_SYM(usbd_can_detect_vbus);

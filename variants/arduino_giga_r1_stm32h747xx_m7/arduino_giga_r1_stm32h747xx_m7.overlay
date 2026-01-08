@@ -390,6 +390,7 @@
 		zephyr,log-uart = &log_uarts;
 		/* zephyr,console = &board_cdc_acm_uart; */
 		arduino,camera-clock = &pwmclock;
+		zephyr,console = &usart1;
 	};
 
 	log_uarts: log_uarts {
