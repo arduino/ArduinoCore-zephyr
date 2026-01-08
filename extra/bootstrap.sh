@@ -39,8 +39,8 @@ west zephyr-export
 pip install -r ../zephyr/scripts/requirements-base.txt
 log_msg "endgroup"
 
-log_msg "group" "Installing Zephyr SDK 0.16.8"
-west sdk install --version 0.16.8 -t arm-zephyr-eabi
+log_msg "group" "Installing Zephyr SDK 1.0.1"
+west sdk install --version 1.0.1 -t arm-zephyr-eabi
 log_msg "endgroup"
 
 log_msg "group" "Fetching blobs for: $NEEDED_HALS"
