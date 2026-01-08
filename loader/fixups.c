@@ -129,7 +129,7 @@ INPUT_CALLBACK_DEFINE(NULL, zephyr_input_callback, NULL);
 #include <zephyr/devicetree.h>
 #include <zephyr/multi_heap/shared_multi_heap.h>
 
-__stm32_sdram1_section static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
+Z_GENERIC_SECTION(SDRAM1) static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
 
 int smh_init(void) {
 	int ret = 0;
