@@ -23,6 +23,7 @@ SECTIONS {
     }
 
     .text 0x00000000 : ALIGN(4) {
+        *(.literal.*)
         *(.text)
         *(.stub)
         *(.text*)
