@@ -17,11 +17,13 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: andreagilardoni
+      url-base: https://github.com/andreagilardoni
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.3.0+
+      remote: andreagilardoni
+      revision: nano-esp32_arduinov4.3.0
       import:
         name-allowlist:
           - cmsis
