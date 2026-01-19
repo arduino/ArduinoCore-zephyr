@@ -692,128 +692,128 @@ unoq.bootloader.target=stm32u585zitxq
 
 ##########################################################################################
 
-nano_nora.name=Arduino Nano ESP32
-#nano_nora.build.core=esp32
-nano_nora.build.core=arduino
-nano_nora.build.crossprefix=xtensa-espressif_esp32s3_zephyr-elf-
+nano_esp32.name=Arduino Nano ESP32
+#nano_esp32.build.core=esp32
+nano_esp32.build.core=arduino
+nano_esp32.build.crossprefix=xtensa-espressif_esp32s3_zephyr-elf-
 # TODO
-# nano_nora.build.compiler_path={runtime.tools.xtensa-espressif_esp32s3_zephyr-elf-0.17.0.path}/bin/
-nano_nora.build.compiler_path=/home/agilardoni/zephyr-sdk-0.17.0/xtensa-espressif_esp32s3_zephyr-elf/bin/
+# nano_esp32.build.compiler_path={runtime.tools.xtensa-espressif_esp32s3_zephyr-elf-0.17.0.path}/bin/
+nano_esp32.build.compiler_path=/home/agilardoni/zephyr-sdk-0.17.0/xtensa-espressif_esp32s3_zephyr-elf/bin/
 
-nano_nora.menu.debug.false=Standard
-nano_nora.menu.debug.true=Debug
-nano_nora.menu.debug.true.build.zsk_args.debug=-debug
+nano_esp32.menu.debug.false=Standard
+nano_esp32.menu.debug.true=Debug
+nano_esp32.menu.debug.true.build.zsk_args.debug=-debug
 
 # TODO
-nano_nora.build.zephyr_target=arduino_nano_nora/esp32s3/procpu
-nano_nora.build.zephyr_args=
-nano_nora.build.zephyr_hals=hal_espressif
-nano_nora.build.artifact=zephyr_main
-nano_nora.build.variant=arduino_nano_nora_esp32s3_procpu
+nano_esp32.build.zephyr_target=arduino_nano_esp32/esp32s3/procpu
+nano_esp32.build.zephyr_args=
+nano_esp32.build.zephyr_hals=hal_espressif
+nano_esp32.build.artifact=zephyr_main
+nano_esp32.build.variant=arduino_nano_esp32_esp32s3_procpu
 # TODO -mcpu is not supported by xtensa compiler
-nano_nora.build.mcu=esp32s3
+nano_esp32.build.mcu=esp32s3
 
 # TODO unrecognized command-line option
-# nano_nora.build.fpu=-mfpu=fpv4-sp-d16
-nano_nora.build.fpu=
-nano_nora.build.architecture=esp32s3
+# nano_esp32.build.fpu=-mfpu=fpv4-sp-d16
+nano_esp32.build.fpu=
+nano_esp32.build.architecture=esp32s3
 
 # TODO unrecognized command-line option
-# nano_nora.build.float-abi=-mfloat-abi=hard
-nano_nora.build.float-abi=
-nano_nora.build.extra_flags=
-nano_nora.build.extra_ldflags=
-nano_nora.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nano_nora.build.architecture=esp32s3
-nano_nora.build.board=nano_nora
+# nano_esp32.build.float-abi=-mfloat-abi=hard
+nano_esp32.build.float-abi=
+nano_esp32.build.extra_flags=
+nano_esp32.build.extra_ldflags=
+nano_esp32.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+nano_esp32.build.architecture=esp32s3
+nano_esp32.build.board=nano_esp32
 
-nano_nora.tools.esptool_py.erase.pattern_args=--chip {build.mcu} --port "{serial.port}" --before default_reset --after hard_reset erase_flash
+nano_esp32.tools.esptool_py.erase.pattern_args=--chip {build.mcu} --port "{serial.port}" --before default_reset --after hard_reset erase_flash
 
-nano_nora.vid.0=0x2341
-nano_nora.pid.0=0x0070
-nano_nora.upload_port.0.vid=0x2341
-nano_nora.upload_port.0.pid=0x0070
+nano_esp32.vid.0=0x2341
+nano_esp32.pid.0=0x0070
+nano_esp32.upload_port.0.vid=0x2341
+nano_esp32.upload_port.0.pid=0x0070
 
-nano_nora.upload.tool=esptool_py
-nano_nora.upload.tool.default=esptool_py
-nano_nora.upload.tool.network=esp_ota
+nano_esp32.upload.tool=esptool_py
+nano_esp32.upload.tool.default=esptool_py
+nano_esp32.upload.tool.network=esp_ota
 
-nano_nora.upload.speed=256000
-nano_nora.upload.erase_cmd=
+nano_esp32.upload.speed=256000
+nano_esp32.upload.erase_cmd=
 
-# nano_nora.menu.FlashMode.qio=QIO 80MHz
-# nano_nora.menu.FlashMode.qio.build.flash_mode=dio
-# nano_nora.menu.FlashMode.qio.build.boot=qio
-# nano_nora.menu.FlashMode.qio.build.boot_freq=80m
-# nano_nora.menu.FlashMode.qio.build.flash_freq=80m
-# nano_nora.menu.FlashMode.qio120=QIO 120MHz
-# nano_nora.menu.FlashMode.qio120.build.flash_mode=dio
-# nano_nora.menu.FlashMode.qio120.build.boot=qio
-# nano_nora.menu.FlashMode.qio120.build.boot_freq=120m
-# nano_nora.menu.FlashMode.qio120.build.flash_freq=80m
-# nano_nora.menu.FlashMode.dio=DIO 80MHz
-# nano_nora.menu.FlashMode.dio.build.flash_mode=dio
-# nano_nora.menu.FlashMode.dio.build.boot=dio
-# nano_nora.menu.FlashMode.dio.build.boot_freq=80m
-# nano_nora.menu.FlashMode.dio.build.flash_freq=80m
-# nano_nora.menu.FlashMode.opi=OPI 80MHz
-# nano_nora.menu.FlashMode.opi.build.flash_mode=dout
-# nano_nora.menu.FlashMode.opi.build.boot=opi
-# nano_nora.menu.FlashMode.opi.build.boot_freq=80m
-# nano_nora.menu.FlashMode.opi.build.flash_freq=80m
+# nano_esp32.menu.FlashMode.qio=QIO 80MHz
+# nano_esp32.menu.FlashMode.qio.build.flash_mode=dio
+# nano_esp32.menu.FlashMode.qio.build.boot=qio
+# nano_esp32.menu.FlashMode.qio.build.boot_freq=80m
+# nano_esp32.menu.FlashMode.qio.build.flash_freq=80m
+# nano_esp32.menu.FlashMode.qio120=QIO 120MHz
+# nano_esp32.menu.FlashMode.qio120.build.flash_mode=dio
+# nano_esp32.menu.FlashMode.qio120.build.boot=qio
+# nano_esp32.menu.FlashMode.qio120.build.boot_freq=120m
+# nano_esp32.menu.FlashMode.qio120.build.flash_freq=80m
+# nano_esp32.menu.FlashMode.dio=DIO 80MHz
+# nano_esp32.menu.FlashMode.dio.build.flash_mode=dio
+# nano_esp32.menu.FlashMode.dio.build.boot=dio
+# nano_esp32.menu.FlashMode.dio.build.boot_freq=80m
+# nano_esp32.menu.FlashMode.dio.build.flash_freq=80m
+# nano_esp32.menu.FlashMode.opi=OPI 80MHz
+# nano_esp32.menu.FlashMode.opi.build.flash_mode=dout
+# nano_esp32.menu.FlashMode.opi.build.boot=opi
+# nano_esp32.menu.FlashMode.opi.build.boot_freq=80m
+# nano_esp32.menu.FlashMode.opi.build.flash_freq=80m
 
-nano_nora.build.tarch=xtensa
-nano_nora.build.bootloader_addr=0x0
-nano_nora.build.usb_mode=1
-nano_nora.build.cdc_on_boot=0
-nano_nora.build.msc_on_boot=0
-nano_nora.build.dfu_on_boot=0
-nano_nora.build.f_cpu=240000000L
-nano_nora.build.flash_size=16MB
-nano_nora.build.flash_freq=80m
-nano_nora.build.flash_mode=dio
-nano_nora.build.boot=qio
-nano_nora.build.boot_freq=80m
-nano_nora.build.defines=
-nano_nora.build.loop_core=
-nano_nora.build.event_core=
-nano_nora.build.psram_type=qspi
-nano_nora.build.memory_type={build.boot}_{build.psram_type}
+nano_esp32.build.tarch=xtensa
+nano_esp32.build.bootloader_addr=0x0
+nano_esp32.build.usb_mode=1
+nano_esp32.build.cdc_on_boot=0
+nano_esp32.build.msc_on_boot=0
+nano_esp32.build.dfu_on_boot=0
+nano_esp32.build.f_cpu=240000000L
+nano_esp32.build.flash_size=16MB
+nano_esp32.build.flash_freq=80m
+nano_esp32.build.flash_mode=dio
+nano_esp32.build.boot=qio
+nano_esp32.build.boot_freq=80m
+nano_esp32.build.defines=
+nano_esp32.build.loop_core=
+nano_esp32.build.event_core=
+nano_esp32.build.psram_type=qspi
+nano_esp32.build.memory_type={build.boot}_{build.psram_type}
 
-nano_nora.upload.maximum_size=1310720
-nano_nora.upload.maximum_data_size=327680
-nano_nora.upload.flags=
-nano_nora.upload.extra_flags=
-nano_nora.upload.use_1200bps_touch=false
-nano_nora.upload.wait_for_upload_port=false
+nano_esp32.upload.maximum_size=1310720
+nano_esp32.upload.maximum_data_size=327680
+nano_esp32.upload.flags=
+nano_esp32.upload.extra_flags=
+nano_esp32.upload.use_1200bps_touch=false
+nano_esp32.upload.wait_for_upload_port=false
 
-nano_nora.serial.disableDTR=false
-nano_nora.serial.disableRTS=false
+nano_esp32.serial.disableDTR=false
+nano_esp32.serial.disableRTS=false
 
 
-nano_nora.upload.protocol=
-nano_nora.upload.transport=
-nano_nora.upload.vid=0x2341
-nano_nora.upload.pid=0x0070
-nano_nora.upload.interface=0
-nano_nora.upload.native_usb=true
-nano_nora.upload.address=0x7e0000
+nano_esp32.upload.protocol=
+nano_esp32.upload.transport=
+nano_esp32.upload.vid=0x2341
+nano_esp32.upload.pid=0x0070
+nano_esp32.upload.interface=0
+nano_esp32.upload.native_usb=true
+nano_esp32.upload.address=0x7e0000
 
-nano_nora.upload.maximum_size=8126464
-nano_nora.upload.maximum_data_size=523624
+nano_esp32.upload.maximum_size=8126464
+nano_esp32.upload.maximum_data_size=523624
 
-nano_nora.bootloader.tool=esptool_py
-nano_nora.bootloader.tool.default=esptool_py
-nano_nora.bootloader.vid=0x2341
-nano_nora.bootloader.pid=0x0070
-nano_nora.bootloader.file=zephyr-{build.variant}.bin
-# TODO duplicate of nano_nora.build.bootloader_addr
-nano_nora.bootloader.address=0x0000
+nano_esp32.bootloader.tool=esptool_py
+nano_esp32.bootloader.tool.default=esptool_py
+nano_esp32.bootloader.vid=0x2341
+nano_esp32.bootloader.pid=0x0070
+nano_esp32.bootloader.file=zephyr-{build.variant}.bin
+# TODO duplicate of nano_esp32.build.bootloader_addr
+nano_esp32.bootloader.address=0x0000
 
-# nano_nora.debug.tool=gdb
-# nano_nora.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-# nano_nora.debug.server.openocd.scripts.1={programmer.transport_script}
-# nano_nora.debug.server.openocd.scripts.2=target/nrf52.cfg
-# nano_nora.debug.cortex-debug.custom.request=attach
+# nano_esp32.debug.tool=gdb
+# nano_esp32.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# nano_esp32.debug.server.openocd.scripts.1={programmer.transport_script}
+# nano_esp32.debug.server.openocd.scripts.2=target/nrf52.cfg
+# nano_esp32.debug.cortex-debug.custom.request=attach
 
 ##########################################################################################
