@@ -1,7 +1,7 @@
 &zephyr_udc0 {
 	board_cdc_acm_uart: board_cdc_acm_uart {
 		compatible = "zephyr,cdc-acm-uart";
-	status = "okay";
+		status = "okay";
 	};
 };
 
@@ -321,7 +321,7 @@
 	chosen {
 		zephyr,camera = &dcmi;
 		zephyr,log-uart = &log_uarts;
-		/* zephyr,console = &board_cdc_acm_uart; */
+		zephyr,console = &usart1;
 	};
 
 	log_uarts: log_uarts {
@@ -330,7 +330,7 @@
 	};
 
 	/* used to overcome problems with _C analog pins */
-	gpioz: gpio@deadbeef {
+	gpiozz: gpio@deadbeef {
 		compatible = "vnd,gpio";
 		gpio-controller;
 		reg = <0xdeadbeef 0x1000>;
@@ -341,6 +341,7 @@
 
 
 &flash0 {
+	bank2-flash-size = <1024>;
 	partitions {
 		/delete-node/ slot0_partition;
 
@@ -464,10 +465,10 @@
 						<&gpiob 6 0>,			/* SDA1 */
 						<&gpioh 12 0>,
 
-						<&gpioz 0 0>,			/* analog only A8 */
-						<&gpioz 1 0>,			/* analog only A9 */
-						<&gpioz 2 0>,			/* analog only A10 */
-						<&gpioz 3 0>;			/* analog only A11 */
+						<&gpiozz 0 0>,			/* analog only A8 */
+						<&gpiozz 1 0>,			/* analog only A9 */
+						<&gpiozz 2 0>,			/* analog only A10 */
+						<&gpiozz 3 0>;			/* analog only A11 */
 
 		builtin-led-gpios = <&gpioj 13 GPIO_ACTIVE_LOW>,
                         <&gpioi 12 GPIO_ACTIVE_LOW>,
@@ -496,10 +497,10 @@
 					<&gpioc 2 0>,
 					<&gpioc 0 0>,			/* A6 */
 					<&gpioa 0 0>,
-					<&gpioz 0 0>,			/* analog only */
-					<&gpioz 1 0>,			/* analog only */
-					<&gpioz 2 0>,			/* analog only */
-					<&gpioz 3 0>,			/* analog only */
+					<&gpiozz 0 0>,			/* analog only */
+					<&gpiozz 1 0>,			/* analog only */
+					<&gpiozz 2 0>,			/* analog only */
+					<&gpiozz 3 0>,			/* analog only */
 					<&gpioa 4 0>,
 					<&gpioa 5 0>;
 

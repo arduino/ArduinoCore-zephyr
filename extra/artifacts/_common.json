@@ -18,6 +18,16 @@
       "version": "0.16.8"
     },
     {
+      "packager": "zephyr",
+      "name": "xtensa-espressif_esp32s3_zephyr-elf",
+      "version": "0.16.8"
+    },
+    {
+      "packager": "esp32",
+      "name": "esptool_py",
+      "version": "4.5.1"
+    },
+    {
       "packager": "arduino",
       "name": "dfu-util",
       "version": "0.11.0-arduino5"

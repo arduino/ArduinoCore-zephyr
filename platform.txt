@@ -9,6 +9,27 @@ version=9.9.9
 # Compile variables
 # ------------------------
 
+##
+## ESPTool
+##
+
+tools.esptool_py.path={runtime.platform.path}/tools/esptool
+tools.esptool_py.cmd=esptool
+tools.esptool_py.cmd.linux=esptool.py
+tools.esptool_py.cmd.windows=esptool.exe
+
+tools.esptool_py.network_cmd=python3 "{runtime.platform.path}/tools/espota.py" -r
+tools.esptool_py.network_cmd.windows="{runtime.platform.path}/tools/espota.exe" -r
+
+tools.esp_ota.cmd=python3 "{runtime.platform.path}/tools/espota.py" -r
+tools.esp_ota.cmd.windows="{runtime.platform.path}/tools/espota.exe" -r
+
+tools.gen_esp32part.cmd=python3 "{runtime.platform.path}/tools/gen_esp32part.py"
+tools.gen_esp32part.cmd.windows="{runtime.platform.path}/tools/gen_esp32part.exe"
+
+tools.gen_insights_pkg.cmd=python3 "{runtime.platform.path}"/tools/gen_insights_package.py
+tools.gen_insights_pkg.cmd.windows="{runtime.platform.path}/tools/gen_insights_package.exe"
+
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w
 compiler.warning_flags.default=
@@ -17,13 +38,13 @@ compiler.warning_flags.all=-Wall -Wextra
 
 compiler.path={build.compiler_path}
 compiler.c.cmd={build.crossprefix}gcc
-compiler.c.flags=-g -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cflags_file}" -MMD -mcpu={build.mcu} {build.float-abi} {build.fpu}
+compiler.c.flags=-g -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cflags_file}" -MMD {build.float-abi} {build.fpu}
 compiler.c.elf.cmd={build.crossprefix}g++
-compiler.c.elf.flags=-Wl,--gc-sections -mcpu={build.mcu} {build.float-abi} {build.fpu} -std=gnu++17
+compiler.c.elf.flags=-Wl,--gc-sections {build.float-abi} {build.fpu} -std=gnu++17
 compiler.S.cmd={build.crossprefix}g++
-compiler.S.flags=-c -x assembler-with-cpp -mcpu={build.mcu} {build.fpu}
+compiler.S.flags=-c -x assembler-with-cpp {build.fpu}
 compiler.cpp.cmd={build.crossprefix}g++
-compiler.cpp.flags=-g -Os -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD -mcpu={build.mcu} {build.float-abi} {build.fpu}
+compiler.cpp.flags=-g -Os -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD {build.float-abi} {build.fpu}
 compiler.ar.cmd={build.crossprefix}ar
 compiler.ar.flags=rcs
 compiler.objcopy.cmd=
@@ -40,13 +61,13 @@ compiler.zephyr.includes_file={build.variant.path}/includes.txt
 compiler.zephyr.cflags_file={build.variant.path}/cflags.txt
 compiler.zephyr.cxxflags_file={build.variant.path}/cxxflags.txt
 compiler.zephyr.macros="-imacros{build.variant.path}/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h" "-imacros{build.variant.path}/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h"
-compiler.zephyr.common_cxxflags=-fdata-sections -ffunction-sections -fno-unwind-tables
+compiler.zephyr.common_cxxflags=-fno-exceptions -fno-rtti -fdata-sections -ffunction-sections -fno-unwind-tables
 compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -lstdc++ -lsupc++ -lnosys -nostdlib
 
 compiler.zephyr.extra_cxxflags=
 compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++
 
-# these can be overriden in boards.txt
+# these can be overridden in boards.txt
 build.extra_flags=
 build.extra_ldflags=
 build.link_mode=dynamic
@@ -54,7 +75,7 @@ build.boot_mode=wait
 upload.extension=elf-zsk.bin
 
 build.ldscript.path={runtime.platform.path}/variants/_ldscripts
-build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} --specs=picolibc.specs --specs=nosys.specs {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
+build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} --specs=nano.specs --specs=nosys.specs {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
 
 build.check_command-dynamic={build.link_command} {build.link_args.check-dynamic} -o "{build.path}/{build.project_name}_check.tmp"
 build.check_command-static=true
@@ -63,7 +84,7 @@ build.combine_command={build.link_command} {build.link_args.build-{build.link_mo
 
 # link_args.* are included by any link_command depending on the link_mode
 build.link_args.dynamic=-e main
-build.link_args.static=-lc -lm -lgcc -Wl,--wrap=random -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=malloc -Wl,--wrap=realloc
+build.link_args.static=-lm -Wl,--wrap=random -Wl,--wrap=calloc -Wl,--wrap=free -Wl,--wrap=malloc -Wl,--wrap=realloc
 
 # link_args.check-* are used to check the build. Only LLEXT needs these to emulate a static build (no -r!).
 build.link_args.check-dynamic="-T{build.variant.path}/syms-dynamic.ld" "-T{build.ldscript.path}/memory-check.ld" "-T{build.ldscript.path}/build-static.ld"
@@ -90,7 +111,7 @@ compiler.objcopy.eep.extra_flags=
 compiler.elf2hex.extra_flags=
 
 # {build.library_discovery_phase} is set to 1 by the builder during library discovery.
-# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatiblity)
+# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatibility)
 build.library_discovery_phase=0
 build.library_discovery_phase_flag=-DARDUINO_LIBRARY_DISCOVERY_PHASE={build.library_discovery_phase}
 
@@ -348,3 +369,52 @@ debug.cortex-debug.custom.overrideRestartCommands.2=c
 
 debug.server.openocd.path={runtime.tools.openocd-0.12.0-arduino1-static.path}/bin/openocd
 debug.server.openocd.scripts_dir={runtime.tools.openocd-0.12.0-arduino1-static.path}/share/openocd/scripts/
+
+# TODO make this be execute only on esp32
+
+## Upload Sketch
+## -------------
+tools.esptool_py.upload.protocol=serial
+tools.esptool_py.upload.params.verbose=
+tools.esptool_py.upload.params.quiet=
+# TODO change and split in multiple phases
+tools.esptool_py.upload.pattern_args=--chip {build.mcu} --port "{serial.port}" --baud {upload.speed} {upload.flags} --before default_reset --after hard_reset write_flash {upload.erase_cmd} -z --flash_mode {build.flash_mode} --flash_freq {build.flash_freq} --flash_size {build.flash_size} {bootloader.address} "{runtime.platform.path}/firmwares/{bootloader.file}" {upload.address} "{build.path}/{build.project_name}.elf-zsk.bin" {upload.extra_flags}
+tools.esptool_py.upload.pattern="{path}/{cmd}" {upload.pattern_args}
+tools.esptool_py.upload.pattern.linux=python3 "{path}/{cmd}" {upload.pattern_args}
+
+## Program Application
+## -------------------
+tools.esptool_py.program.params.verbose=
+tools.esptool_py.program.params.quiet=
+tools.esptool_py.program.pattern_args=--chip {build.mcu} --port "{serial.port}" --baud {upload.speed} {upload.flags} --before default_reset --after hard_reset write_flash -z --flash_mode {build.flash_mode} --flash_freq {build.flash_freq} --flash_size {build.flash_size} {upload.address} "{build.path}/{build.project_name}.{upload.extension}"
+tools.esptool_py.program.pattern="{path}/{cmd}" {program.pattern_args}
+tools.esptool_py.program.pattern.linux=python3 "{path}/{cmd}" {program.pattern_args}
+
+## Erase Chip (before burning the bootloader)
+## ------------------------------------------
+tools.esptool_py.erase.protocol=serial
+tools.esptool_py.erase.params.verbose=
+tools.esptool_py.erase.params.quiet=
+tools.esptool_py.erase.pattern_args=--chip {build.mcu} --port "{serial.port}" --baud {upload.speed} {upload.flags} --before default_reset --after hard_reset erase_flash
+tools.esptool_py.erase.pattern="{path}/{cmd}" {erase.pattern_args}
+tools.esptool_py.erase.pattern.linux=python3 "{path}/{cmd}" {erase.pattern_args}
+
+## Burn Bootloader
+## ---------------
+tools.esptool_py.bootloader.protocol=serial
+tools.esptool_py.bootloader.params.verbose=
+tools.esptool_py.bootloader.params.quiet=
+tools.esptool_py.bootloader.pattern=
+
+## Upload Sketch Through OTA (Arduino IDE 1.x)
+## -------------------------------------------
+## The following rule is deprecated by pluggable discovery.
+## We keep it to avoid breaking compatibility with the Arduino Java IDE.
+tools.esptool_py.upload.network_pattern={network_cmd} -i "{serial.port}" -p "{network.port}" "--auth={network.password}" -f "{build.path}/{build.project_name}.bin"
+
+## Upload Sketch Through OTA (Arduino IDE 2.x)
+## -------------------------------------------
+tools.esp_ota.upload.protocol=network
+tools.esp_ota.upload.field.password=Password
+tools.esp_ota.upload.field.password.secret=true
+tools.esp_ota.upload.pattern={cmd} -i {upload.port.address} -p {upload.port.properties.port} --auth={upload.field.password} -f "{build.path}/{build.project_name}.bin"

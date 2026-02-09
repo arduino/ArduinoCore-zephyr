@@ -19,11 +19,11 @@ SECTIONS {
         *stdexcept.o
         *eh_*.o
         *cow-stdexcept.o
-        *functexcept.o
         *cow-string-inst.o
     }
 
     .text 0x00000000 : ALIGN(4) {
+        *(.literal.*)
         *(.text)
         *(.stub)
         *(.text*)

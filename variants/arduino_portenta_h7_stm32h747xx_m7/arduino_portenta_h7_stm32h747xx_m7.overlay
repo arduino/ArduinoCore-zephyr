@@ -257,7 +257,7 @@
 	};
 
 	/* used to overcome problems with _C analog pins */
-	gpioz: gpio@deadbeef {
+	gpiozz: gpio@deadbeef {
 		compatible = "vnd,gpio";
 		gpio-controller;
 		reg = <0xdeadbeef 0x1000>;
@@ -276,6 +276,7 @@
 				erase-block-size = <DT_SIZE_K(128)>;
 				/* maximum erase time for a 128K sector */
 				max-erase-time = <4000>;
+				bank2-flash-size = <1024>;
 
 				reg = <0x08000000 DT_SIZE_K(1024)>;
 				status = "okay";
@@ -328,12 +329,12 @@ qspi_flash: &mx25l12833f {};
 				    <&gpioa 10 0>,	/* D13 */
 				    <&gpioa 9 0>,		/* D14 */
 
-				    <&gpioz 0 0>,		/* A0	 ADC2_INP0 */
-				    <&gpioz 1 0>,		/* A1	 ADC2_INP1 */
-				    <&gpioz 2 0>,		/* A2	 ADC3_INP0 */
-				    <&gpioz 3 0>,		/* A3	 ADC3_INP1 */
-				    <&gpioz 4 0>,		/* A4 hack for duplicate PC_2 */
-				    <&gpioz 5 0>,		/* A5 hack for duplicate PC_3 */
+				    <&gpiozz 0 0>,		/* A0	 ADC2_INP0 */
+				    <&gpiozz 1 0>,		/* A1	 ADC2_INP1 */
+				    <&gpiozz 2 0>,		/* A2	 ADC3_INP0 */
+				    <&gpiozz 3 0>,		/* A3	 ADC3_INP1 */
+				    <&gpiozz 4 0>,		/* A4 hack for duplicate PC_2 */
+				    <&gpiozz 5 0>,		/* A5 hack for duplicate PC_3 */
 				    /* <&gpioc 2 0>,	A4 _ALT0?   ADC1_INP12 */
 				    /* <&gpioc 3 0>,	A5 _ALT0?   ADC1_INP13 */
 				    <&gpioa 4 0>,		/* A6	 ADC1_INP18 */
@@ -359,16 +360,16 @@ qspi_flash: &mx25l12833f {};
 				<&gpioj 10 0>,
 				<&gpioh 6 0>;
 
-		adc-pin-gpios =	<&gpioz 0 0>,			/* analog only */
-				<&gpioz 1 0>,			/* analog only */
-				<&gpioz 2 0>,			/* analog only */
-				<&gpioz 3 0>,			/* analog only */
+		adc-pin-gpios =	<&gpiozz 0 0>,			/* analog only */
+				<&gpiozz 1 0>,			/* analog only */
+				<&gpiozz 2 0>,			/* analog only */
+				<&gpiozz 3 0>,			/* analog only */
 				<&gpioc 2 0>,
 				<&gpioc 3 0>,
 				<&gpioa 4 0>,
 				<&gpioa 6 0>,
-				<&gpioz 4 0>,			/* Hack for D19  */
-				<&gpioz 5 0>;			/* Hack for D20 */
+				<&gpiozz 4 0>,			/* Hack for D19  */
+				<&gpiozz 5 0>;			/* Hack for D20 */
 
 		serials = <&board_cdc_acm_uart>,<&usart6>, <&usart1>, <&uart4>;
 		cdc-acm = <&board_cdc_acm_uart>;

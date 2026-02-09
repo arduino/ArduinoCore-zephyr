@@ -6,17 +6,6 @@
 
 #include <stdlib.h>
 
-namespace std {
-void __throw_length_error(const char *__s __attribute__((unused))) {
-}
-
-void __throw_bad_alloc() {
-}
-
-void __throw_bad_function_call() {
-}
-}; // namespace std
-
 extern "C" {
 
 void *__dso_handle = (void *)&__dso_handle;

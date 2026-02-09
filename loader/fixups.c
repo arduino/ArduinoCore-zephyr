@@ -1,3 +1,4 @@
+#ifndef ESP_PLATFORM
 #include <cmsis_core.h>
 #include <zephyr/init.h>
 
@@ -118,7 +119,7 @@ SYS_INIT(camera_ext_clock_enable, POST_KERNEL, CONFIG_CLOCK_CONTROL_PWM_INIT_PRI
 #include <zephyr/devicetree.h>
 #include <zephyr/multi_heap/shared_multi_heap.h>
 
-__stm32_sdram1_section static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
+Z_GENERIC_SECTION(SDRAM1) static uint8_t __aligned(32) smh_pool[4 * 1024 * 1024];
 
 int smh_init(void) {
 	int ret = 0;
@@ -254,3 +255,15 @@ int disable_vrefbuf() {
 
 SYS_INIT(disable_vrefbuf, POST_KERNEL, 0);
 #endif
+
+#endif // ESP_PLATFORM
+
+#include <stdint.h>
+#include <zephyr/kernel.h>
+
+#define HEADER_LEN 16
+
+__attribute__((retain)) const uintptr_t base_addr =
+		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
+
+void* entry_point = base_addr + HEADER_LEN + 1;

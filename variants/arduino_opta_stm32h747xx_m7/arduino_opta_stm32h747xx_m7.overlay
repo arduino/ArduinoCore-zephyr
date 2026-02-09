@@ -49,7 +49,7 @@
 	};
 
 	/* used to overcome problems with _C analog pins */
-	gpioz: gpio@deadbeef {
+	gpiozz: gpio@deadbeef {
 		compatible = "vnd,gpio";
 		gpio-controller;
 		reg = <0xdeadbeef 0x1000>;
@@ -59,6 +59,7 @@
 };
 
 &flash0 {
+	bank2-flash-size = <1024>;
 	partitions {
 		user_sketch: partition@e0000 {
 			reg = <0x0E0000 0x20000>;
@@ -80,8 +81,8 @@
 						<&gpioh 11 0>,
 						<&gpioe 5 0>,
 						<&gpioe 4 0>,	/* User button */
-						<&gpioz 0 0>,	/* Inputs */
-						<&gpioz 1 0>,
+						<&gpiozz 0 0>,	/* Inputs */
+						<&gpiozz 1 0>,
 						<&gpiof 12 0>,
 						<&gpiob 0 0>,
 						<&gpiof 10 0>,
@@ -97,8 +98,8 @@
 						<&gpioh 12 0>,
                         <&gpioe 5 0>;
 
-		adc-pin-gpios =	<&gpioz 0 0>,
-					<&gpioz 1 0>,
+		adc-pin-gpios =	<&gpiozz 0 0>,
+					<&gpiozz 1 0>,
 					<&gpiof 12 0>,
 					<&gpiob 0 0>,
 					<&gpiof 10 0>,

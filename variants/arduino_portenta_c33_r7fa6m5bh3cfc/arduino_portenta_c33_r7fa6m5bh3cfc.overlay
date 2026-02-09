@@ -1,7 +1,7 @@
 &zephyr_udc0 {
 	board_cdc_acm_uart: board_cdc_acm_uart {
 		compatible = "zephyr,cdc-acm-uart";
-	status = "okay";
+		status = "okay";
 	};
 };
 

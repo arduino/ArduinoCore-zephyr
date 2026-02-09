@@ -466,17 +466,17 @@ void detachInterrupt(pin_size_t pinNumber) {
 
 #include <stdlib.h>
 
-void randomSeed(unsigned long seed) {
-	srand(seed);
-}
+// void randomSeed(unsigned long seed) {
+// 	srand(seed);
+// }
 
-long random(long min, long max) {
-	return rand() % (max - min) + min;
-}
+// long random(long min, long max) {
+// 	return rand() % (max - min) + min;
+// }
 
-long random(long max) {
-	return rand() % max;
-}
+// long random(long max) {
+// 	return rand() % max;
+// }
 
 #endif
 
