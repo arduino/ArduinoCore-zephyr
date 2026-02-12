@@ -110,6 +110,14 @@ __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELAB
 #endif
 __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
 
+#ifdef CONFIG_LLEXT
+extern struct k_heap llext_heap;
+#define SKETCH_HEAP llext_heap
+#else
+K_HEAP_DEFINE(_sketch_heap, CONFIG_SKETCH_HEAP_SIZE << 10);
+#define SKETCH_HEAP _sketch_heap
+#endif
+
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
@@ -266,16 +274,15 @@ static int loader(const struct shell *sh) {
 #endif
 #endif
 
-		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
 		entry_point_t entry_point = (entry_point_t)(base_addr + HEADER_LEN + 1);
-		entry_point(&llext_heap, llext_heap.heap.init_bytes);
+		entry_point(&SKETCH_HEAP, CONFIG_SKETCH_HEAP_SIZE << 10);
 		// should never reach here
 		for (;;) {
 			k_sleep(K_FOREVER);
 		}
 	}
-
+#ifdef CONFIG_LLEXT
 #if defined(CONFIG_LLEXT_STORAGE_WRITABLE)
 	uint8_t *sketch_buf = k_aligned_alloc(4096, sketch_buf_len);
 
@@ -294,7 +301,6 @@ static int loader(const struct shell *sh) {
 	uint8_t *sketch_buf = (uint8_t *)base_addr;
 #endif
 
-#ifdef CONFIG_LLEXT
 	struct llext_buf_loader buf_loader = LLEXT_BUF_LOADER(sketch_buf, sketch_buf_len);
 	struct llext_loader *ldr = &buf_loader.loader;
 
@@ -315,7 +321,6 @@ static int loader(const struct shell *sh) {
 		printk("Failed to find main function\n");
 		return -ENOENT;
 	}
-#endif
 
 #ifdef CONFIG_USERSPACE
 	/*
@@ -350,12 +355,10 @@ static int loader(const struct shell *sh) {
 	k_thread_join(&llext_thread, K_FOREVER);
 #else
 
-#ifdef CONFIG_LLEXT
 	llext_bootstrap(ext, main_fn, NULL);
 #endif
 
-#endif
-
+#endif // CONFIG_LLEXT
 	return 0;
 }
 
