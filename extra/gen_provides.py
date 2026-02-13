@@ -122,6 +122,10 @@ def main():
     argparser.add_argument('-F', '--funcs',
             action='store_true',
             help='Extract all public functions')
+    argparser.add_argument('-R', '--regexp',
+            action='append',
+			default=[],
+            help='Extract all public symbols matching regexp')
     argparser.add_argument('file',
             help='ELF file to parse')
     argparser.add_argument('syms', nargs='*',
@@ -198,6 +202,9 @@ def main():
                 llext_sym_addr = sym['st_value']
                 name = get_str_at(elf, get_ptr_at(elf, llext_sym_addr))
                 value = get_ptr_at(elf, llext_sym_addr + NativePtr.length)
+            elif args.regexp and any(map(lambda x: re.match(x, name), args.regexp)):
+                comment = "regexp_sym"
+                value = sym['st_value']
 
             if name in deref_syms:
                 value = get_ptr_at(elf, value)
