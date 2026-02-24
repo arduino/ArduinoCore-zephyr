@@ -113,6 +113,35 @@ SYS_INIT(camera_ext_clock_enable, POST_KERNEL, CONFIG_CLOCK_CONTROL_PWM_INIT_PRI
 
 #endif
 
+#if defined(CONFIG_BOARD_ARDUINO_GIGA_R1)
+#include <zephyr/kernel.h>
+#include <stm32h7xx_hal.h>
+
+/**
+ * @brief Arduino Zephyr core runs main clock at 480 MHz, that means a sys_clock
+ * (AXI interface clock) of 240 MHZ.
+ * According to table 15 of the reference manual (page 166) this requires a
+ * Vcore set to VOS0.
+ * Without this setting some giga boards fails to start (some other work fine however).
+ */
+static int force_vos0_overdrive(void) {
+	/* Enable SYSCFG clock (Mandatory for VOS0 transition on STM32H7) */
+	__HAL_RCC_SYSCFG_CLK_ENABLE();
+
+	/* Configure Voltage Scale 0 (Overdrive) */
+	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
+
+	/* Wait for hardware to report 1.35V is ready */
+	while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
+	}
+
+	return 0;
+}
+
+/* Run exactly one step after Zephyr's clock_control initializes */
+SYS_INIT(force_vos0_overdrive, PRE_KERNEL_1, 2);
+#endif
+
 #if defined(CONFIG_SHARED_MULTI_HEAP)
 #include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
