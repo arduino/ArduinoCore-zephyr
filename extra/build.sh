@@ -102,13 +102,17 @@ cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts for dynamic builds"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L \
+	"kheap_llext_heap=kheap__sketch_heap" \
+	"kheap_llext_heap_size=kheap__sketch_heap_size" > ${VARIANT_DIR}/syms-dynamic.ld
 
 echo "Generating exported symbol scripts for static builds"
 extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
 	-R '__device_dts_ord_\d+' \
-	"+kheap_llext_heap" \
+	"+kheap__sketch_heap" \
 	"+kheap__system_heap" \
+	"kheap_llext_heap=kheap__sketch_heap" \
+	"kheap_llext_heap_size=kheap__sketch_heap_size" \
 	"*sketch_base_addr=_sketch_start" \
 	"*sketch_max_size=_sketch_max_size" \
 	"*loader_max_size=_loader_max_size" \

@@ -8,7 +8,7 @@ MEMORY
 {
     /* 16 below compensates for the zsk header that is added before the .bin */
     FLASH (rx) : ORIGIN = _sketch_start + 16, LENGTH = _sketch_max_size - 16
-    RAM (rwx) : ORIGIN = kheap_llext_heap, LENGTH = kheap_llext_heap_size
+    RAM (rwx) : ORIGIN = kheap__sketch_heap, LENGTH = kheap__sketch_heap_size
 }
 
 PROVIDE(__heap_start = kheap__system_heap);
