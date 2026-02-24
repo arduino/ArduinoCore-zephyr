@@ -228,8 +228,7 @@ def main():
                 out_syms[name + "_size"] = (sym['st_size'], [f"size of {name}"])
 
         if not out_syms:
-            sys.stderr.write("No symbols found matching the criteria.\n")
-            fail = True
+            sys.stderr.write("Warning: No symbols found matching the criteria.\n")
 
         if fail:
             sys.exit(1)
