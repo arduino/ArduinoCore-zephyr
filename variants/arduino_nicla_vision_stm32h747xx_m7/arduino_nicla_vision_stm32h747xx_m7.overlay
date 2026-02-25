@@ -182,15 +182,6 @@
 		compatible = "zephyr,log-uart";
 		uarts = <&lpuart1 &board_cdc_acm_uart>;
 	};
-
-    /* used to overcome problems with _C analog pins */
-    gpioz: gpio@deadbeef {
-        compatible = "vnd,gpio";
-        gpio-controller;
-        reg = <0xdeadbeef 0x1000>;
-        #gpio-cells = <0x2>;
-        status = "okay";
-    };
 };
 
 /*
