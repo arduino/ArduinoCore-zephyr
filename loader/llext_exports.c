@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <math.h>
 #include <zephyr/kernel.h>
 #include <time.h>
@@ -20,6 +21,24 @@
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
 #endif
+
+/*
+ * Provide errno access for LLEXT modules.
+ *
+ * LLEXT modules are compiled with -ftls-model=local-exec which assumes TLS
+ * variables reside in the module's own TLS segment; accessing the loader's
+ * TLS errno directly from an LLEXT generates __aeabi_read_tp calls that
+ * either aren't exported or use the wrong segment offset.
+ *
+ * This function runs in the loader context where the TLS layout is known,
+ * and returns a plain pointer.  LLEXT callers dereference it with no TLS
+ * mechanism involved on their side.
+ */
+int *arduino_errno_ptr(void)
+{
+	return &errno;
+}
+EXPORT_SYMBOL(arduino_errno_ptr);
 
 #define FORCE_EXPORT_SYM(name)                                                                     \
 	extern void name(void);                                                                        \
