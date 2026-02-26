@@ -20,6 +20,8 @@
 #include <zephyr/net/socket.h>
 #include <memory>
 #include <cstring>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 class ZephyrSocketWrapper {
 protected:
@@ -90,7 +92,7 @@ protected:
 	// custom deleter for shared_ptr to close automatically the socket
 	static void socket_deleter(int *fd) {
 		if (fd && *fd != -1) {
-			::close(*fd);
+			::zsock_close(*fd);
 		}
 		delete fd;
 	}

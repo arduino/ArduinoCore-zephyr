@@ -68,14 +68,8 @@ public:
 	int read(uint8_t *buffer, size_t size) override {
 		auto received = recv(buffer, size);
 
-		if (received == 0) {
+		if (received <= 0) {
 			return 0;
-		} else if (received < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				return 0;
-			} else {
-				return 0;
-			}
 		}
 		return received;
 	}
