@@ -10,6 +10,7 @@
 #include "api/Client.h"
 #include "unistd.h"
 #include "zephyr/sys/printk.h"
+#include <errno.h>
 
 class ZephyrClient : public arduino::Client, ZephyrSocketWrapper {
 private:
@@ -68,10 +69,16 @@ public:
 	int read(uint8_t *buffer, size_t size) override {
 		auto received = recv(buffer, size);
 
-		if (received <= 0) {
+		if (received > 0) {
+			return received;
+		}
+		if (received == 0) {
 			return 0;
 		}
-		return received;
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			return 0;
+		}
+		return -1;
 	}
 
 	size_t write(uint8_t c) override {
