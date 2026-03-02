@@ -6,19 +6,7 @@
 
 #include <string.h>
 #include <strings.h>
-
-#if CONFIG_LLEXT
 #include <zephyr/llext/symbol.h>
-#else
-#include <zephyr/toolchain.h>
-
-#define EXPORT_SYMBOL_NAMED(sym_ident, sym_name) \
-	Z_GENERIC_DOT_SECTION(exported_sym) static const void * __exported_sym_ ## sym_name __used\
-	= (const void*) &sym_ident
-
-#define EXPORT_SYMBOL(x) EXPORT_SYMBOL_NAMED(x, x)
-#endif
-
 #include <zephyr/usb/usb_device.h>
 #include <ctype.h>
 #include <stdio.h>

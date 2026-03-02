@@ -41,6 +41,3 @@ target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 
 target_link_libraries(app PUBLIC blobs)
 
-if (CONFIG_ARDUINO_API AND CONFIG_LLEXT_EDK AND NOT CONFIG_LLEXT)
-	zephyr_linker_sources(SECTIONS loader-nollext.ld)
-endif()
