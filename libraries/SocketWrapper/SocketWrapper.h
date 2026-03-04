@@ -193,7 +193,7 @@ public:
 		};
 
 		while (resolve_attempts--) {
-			ret = zsock_getaddrinfo(host, String(port).c_str(), &hints, &res);
+			ret = getaddrinfo(host, String(port).c_str(), &hints, &res);
 
 			if (ret == 0) {
 				break;
