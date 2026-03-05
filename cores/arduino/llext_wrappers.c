@@ -76,8 +76,8 @@ W2(int, strcasecmp, const char *, const char *)
 W3(char *, strncpy, char *, const char *, size_t)
 W2(char *, strcat, char *, const char *)
 W2(char *, strcpy, char *, const char *)
-W3(int, memcmp, const void *, const void *, int)
-W2(void *, memset, void *, int)
+W3(int, memcmp, const void *, const void *, unsigned int)
+W3(void *, memset, void *, int, unsigned int)
 
 /* stdlib.h - conversion */
 W2(double, strtod, const char *, char **)
@@ -138,7 +138,9 @@ W1(float, tanf, float)
 /* math.h - double(double, double) */
 W2(double, atan2, double, double)
 W2(double, pow, double, double)
-W2(double, ldexp, double, double)
+
+/* math.h - double(double, int) */
+W2(double, ldexp, double, int)
 
 /* math.h - float(float, float) */
 W2(float, atan2f, float, float)
