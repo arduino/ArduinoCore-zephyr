@@ -139,6 +139,40 @@ static int loader(const struct shell *sh) {
 		// This is not a valid sketch, but try to start a shell anyway
 	}
 
+#if TARGET_HAS_USB_CDC
+	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
+#if CONFIG_SHELL
+	if (debug && strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
+		// disables default shell on UART
+		shell_uninit(shell_backend_uart_get_ptr(), NULL);
+		// enables USB and starts the shell
+		usb_enable(NULL);
+		int dtr;
+		do {
+			// wait for the serial port to open
+			uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
+			k_sleep(K_MSEC(100));
+		} while (!dtr);
+		enable_shell_usb();
+	}
+#elif CONFIG_LOG
+#if !CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT
+	if (debug) {
+		usb_enable(NULL);
+	}
+#endif
+	for (int i = 0; i < log_backend_count_get(); i++) {
+		const struct log_backend *backend;
+		backend = log_backend_get(i);
+		log_backend_init(backend);
+		log_backend_enable(backend, backend->cb->ctx, CONFIG_LOG_DEFAULT_LEVEL);
+		if (!debug) {
+			break;
+		}
+	}
+#endif
+#endif
+
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q)
 	void matrixBegin(void);
 	void matrixEnd(void);
@@ -217,41 +251,6 @@ static int loader(const struct shell *sh) {
 #endif
 
 	size_t sketch_buf_len = sketch_hdr->len;
-
-#if TARGET_HAS_USB_CDC
-	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
-#if CONFIG_SHELL
-	if (debug && strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
-		// disables default shell on UART
-		shell_uninit(shell_backend_uart_get_ptr(), NULL);
-		// enables USB and starts the shell
-		usb_enable(NULL);
-		int dtr;
-		do {
-			// wait for the serial port to open
-			uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_DTR, &dtr);
-			k_sleep(K_MSEC(100));
-		} while (!dtr);
-		enable_shell_usb();
-		return 0;
-	}
-#elif CONFIG_LOG
-#if !CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT
-	if (debug) {
-		usb_enable(NULL);
-	}
-#endif
-	for (int i = 0; i < log_backend_count_get(); i++) {
-		const struct log_backend *backend;
-		backend = log_backend_get(i);
-		log_backend_init(backend);
-		log_backend_enable(backend, backend->cb->ctx, CONFIG_LOG_DEFAULT_LEVEL);
-		if (!debug) {
-			break;
-		}
-	}
-#endif
-#endif
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
 #ifdef CONFIG_BOARD_ARDUINO_PORTENTA_C33
