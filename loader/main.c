@@ -142,7 +142,7 @@ static int loader(const struct shell *sh) {
 #if TARGET_HAS_USB_CDC
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
 #if CONFIG_SHELL
-	if (debug && strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
+	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
 		// disables default shell on UART
 		shell_uninit(shell_backend_uart_get_ptr(), NULL);
 		// enables USB and starts the shell
