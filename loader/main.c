@@ -24,8 +24,12 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/usb/usb_device.h>
 
 #include <zephyr/devicetree/fixed-partitions.h>
+#include <zephyr/fs/fs.h>
 
 #define HEADER_LEN 16
+
+#define OTA_SENTINEL_PATH "/ota:/OTA_UPDATE_PENDING"
+#define OTA_UPDATE_PATH   "/ota:/UPDATE.BIN"
 
 struct sketch_header_v1 {
 	uint8_t ver;    // @ 0x07
@@ -109,6 +113,103 @@ __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELAB
 #define LOADER_MAX_SIZE DT_REG_SIZE(DT_NODELABEL(flash0))
 #endif
 __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
+
+#if defined(CONFIG_FILE_SYSTEM)
+static int try_ota_update(const struct flash_area *fa) {
+	struct fs_dirent entry;
+	int rc;
+
+	/* Check for pending OTA update */
+	if (fs_stat(OTA_SENTINEL_PATH, &entry) != 0) {
+		printk("OTA: no update pending\n");
+		return 0;
+	}
+
+	printk("OTA: update pending, validating...\n");
+
+	/* Open UPDATE.BIN */
+	struct fs_file_t file;
+	fs_file_t_init(&file);
+	rc = fs_open(&file, OTA_UPDATE_PATH, FS_O_READ);
+	if (rc < 0) {
+		printk("OTA: failed to open %s, rc %d\n", OTA_UPDATE_PATH, rc);
+		fs_unlink(OTA_SENTINEL_PATH);
+		return -1;
+	}
+
+	/* Get file size */
+	fs_seek(&file, 0, FS_SEEK_END);
+	off_t file_size = fs_tell(&file);
+	fs_seek(&file, 0, FS_SEEK_SET);
+
+	if (file_size < HEADER_LEN) {
+		printk("OTA: file too small (%ld bytes)\n", (long)file_size);
+		fs_close(&file);
+		fs_unlink(OTA_SENTINEL_PATH);
+		return -1;
+	}
+
+	/* Read and validate sketch header */
+	char header[HEADER_LEN];
+	rc = fs_read(&file, header, HEADER_LEN);
+	if (rc != HEADER_LEN) {
+		printk("OTA: failed to read header\n");
+		fs_close(&file);
+		fs_unlink(OTA_SENTINEL_PATH);
+		return -1;
+	}
+
+	struct sketch_header_v1 *hdr = (struct sketch_header_v1 *)(header + 7);
+	if (hdr->ver != 0x1 || hdr->magic != 0x2341) {
+		printk("OTA: invalid sketch header (ver=0x%x magic=0x%x)\n", hdr->ver, hdr->magic);
+		fs_close(&file);
+		fs_unlink(OTA_SENTINEL_PATH);
+		return -1;
+	}
+
+	size_t sketch_len = hdr->len;
+	printk("OTA: sketch length = %u bytes\n", (unsigned)sketch_len);
+
+	/* Erase flash partition */
+	printk("OTA: erasing flash partition (%u bytes)...\n", (unsigned)fa->fa_size);
+	rc = flash_area_erase(fa, 0, fa->fa_size);
+	if (rc) {
+		printk("OTA: flash erase failed, rc %d\n", rc);
+		fs_close(&file);
+		fs_unlink(OTA_SENTINEL_PATH);
+		return -1;
+	}
+
+	/* Write sketch data from file to flash in chunks */
+	fs_seek(&file, 0, FS_SEEK_SET);
+	uint8_t chunk[4096];
+	off_t offset = 0;
+	size_t remaining = sketch_len;
+	ssize_t n;
+	while (remaining > 0 &&
+		   (n = fs_read(&file, chunk, remaining < sizeof(chunk) ? remaining : sizeof(chunk))) > 0) {
+		rc = flash_area_write(fa, offset, chunk, n);
+		if (rc) {
+			printk("OTA: flash write failed at offset %ld, rc %d\n", (long)offset, rc);
+			fs_close(&file);
+			fs_unlink(OTA_SENTINEL_PATH);
+			return -1;
+		}
+		offset += n;
+		remaining -= n;
+	}
+	fs_close(&file);
+
+	printk("OTA: wrote %ld bytes to flash\n", (long)offset);
+
+	/* Delete sentinel and update file */
+	fs_unlink(OTA_SENTINEL_PATH);
+	fs_unlink(OTA_UPDATE_PATH);
+
+	printk("OTA: update complete\n");
+	return 0;
+}
+#endif /* CONFIG_FILE_SYSTEM */
 
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
@@ -248,6 +349,13 @@ static int loader(const struct shell *sh) {
 			}
 		}
 	}
+#endif
+
+#if defined(CONFIG_FILE_SYSTEM)
+	try_ota_update(fa);
+	/* Re-read header in case OTA replaced the sketch */
+	flash_area_read(fa, 0, header, sizeof(header));
+	sketch_hdr = (struct sketch_header_v1 *)(header + 7);
 #endif
 
 	size_t sketch_buf_len = sketch_hdr->len;

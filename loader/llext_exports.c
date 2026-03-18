@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <zephyr/llext/symbol.h>
 #include <zephyr/usb/usb_device.h>
+#include <zephyr/sys/reboot.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -268,6 +269,7 @@ EXPORT_SYMBOL(k_work_schedule);
 
 EXPORT_SYMBOL(time);
 EXPORT_SYMBOL(sys_clock_settime);
+EXPORT_SYMBOL(sys_reboot);
 EXPORT_SYMBOL(mktime);
 
 EXPORT_SYMBOL(printf);
