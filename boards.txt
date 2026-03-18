@@ -71,6 +71,10 @@ giga.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 giga.debug.cortex-debug.custom.request=attach
 giga.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
 
+giga.build.ota.sketch_offset=0xA0000
+giga.recipe.hooks.objcopy.postobjcopy.3.pattern="{compiler.path}{compiler.elf2hex.cmd}" -I binary -O elf32-littlearm -B arm --add-section .sketch={build.path}/{build.project_name}.{upload.extension} --change-section-address .sketch={build.ota.sketch_offset} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" "{build.path}/{build.project_name}.ota.elf"
+giga.recipe.hooks.objcopy.postobjcopy.4.pattern="{compiler.path}{compiler.elf2hex.cmd}" -O binary --gap-fill 0xFF "{build.path}/{build.project_name}.ota.elf" "{build.path}/{build.project_name}.ota"
+
 ##########################################################################################
 
 nano33ble.name=Arduino Nano 33 BLE
@@ -311,6 +315,10 @@ portentah7.bootloader.interface=0
 portentah7.bootloader.file=zephyr-{build.variant}.bin
 portentah7.bootloader.address=0x08040000
 
+portentah7.build.ota.sketch_offset=0xA0000
+portentah7.recipe.hooks.objcopy.postobjcopy.3.pattern="{compiler.path}{compiler.elf2hex.cmd}" -I binary -O elf32-littlearm -B arm --add-section .sketch={build.path}/{build.project_name}.{upload.extension} --change-section-address .sketch={build.ota.sketch_offset} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" "{build.path}/{build.project_name}.ota.elf"
+portentah7.recipe.hooks.objcopy.postobjcopy.4.pattern="{compiler.path}{compiler.elf2hex.cmd}" -O binary --gap-fill 0xFF "{build.path}/{build.project_name}.ota.elf" "{build.path}/{build.project_name}.ota"
+
 portentah7.debug.tool=gdb
 portentah7.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
 portentah7.debug.server.openocd.scripts.1={programmer.transport_script}
@@ -493,6 +501,7 @@ portentac33.bootloader.interface=0
 portentac33.bootloader.address=0x10000
 portentac33.bootloader.dfuse=-Q
 
+
 ##########################################################################################
 
 opta.name=Arduino Opta
@@ -560,6 +569,10 @@ opta.debug.server.openocd.scripts.1={programmer.transport_script}
 opta.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 opta.debug.cortex-debug.custom.request=attach
 opta.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+
+opta.build.ota.sketch_offset=0xA0000
+opta.recipe.hooks.objcopy.postobjcopy.3.pattern="{compiler.path}{compiler.elf2hex.cmd}" -I binary -O elf32-littlearm -B arm --add-section .sketch={build.path}/{build.project_name}.{upload.extension} --change-section-address .sketch={build.ota.sketch_offset} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" "{build.path}/{build.project_name}.ota.elf"
+opta.recipe.hooks.objcopy.postobjcopy.4.pattern="{compiler.path}{compiler.elf2hex.cmd}" -O binary --gap-fill 0xFF "{build.path}/{build.project_name}.ota.elf" "{build.path}/{build.project_name}.ota"
 
 ##########################################################################################
 
