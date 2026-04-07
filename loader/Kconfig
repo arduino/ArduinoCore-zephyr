@@ -4,6 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+config PINCTRL
+	select PINCTRL_NON_STATIC
+
 source "Kconfig.zephyr"
 
 config LLEXT_HEAP_REGION

@@ -144,7 +144,6 @@
 &adc {
 	#address-cells = <1>;
 	#size-cells = <0>;
-	zephyr,deferred-init;
 	
 	channel@0 {
 		reg = <0>;
@@ -220,6 +219,12 @@
 };
 
 &pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
 	pwm1_default: pwm1_default {
 		group1 {
 			psels = <NRF_PSEL(PWM_OUT0, 1, 9)>, /* keep original config */
@@ -264,24 +269,26 @@
 &pwm1 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&pwm1_default>;
+	pinctrl-0 = <&empty_default>;
 	pinctrl-1 = <&pwm1_sleep>;
-	pinctrl-names = "default", "sleep";
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &pwm2 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&pwm2_default>;
+	pinctrl-0 = <&empty_default>;
 	pinctrl-1 = <&pwm2_sleep>;
-	pinctrl-names = "default", "sleep";
+	pinctrl-2 = <&pwm2_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &i2c0 {
 	status = "okay";
 	zephyr,deferred-init;
 	pinctrl-0 = <&i2c0_default>;
-	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-1 = <&empty_default>;
 	pinctrl-names = "default", "sleep";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
@@ -290,7 +297,7 @@
 	status = "okay";
 	zephyr,deferred-init;
 	pinctrl-0 = <&i2c1_default>;
-	pinctrl-1 = <&i2c1_sleep>;
+	pinctrl-1 = <&empty_default>;
 	pinctrl-names = "default", "sleep";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };

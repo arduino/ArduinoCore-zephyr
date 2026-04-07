@@ -55,9 +55,11 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	this->vdev = DEVICE_DT_GET(DT_CHOSEN(zephyr_camera));
 #endif
 
-	if (!this->vdev || !device_is_ready(this->vdev)) {
+	if (!this->vdev) {
 		return false;
 	}
+
+	(void)zephyr::arduino::init_dev_apply_pinctrl(this->vdev);
 
 	switch (pixformat) {
 	case CAMERA_RGB565:

@@ -59,8 +59,10 @@
     pwm1: pwm {
         status = "okay";
         zephyr,deferred-init;
-        pinctrl-0 = <&tim1_ch3_pj9 &tim1_ch1_pk1>;
-        pinctrl-names = "default";
+        pinctrl-0 = <>;
+        pinctrl-1 = <>;
+        pinctrl-2 = <&tim1_ch1_pk1 &tim1_ch3_pj9>;
+        pinctrl-names = "default", "sleep", "arduino";
     };
 };
 
@@ -73,8 +75,10 @@
     pwm8: pwm {
         status = "okay";
         zephyr,deferred-init;
-        pinctrl-0 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
-        pinctrl-names = "default";
+        pinctrl-0 = <>;
+        pinctrl-1 = <>;
+        pinctrl-2 = <&tim8_ch2_pj10 &tim8_ch3n_ph15>;
+        pinctrl-names = "default", "sleep", "arduino";
     };
 };
 
@@ -85,15 +89,19 @@
     pwm12: pwm {
         status = "okay";
         zephyr,deferred-init;
-        pinctrl-0 = <&tim12_ch1_ph6>;
-        pinctrl-names = "default";
+        pinctrl-0 = <>;
+        pinctrl-1 = <>;
+        pinctrl-2 = <&tim12_ch1_ph6>;
+        pinctrl-names = "default", "sleep", "arduino";
     };
 };
 
 &adc1 {
     zephyr,deferred-init;
-    pinctrl-0 = <&adc1_inp4_pc4>;
-    pinctrl-names = "default";
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&adc1_inp4_pc4>;
+    pinctrl-names = "default", "sleep", "arduino";
     st,adc-clock-source = "SYNC";
     st,adc-prescaler = <4>;
     status = "okay";
@@ -120,8 +128,10 @@
 
 &adc2 {
     zephyr,deferred-init;
-    pinctrl-0 = <&adc2_inp2_pf13>;
-    pinctrl-names = "default";
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&adc2_inp2_pf13>;
+    pinctrl-names = "default", "sleep", "arduino";
     st,adc-clock-source = "SYNC";
     st,adc-prescaler = <4>;
     status = "okay";
@@ -140,8 +150,10 @@
 
 &adc3 {
     zephyr,deferred-init;
-    pinctrl-0 = <&adc3_inp5_pf3>;
-    pinctrl-names = "default";
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&adc3_inp5_pf3>;
+    pinctrl-names = "default", "sleep", "arduino";
     st,adc-clock-source = "SYNC";
     st,adc-prescaler = <4>;
     status = "okay";
@@ -159,6 +171,7 @@
 };
 
 / {
+
     chosen {
         zephyr,console = &lpuart1;
         zephyr,shell-uart = &lpuart1;
@@ -227,29 +240,32 @@
     };
 
     zephyr,user {
-        digital-pin-gpios = <&gpiog 12 GPIO_ACTIVE_HIGH>,   /* D0 PG_12 */
-                            <&gpioa 9 GPIO_ACTIVE_HIGH>,    /* D1 PA_9 */
-                            <&gpioa 10 GPIO_ACTIVE_HIGH>,   /* D2 PA_10 */
-                            <&gpiog 1 GPIO_ACTIVE_HIGH>,    /* D3 PG_1 */
-                            <&gpioe 3 GPIO_ACTIVE_HIGH>,    /* Red LED PE_3 */
-                            <&gpioc 13 GPIO_ACTIVE_HIGH>,   /* Green LED PC_13 */
-                            <&gpiof 4 GPIO_ACTIVE_HIGH>,    /* Blue LED PF_4 */
-							<&gpiog 0 GPIO_ACTIVE_HIGH>,	/* SE05X_EN */
-                            <&gpioc 4 GPIO_ACTIVE_HIGH>,    /* PC4 A0 ADC1 ch4  */
-                            <&gpiof 13 GPIO_ACTIVE_HIGH>,   /* PF13 A1 ADC2 ch2  */
-                            <&gpiof 3 GPIO_ACTIVE_HIGH>;    /* PF3 A2 ADC3 ch5  */
+        digital-pin-gpios = <&gpiog 12 GPIO_ACTIVE_HIGH>,   /* D0  PG12 */
+                            <&gpioa 9 GPIO_ACTIVE_HIGH>,    /* D1  PA9  */
+                            <&gpioa 10 GPIO_ACTIVE_HIGH>,   /* D2  PA10 */
+                            <&gpiog 1 GPIO_ACTIVE_HIGH>,    /* D3  PG1  */
+                            <&gpioe 3 GPIO_ACTIVE_HIGH>,    /* D4  PE3  Red LED */
+                            <&gpioc 13 GPIO_ACTIVE_HIGH>,   /* D5  PC13 Green LED */
+                            <&gpiof 4 GPIO_ACTIVE_HIGH>,    /* D6  PF4  Blue LED */
+                            <&gpiog 0 GPIO_ACTIVE_HIGH>,    /* D7  PG0  SE05X_EN */
+                            <&gpiok 1 GPIO_ACTIVE_HIGH>,    /* D8  PK1  tim1 ch1  */
+                            <&gpioj 9 GPIO_ACTIVE_HIGH>,    /* D9  PJ9  tim1 ch3  */
+                            <&gpioj 10 GPIO_ACTIVE_HIGH>,   /* D10 PJ10 tim8 ch2  */
+                            <&gpioh 15 GPIO_ACTIVE_HIGH>,   /* D11 PH15 tim8 ch3n */
+                            <&gpioh 6 GPIO_ACTIVE_HIGH>,    /* D12 PH6  tim12 ch1 */
+                            <&gpioc 4 GPIO_ACTIVE_HIGH>,    /* D13 PC4  A0 ADC1 ch4  */
+                            <&gpiof 13 GPIO_ACTIVE_HIGH>,   /* D14 PF13 A1 ADC2 ch2  */
+                            <&gpiof 3 GPIO_ACTIVE_HIGH>;    /* D15 PF3  A2 ADC3 ch5  */
 
         adc-pin-gpios = <&gpioc 4 GPIO_ACTIVE_HIGH>,   /* A0 PC4  */
                         <&gpiof 13 GPIO_ACTIVE_HIGH>,   /* A1 PF13 */
                         <&gpiof 3 GPIO_ACTIVE_HIGH>;    /* A2 PF3  */
 
-        pwm-pin-gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>,
-                        <&gpioc 6 GPIO_ACTIVE_HIGH>,
-                        <&gpioc 7 GPIO_ACTIVE_HIGH>,
-                        <&gpioh 15 GPIO_ACTIVE_HIGH>,
-                        <&gpioj 7 GPIO_ACTIVE_HIGH>,
-                        <&gpioj 10 GPIO_ACTIVE_HIGH>,
-                        <&gpioh 6 GPIO_ACTIVE_HIGH>;
+        pwm-pin-gpios = <&gpiok 1 GPIO_ACTIVE_HIGH>,   /* D8  PK1  pwm1  ch1  */
+                        <&gpioj 9 GPIO_ACTIVE_HIGH>,    /* D9  PJ9  pwm1  ch3  */
+                        <&gpioj 10 GPIO_ACTIVE_HIGH>,   /* D10 PJ10 pwm8  ch2  */
+                        <&gpioh 15 GPIO_ACTIVE_HIGH>,   /* D11 PH15 pwm8  ch3n */
+                        <&gpioh 6 GPIO_ACTIVE_HIGH>;    /* D12 PH6  pwm12 ch1  */
 
         serials = <&board_cdc_acm_uart>, <&usart1>, <&lpuart1>;
         cdc-acm-serial = <&board_cdc_acm_uart>;
@@ -265,7 +281,7 @@
                             <&gpioe 3 GPIO_ACTIVE_HIGH>,  /* Red LED PE_3 */
                             <&gpiof 4 GPIO_ACTIVE_HIGH>;  /* Blue LED PF_4 */
 
-        /* PWM channels: timers1(ch1,ch3), timers8(ch2,ch2n,ch3n), timers12(ch1) */
+        /* PWM channels: timers1(ch1,ch3), timers8(ch2,ch3n), timers12(ch1) */
         pwms =  <&pwm1 1 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
                 <&pwm1 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
                 <&pwm8 2 PWM_HZ(1000) PWM_POLARITY_NORMAL>,

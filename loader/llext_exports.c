@@ -14,6 +14,7 @@
 #include <math.h>
 #include <zephyr/kernel.h>
 #include <time.h>
+#include <zephyr/drivers/pinctrl.h>
 
 #define FORCE_EXPORT_SYM(name) \
        extern void name(void); \
@@ -122,6 +123,11 @@ EXPORT_SYMBOL(k_msgq_put);
 EXPORT_SYMBOL(k_msgq_get);
 EXPORT_SYMBOL(k_msgq_num_used_get);
 EXPORT_SYMBOL(k_sys_work_q);
+
+#if defined(CONFIG_PINCTRL)
+EXPORT_SYMBOL(pinctrl_lookup_state);
+EXPORT_SYMBOL(pinctrl_configure_pins);
+#endif
 
 #if defined(CONFIG_USB_DEVICE_STACK)
 EXPORT_SYMBOL(usb_enable);

@@ -51,6 +51,8 @@
 
 	uart7: uart {
 		zephyr,deferred-init;
+		pinctrl-0 = <&sci7_default>;
+		pinctrl-names = "default";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -63,6 +65,8 @@
 
 	uart6: uart {
 		zephyr,deferred-init;
+		pinctrl-0 = <&sci6_default>;
+		pinctrl-names = "default";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -75,6 +79,8 @@
 
 	uart5: uart {
 		zephyr,deferred-init;
+		pinctrl-0 = <&sci5_default>;
+		pinctrl-names = "default";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -101,6 +107,47 @@
 };
 
 &pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	adc0_arduino: adc0_arduino {
+		group1 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 6)>; /* A0 - AN006 */
+			renesas,analog-enable;
+		};
+		group2 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 5)>; /* A1 - AN005 */
+			renesas,analog-enable;
+		};
+		group3 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 4)>; /* A2 - AN004 */
+			renesas,analog-enable;
+		};
+		group4 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 2)>; /* A3 - AN002 */
+			renesas,analog-enable;
+		};
+		group5 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 1)>; /* A4 - AN001 */
+			renesas,analog-enable;
+		};
+		group6 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 15)>; /* A5 - AN013/P015 */
+			renesas,analog-enable;
+		};
+		group7 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 14)>; /* A6 - AN012/P014 */
+			renesas,analog-enable;
+		};
+		group8 {
+			psels = <RA_PSEL(RA_PSEL_ADC, 0, 0)>; /* A7 - AN000 */
+			renesas,analog-enable;
+		};
+	};
+
 	iic0_default: iic0_default {
 		group1 {
 			/* SCL0 SDA0 */
@@ -137,16 +184,22 @@
 
 &pwm3 {
 	status = "okay";
-	pinctrl-0 = <&pwm3_default>;
-	pinctrl-names = "default";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm3_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 	interrupts = <65 1>, <66 1>;
 	interrupt-names = "gtioca", "overflow";
 };
 
 &pwm7 {
 	status = "okay";
-	pinctrl-0 = <&pwm7_default>;
-	pinctrl-names = "default";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm7_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 	interrupts = <67 1>, <68 1>;
 	interrupt-names = "gtioca", "overflow";
 	/* GPT7 is a 16-bit timer on RA6M5 (BSP_FEATURE_GPT_32BIT_CHANNEL_MASK=0x0F).
@@ -157,8 +210,11 @@
 
 &pwm8 {
 	status = "okay";
-	pinctrl-0 = <&pwm8_default>;
-	pinctrl-names = "default";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm8_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 	interrupts = <69 1>, <70 1>;
 	interrupt-names = "gtioca", "overflow";
 	/* GPT8 is a 16-bit timer on RA6M5 (BSP_FEATURE_GPT_32BIT_CHANNEL_MASK=0x0F).
@@ -167,8 +223,23 @@
 	divider = <RA_PWM_SOURCE_DIV_4>;
 };
 
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+	interrupts = <71 1>, <72 1>;
+	interrupt-names = "gtioca", "overflow";
+};
+
 &adc0 {
 	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&adc0_arduino>;
+	pinctrl-names = "default", "sleep", "arduino";
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;

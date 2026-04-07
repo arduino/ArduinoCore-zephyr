@@ -16,6 +16,8 @@
 #include <zephyr/drivers/i2c.h>
 #include <math.h>
 
+#include "wiring_private.h"
+
 #if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
 /* Note: DT_REG_ADDR needs an expanded argument or it will not work properly */
 #define DIGITAL_PIN_MATCHES(dev_pha, pin, dev, num)                                                \
