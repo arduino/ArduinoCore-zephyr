@@ -20,6 +20,7 @@
 	status = "okay";
 };
 
+
 &i2c3 {
 	status = "okay";
 
@@ -401,3 +402,12 @@ qspi_flash: &mx25l12833f {};
 			      <&adc1 13>; /* Hack for D20 */
 	};
 };
+
+
+/* QSPI flash (MX25L12833F) is already configured in arduino_portenta_h7-common.dtsi
+ * with the correct pins: IO2=PF7, IO3=PD13 (different from Giga R1!)
+ */
+qspi_flash: &mx25l12833f {};
+
+/* Include common flash filesystem configuration */
+#include "../common/arduino_flash_fs.dtsi"
