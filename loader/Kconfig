@@ -4,6 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+config LLEXT_HEAP_SIZE
+	int
+	default SKETCH_HEAP_SIZE
+
 source "Kconfig.zephyr"
 
 config LLEXT_HEAP_REGION
@@ -17,3 +21,9 @@ config MAIN_STACK_REGION
 	depends on CODE_DATA_RELOCATION
 	help
 	  Specify the memory region for main stack.
+
+config SKETCH_HEAP_SIZE
+	int "Sketch heap size in KB"
+	default 32
+	help
+	  Specify the size in KB for the sketch heap

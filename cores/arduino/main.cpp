@@ -89,14 +89,14 @@ extern "C" __attribute__((section(".entry_point"), used)) void entry_point(struc
 	extern uintptr_t _ebss;
 	extern uintptr_t __heap_start;
 	extern uintptr_t __heap_end;
-	extern uintptr_t kheap_llext_heap;
-	extern uintptr_t kheap_llext_heap_size;
+	extern uintptr_t kheap__sketch_heap;
+	extern uintptr_t kheap__sketch_heap_size;
 
 	//__asm volatile ("cpsie i");
 
 	printk("System Heap end: %p\n", &__heap_end);
 	printk("System Heap start: %p\n", &__heap_start);
-	printk("Sketch Heap start: %p, size %p\n", &kheap_llext_heap, &kheap_llext_heap_size);
+	printk("Sketch Heap start: %p, size %p\n", &kheap__sketch_heap, &kheap__sketch_heap_size);
 
 	memcpy(&_sdata, &_sidata, (&_edata - &_sdata) * sizeof(uint32_t));
 	memset(&_sbss, 0, (&_ebss - &_sbss) * sizeof(uint32_t));

@@ -12,7 +12,7 @@ if (CONFIG_ARDUINO_API)
 endif()
 endif()
 
-if (CONFIG_ARDUINO_API AND NOT CONFIG_LLEXT)
+if (CONFIG_ARDUINO_API AND NOT CONFIG_LLEXT_EDK)
 add_subdirectory(cores)
 add_subdirectory(libraries)
 zephyr_include_directories(${variant_dir})
