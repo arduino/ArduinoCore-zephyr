@@ -38,6 +38,15 @@ config ARDUINO_MAX_TONES
 	  If set to -1 (or any other negative value), the maximum number will be
 	  determined from the system's digital pin configuration.
 
+config ARDUINO_DELAY_US_COMPENSATION
+	int "delayMicroseconds() compensation value (us)"
+	default 1
+	range 0 2147483647
+	help
+	  Compensation value, in microseconds, subtracted from the requested
+	  delay in delayMicroseconds() to account for software overhead.
+	  This can improve short-delay accuracy.
+
 endif
 
 if USB_DEVICE_STACK_NEXT
