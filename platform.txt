@@ -225,6 +225,10 @@ tools.stm32flash.erase.pattern="{path}/{cmd}" {serial.port} -e 1024 -b 2400
 # DFU_UTIL
 #
 
+tools.dfu-util.pre_cmd.linux={build.variant.path}/check_loader_version.sh
+tools.dfu-util.pre_upload_check.pattern="{pre_cmd}" {upload.port.properties.configuration}
+tools.dfu-util.pre_upload.pattern="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{runtime.platform.path}/firmwares/{bootloader.file}" -a{bootloader.interface} --dfuse-address={bootloader.address}
+
 upload.dfuse=--dfuse-address={upload.address}:leave
 bootloader.dfuse=--dfuse-address={bootloader.address}:leave
 

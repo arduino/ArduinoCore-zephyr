@@ -46,6 +46,7 @@ giga.upload.vid=0x2341
 giga.upload.pid=0x0366
 giga.upload.interface=0
 giga.upload.use_1200bps_touch=true
+giga.upload.use_pre_upload_check=true
 giga.upload.wait_for_upload_port=true
 giga.upload.native_usb=true
 giga.upload.maximum_size=1966080
