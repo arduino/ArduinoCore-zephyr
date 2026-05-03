@@ -76,11 +76,7 @@ public:
 	void flush();
 
 	void end() {
-#ifdef CONFIG_DEVICE_DEINIT_SUPPORT
-		if (uart->ops.deinit) {
-			uart->ops.deinit(uart);
-		}
-#endif
+		device_deinit(uart);
 	}
 
 	size_t write(const uint8_t *buffer, size_t size);
@@ -110,7 +106,7 @@ protected:
 	ZephyrSerialBuffer<CONFIG_ARDUINO_API_SERIAL_BUFFER_SIZE> rx;
 
 	virtual void _reinit_if_needed() {
-		uart->ops.init(uart);
+		device_init(uart);
 	}
 };
 

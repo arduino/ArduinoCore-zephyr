@@ -17,7 +17,7 @@ void _reinit_peripheral_if_needed(pin_size_t pin, const struct device *dev) {
 	if (pinmux_array[pin] != dev) {
 		pinmux_array[pin] = dev;
 		if (dev != NULL) {
-			dev->ops.init(dev);
+			device_init(dev);
 		}
 	}
 }
