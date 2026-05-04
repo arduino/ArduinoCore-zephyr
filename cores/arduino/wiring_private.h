@@ -30,6 +30,8 @@
 namespace zephyr {
 namespace arduino {
 
+constexpr pin_size_t invalid_pin_number = pin_size_t(-1);
+
 constexpr struct gpio_dt_spec arduino_pins[] = {
 	DT_FOREACH_PROP_ELEM_SEP(
 	DT_PATH(zephyr_user), digital_pin_gpios, GPIO_DT_SPEC_GET_BY_IDX, (, ))};
