@@ -29,11 +29,11 @@ unsigned long millis(void) {
 const struct device *digitalPinToPortDevice(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber, nullptr);
 
-	return arduino_pins[pinNumber].port;
+	return local_gpio_port(pinNumber);
 }
 
 int digitalPinToPinIndex(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber, -1);
 
-	return arduino_pins[pinNumber].pin;
+	return local_gpio_pin(pinNumber);
 }
