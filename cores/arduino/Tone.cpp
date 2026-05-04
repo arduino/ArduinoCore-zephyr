@@ -69,11 +69,11 @@ static struct pin_timer *find_pin_timer(pin_size_t pinNumber, bool active_only) 
 void tone_expiry_cb(struct k_timer *timer) {
 	struct pin_timer *pt = CONTAINER_OF(timer, struct pin_timer, timer);
 	k_spinlock_key_t key = k_spin_lock(&pt->lock);
-	pin_size_t pin = pt->pin;
+	const struct device *port = local_gpio_port(pt->pin);
 
 	if (pt->count == 0 && !pt->infinity) {
-		if (pin != invalid_pin_number) {
-			gpio_pin_set_dt(&arduino_pins[pin], 0);
+		if (port) {
+			gpio_pin_set(port, local_gpio_pin(pt->pin), 0);
 		}
 
 		k_timer_stop(timer);
@@ -81,8 +81,8 @@ void tone_expiry_cb(struct k_timer *timer) {
 		pt->infinity = false;
 		pt->pin = invalid_pin_number;
 	} else {
-		if (pin != invalid_pin_number) {
-			gpio_pin_toggle_dt(&arduino_pins[pin]);
+		if (port) {
+			gpio_pin_toggle(port, local_gpio_pin(pt->pin));
 		}
 		pt->count--;
 	}
@@ -129,7 +129,7 @@ void tone(pin_size_t pinNumber, unsigned int frequency, unsigned long duration) 
 		pt->pin = invalid_pin_number;
 		k_spin_unlock(&pt->lock, key);
 
-		gpio_pin_set_dt(&arduino_pins[pinNumber], 0);
+		gpio_pin_set(local_gpio_port(pinNumber), local_gpio_pin(pinNumber), 0);
 
 		k_mutex_unlock(&timer_cfg_lock);
 		return;
@@ -146,7 +146,8 @@ void tone(pin_size_t pinNumber, unsigned int frequency, unsigned long duration) 
 	pt->pin = pinNumber;
 	k_spin_unlock(&pt->lock, key);
 
-	gpio_pin_set_dt(&arduino_pins[pinNumber], 1);
+	gpio_pin_set(local_gpio_port(pinNumber), local_gpio_pin(pinNumber), 1);
+
 	k_timer_start(&pt->timer, timeout, timeout);
 
 	k_mutex_unlock(&timer_cfg_lock);
@@ -178,7 +179,7 @@ void noTone(pin_size_t pinNumber) {
 	pt->pin = invalid_pin_number;
 	k_spin_unlock(&pt->lock, key);
 
-	gpio_pin_set_dt(&arduino_pins[pinNumber], 0);
+	gpio_pin_set(local_gpio_port(pinNumber), local_gpio_pin(pinNumber), 0);
 
 	k_mutex_unlock(&timer_cfg_lock);
 }
