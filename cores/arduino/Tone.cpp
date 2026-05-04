@@ -24,7 +24,7 @@ namespace {
 static struct pin_timer {
 	struct k_timer timer;
 	uint32_t count{0};
-	pin_size_t pin{pin_size_t(-1)};
+	pin_size_t pin{invalid_pin_number};
 	bool infinity{false};
 	bool timer_initialized{false};
 	struct k_spinlock lock{};
@@ -54,7 +54,7 @@ static struct pin_timer *find_pin_timer(pin_size_t pinNumber, bool active_only) 
 	for (size_t i = 0; i < ARRAY_SIZE(arduino_pin_timers); i++) {
 		k_spinlock_key_t key = k_spin_lock(&arduino_pin_timers[i].lock);
 
-		if (arduino_pin_timers[i].pin == pin_size_t(-1)) {
+		if (arduino_pin_timers[i].pin == invalid_pin_number) {
 			arduino_pin_timers[i].pin = pinNumber;
 			k_spin_unlock(&arduino_pin_timers[i].lock, key);
 			return &arduino_pin_timers[i];
@@ -72,16 +72,16 @@ void tone_expiry_cb(struct k_timer *timer) {
 	pin_size_t pin = pt->pin;
 
 	if (pt->count == 0 && !pt->infinity) {
-		if (pin != pin_size_t(-1)) {
+		if (pin != invalid_pin_number) {
 			gpio_pin_set_dt(&arduino_pins[pin], 0);
 		}
 
 		k_timer_stop(timer);
 		pt->count = 0;
 		pt->infinity = false;
-		pt->pin = pin_size_t(-1);
+		pt->pin = invalid_pin_number;
 	} else {
-		if (pin != pin_size_t(-1)) {
+		if (pin != invalid_pin_number) {
 			gpio_pin_toggle_dt(&arduino_pins[pin]);
 		}
 		pt->count--;
@@ -126,7 +126,7 @@ void tone(pin_size_t pinNumber, unsigned int frequency, unsigned long duration) 
 		key = k_spin_lock(&pt->lock);
 		pt->count = 0;
 		pt->infinity = false;
-		pt->pin = pin_size_t(-1);
+		pt->pin = invalid_pin_number;
 		k_spin_unlock(&pt->lock, key);
 
 		gpio_pin_set_dt(&arduino_pins[pinNumber], 0);
@@ -175,7 +175,7 @@ void noTone(pin_size_t pinNumber) {
 	k_timer_stop(&pt->timer);
 	pt->count = 0;
 	pt->infinity = false;
-	pt->pin = pin_size_t(-1);
+	pt->pin = invalid_pin_number;
 	k_spin_unlock(&pt->lock, key);
 
 	gpio_pin_set_dt(&arduino_pins[pinNumber], 0);
