@@ -32,22 +32,42 @@ BUILD_ASSERT(
 #ifdef CONFIG_PWM
 
 constexpr struct pwm_dt_spec arduino_pwm[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, ZARD_PWM_DT_SPEC)};
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwms)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, ZARD_PWM_DT_SPEC)
+#elif defined(ZARD_PWM_CONNECTOR)
+	DT_FOREACH_MAP_ENTRY(DT_NODELABEL(ZARD_PWM_CONNECTOR), pwm_map, ZARD_PWM_CONN_CHANNEL_DT)
+#endif
+};
 
 /* pwm-pins node provides a mapping digital pin numbers to pwm channels */
 constexpr pin_size_t arduino_pwm_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, ZARD_PWM_PINS)};
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), pwm_pin_gpios)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, ZARD_PWM_PINS)
+#elif defined(ZARD_PWM_CONNECTOR)
+	DT_FOREACH_MAP_ENTRY(DT_NODELABEL(ZARD_PWM_CONNECTOR), pwm_map, ZARD_PWM_CONN_PINNUM)
+#endif
+};
 
 #endif
 
 #ifdef CONFIG_ADC
 
 constexpr struct adc_dt_spec arduino_adc[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ZARD_ADC_DT_SPEC)};
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ZARD_ADC_DT_SPEC)
+#elif defined(ZARD_ADC_CONNECTOR)
+	DT_FOREACH_MAP_ENTRY(DT_NODELABEL(ZARD_ADC_CONNECTOR), io_channel_map, ZARD_ADC_CONN_CHANNEL_DT)
+#endif
+};
 
 /* adc-pin-gpios provides a mapping digital pin numbers to adc channels */
 constexpr pin_size_t arduino_analog_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ZARD_ADC_PINS)};
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), adc_pin_gpios)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ZARD_ADC_PINS)
+#elif defined(ZARD_ADC_CONNECTOR)
+	DT_FOREACH_MAP_ENTRY(DT_NODELABEL(ZARD_ADC_CONNECTOR), io_channel_map, ZARD_ADC_CONN_PINNUM)
+#endif
+};
 
 #endif
 
