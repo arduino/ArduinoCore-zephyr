@@ -94,6 +94,25 @@ constexpr size_t is_first_appearance(const size_t &idx, const size_t &at, const 
 			   is_first_appearance(idx + 1, at, (query == head ? idx : found), query, tail...);
 }
 
+constexpr inline const struct device *local_gpio_port(pin_size_t gpin) {
+	return (gpin < ARRAY_SIZE(arduino_pins)) ? arduino_pins[gpin].port : nullptr;
+}
+
+constexpr inline pin_size_t local_gpio_pin(pin_size_t gpin) {
+	return (gpin < ARRAY_SIZE(arduino_pins)) ? arduino_pins[gpin].pin : invalid_pin_number;
+}
+
+constexpr inline gpio_flags_t local_gpio_flags(pin_size_t gpin) {
+	return (gpin < ARRAY_SIZE(arduino_pins)) ? arduino_pins[gpin].dt_flags : 0;
+}
+
+inline int global_gpio_pin_configure(pin_size_t pinNumber, int flags) {
+	if (pinNumber >= ARRAY_SIZE(arduino_pins)) {
+		return -1;
+	}
+	return gpio_pin_configure_dt(&arduino_pins[pinNumber], flags);
+}
+
 #define ZARD_GET_DEVICE_VARGS(n, p, i, _) DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, p, i))
 #define ZARD_FIRST_APPEARANCE(n, p, i)                                                             \
 	is_first_appearance(0, i, ((size_t)-1), DEVICE_DT_GET(DT_GPIO_CTLR_BY_IDX(n, p, i)),           \
