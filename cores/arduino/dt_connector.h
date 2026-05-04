@@ -150,3 +150,60 @@
 		     DT_MAP_ENTRY_CHILD_SPECIFIER_BY_IDX(n, p, i, 0)) =                            \
 	             ZARD_GLOBAL_GPIO_OFFSET(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i)) +                \
 		     DT_MAP_ENTRY_PARENT_SPECIFIER_BY_IDX(n, p, i, 0),), ())
+
+/* -- PWM/ADC connector helpers ------------------------------------- */
+
+/*
+ * Shared guard: expands body (with trailing comma) only when the parent
+ * peripheral node of map entry i is enabled; otherwise expands to nothing.
+ */
+#define ZARD_IF_MAP_ENTRY_OKAY(n, p, i, ...)                                                       \
+	COND_CODE_1(DT_NODE_HAS_STATUS_OKAY(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i)),                  \
+		    (__VA_ARGS__,), ())
+
+/* -- ADC helpers --------------------------------------------------- */
+
+/* Map a zephyr,user/adc-pin-gpios entry to its global Arduino pin number. */
+#define ZARD_ADC_PINS(n, p, i)                                                                     \
+	ZARD_GLOBAL_GPIO_OFFSET(DT_PHANDLE_BY_IDX(n, p, i)) + DT_PHA_BY_IDX(n, p, i, pin),
+
+/* Emit an adc_dt_spec initialiser for one element of zephyr,user/io-channels. */
+#define ZARD_ADC_DT_SPEC(n, p, i) ADC_DT_SPEC_GET_BY_IDX(n, i),
+
+/* Emit an adc_dt_spec for one connector io-channel-map entry (skips disabled nodes). */
+#define ZARD_ADC_CONN_CHANNEL_DT(n, p, i)                                                          \
+	ZARD_IF_MAP_ENTRY_OKAY(n, p, i,                                                                \
+						   ADC_DT_SPEC_STRUCT(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i),                 \
+											  DT_MAP_ENTRY_PARENT_SPECIFIER_BY_IDX(n, p, i, 0)))
+
+/* Emit the Arduino analog-pin name for one connector io-channel-map entry. */
+#define ZARD_ADC_CONN_PINNUM(n, p, i)                                                              \
+	ZARD_IF_MAP_ENTRY_OKAY(                                                                        \
+		n, p, i,                                                                                   \
+		ZARD_CONNECTOR_PIN_NAME_A(DT_NODELABEL(ZARD_CONNECTOR),                                    \
+								  DT_MAP_ENTRY_CHILD_SPECIFIER_BY_IDX(n, p, i, 0)))
+
+/* -- PWM helpers --------------------------------------------------- */
+
+/* Map a zephyr,user/pwm-pin-gpios entry to its global Arduino pin number. */
+#define ZARD_PWM_PINS(n, p, i)                                                                     \
+	ZARD_GLOBAL_GPIO_OFFSET(DT_PHANDLE_BY_IDX(n, p, i)) + DT_PHA_BY_IDX(n, p, i, pin),
+
+/* Emit a pwm_dt_spec initialiser for one element of zephyr,user/pwms. */
+#define ZARD_PWM_DT_SPEC(n, p, i) PWM_DT_SPEC_GET_BY_IDX(n, i),
+
+/* Emit a pwm_dt_spec for one connector pwm-map entry (skips disabled nodes). */
+#define ZARD_PWM_CONN_CHANNEL_DT(n, p, i)                                                          \
+	ZARD_IF_MAP_ENTRY_OKAY(n, p, i,                                                                \
+						   {                                                                       \
+							   .dev = DEVICE_DT_GET(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i)),          \
+							   .channel = DT_MAP_ENTRY_PARENT_SPECIFIER_BY_IDX(n, p, i, 0),        \
+							   .period = 255,                                                      \
+						   })
+
+/* Emit the Arduino digital-pin name for one connector pwm-map entry. */
+#define ZARD_PWM_CONN_PINNUM(n, p, i)                                                              \
+	ZARD_IF_MAP_ENTRY_OKAY(                                                                        \
+		n, p, i,                                                                                   \
+		ZARD_CONNECTOR_PIN_NAME_D(DT_NODELABEL(ZARD_CONNECTOR),                                    \
+								  DT_MAP_ENTRY_CHILD_SPECIFIER_BY_IDX(n, p, i, 0)))
