@@ -29,6 +29,92 @@
     prescaler = <1>;  // Optional: sets the RTC tick to ~30.5 µs
 };
 
+&pinctrl {
+	pwm1_default: pwm1_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 10)>,
+				<NRF_PSEL(PWM_OUT1, 0, 9)>,
+				<NRF_PSEL(PWM_OUT2, 0, 20)>,
+				<NRF_PSEL(PWM_OUT3, 0, 23)>;
+				nordic,invert;
+		};
+	};
+
+	pwm1_sleep: pwm1_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 10)>,
+				<NRF_PSEL(PWM_OUT1, 0, 9)>,
+				<NRF_PSEL(PWM_OUT2, 0, 20)>,
+				<NRF_PSEL(PWM_OUT3, 0, 23)>;
+				low-power-enable;
+		};
+	};
+
+	pwm2_default: pwm2_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 22)>,
+				<NRF_PSEL(PWM_OUT1, 0, 24)>,
+				<NRF_PSEL(PWM_OUT2, 0, 29)>,
+				<NRF_PSEL(PWM_OUT3, 0, 28)>;
+				nordic,invert;
+		};
+	};
+
+	pwm2_sleep: pwm2_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 22)>,
+				<NRF_PSEL(PWM_OUT1, 0, 24)>,
+				<NRF_PSEL(PWM_OUT2, 0, 29)>,
+				<NRF_PSEL(PWM_OUT3, 0, 28)>;
+				low-power-enable;
+		};
+	};
+
+	pwm3_default: pwm3_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 27)>,
+				<NRF_PSEL(PWM_OUT1, 0, 11)>,
+				<NRF_PSEL(PWM_OUT2, 0, 2)>,
+				<NRF_PSEL(PWM_OUT3, 0, 30)>;
+				nordic,invert;
+		};
+	};
+
+	pwm3_sleep: pwm3_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 27)>, /* keep original config */
+				<NRF_PSEL(PWM_OUT1, 0, 11)>,
+				<NRF_PSEL(PWM_OUT2, 0, 2)>,
+				<NRF_PSEL(PWM_OUT3, 0, 30)>;
+				low-power-enable;
+		};
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm1_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm2_default>;
+	pinctrl-1 = <&pwm2_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm3_default>;
+	pinctrl-1 = <&pwm3_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 / {
 	zephyr,user {
 		digital-pin-gpios = <&gpio0 10 0>,		// 0: GPIO3
@@ -57,6 +143,33 @@
 
 		io-channels =	<&adc 0>,
 				<&adc 6>;
+
+		pwm-pin-gpios =	    <&gpio0 10 0>,
+				    <&gpio0 9 0>,
+				    <&gpio0 20 0>,
+				    <&gpio0 23 0>,
+				    <&gpio0 22 0>,
+				    <&gpio0 24 0>,
+				    <&gpio0 29 0>,
+				    <&gpio0 28 0>,
+				    <&gpio0 27 0>,
+				    <&gpio0 11 0>,
+				    <&gpio0 2 0>,
+				    <&gpio0 30 0>;
+		
+
+		pwms =	<&pwm0 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm0 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm0 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm0 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 3 PWM_HZ(500) PWM_POLARITY_NORMAL>;
 
 		serials = <&uart0>;
 		i2cs = <&i2c1>;
