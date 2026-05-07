@@ -35,13 +35,6 @@ namespace {
 
 #ifdef CONFIG_PWM
 
-const struct pwm_dt_spec arduino_pwm[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_DT_SPEC)};
-
-/* pwm-pins node provides a mapping digital pin numbers to pwm channels */
-const pin_size_t arduino_pwm_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, PWM_PINS)};
-
 size_t pwm_pin_index(pin_size_t pinNumber) {
 	for (size_t i = 0; i < ARRAY_SIZE(arduino_pwm_pins); i++) {
 		if (arduino_pwm_pins[i] == pinNumber) {
@@ -54,13 +47,6 @@ size_t pwm_pin_index(pin_size_t pinNumber) {
 #endif // CONFIG_PWM
 
 #ifdef CONFIG_ADC
-
-const struct adc_dt_spec arduino_adc[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_DT_SPEC)};
-
-/* io-channel-pins node provides a mapping digital pin numbers to adc channels */
-const pin_size_t arduino_analog_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ADC_PINS)};
 
 struct adc_channel_cfg channel_cfg[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_CH_CFG)};
