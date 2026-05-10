@@ -97,7 +97,7 @@
 		status = "okay";
 		zephyr,deferred-init;
 		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_pa8 &analog_pj11>;
+		pinctrl-1 = <>;
 		pinctrl-2 = <&tim1_ch1_pa8 &tim1_ch2_pj11>;
 		pinctrl-names = "default", "sleep", "arduino";
 	};
@@ -111,7 +111,7 @@
 		status = "okay";
 		zephyr,deferred-init;
 		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_pc6 &analog_pc7>;
+		pinctrl-1 = <>;
 		pinctrl-2 = <&tim3_ch1_pc6 &tim3_ch2_pc7>;
 		pinctrl-names = "default", "sleep", "arduino";
 	};
@@ -125,7 +125,7 @@
 		status = "okay";
 		zephyr,deferred-init;
 		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_ph15 &analog_pj7>;
+		pinctrl-1 = <>;
 		pinctrl-2 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
 		pinctrl-names = "default", "sleep", "arduino";
 	};
@@ -139,7 +139,7 @@
 		status = "okay";
 		zephyr,deferred-init;
 		pinctrl-0 = <>;
-		pinctrl-1 = <&analog_ph6>;
+		pinctrl-1 = <>;
 		pinctrl-2 = <&tim12_ch1_ph6>;
 		pinctrl-names = "default", "sleep", "arduino";
 	};
@@ -196,12 +196,7 @@
 &adc1 {
 	zephyr,deferred-init;
 	pinctrl-0 = <>;
-	pinctrl-1 = <&analog_pc2
-       	     &analog_pc3
-       	     &analog_pa4
-       	     &analog_pa6
-       	     &analog_pa0_c
-       	     &analog_pa1_c>;
+	pinctrl-1 = <>;
 	pinctrl-2 = <&adc1_inp12_pc2
        	     &adc1_inp13_pc3
        	     &adc1_inp18_pa4
@@ -265,8 +260,7 @@
 &adc3 {
 	zephyr,deferred-init;
 	pinctrl-0 = <>;
-	pinctrl-1 = <&analog_pc2_c
-		     &analog_pc3_c>;
+	pinctrl-1 = <>;
 	pinctrl-2 = <&adc3_inp0_pc2_c
 		     &adc3_inp1_pc3_c>;
 	pinctrl-names = "default", "sleep", "arduino";

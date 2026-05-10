@@ -6,6 +6,7 @@ if(NOT DEFINED ARDUINO_BUILD_PATH)
 
 zephyr_sources(zephyrSerial.cpp)
 zephyr_sources(zephyrCommon.cpp)
+zephyr_sources(zephyrPinctrl.cpp)
 zephyr_sources(USB.cpp)
 zephyr_sources(itoa.cpp)
 
