@@ -23,3 +23,5 @@ config MAIN_STACK_REGION
 	depends on CODE_DATA_RELOCATION
 	help
 	  Specify the memory region for main stack.
+
+rsource "ota/Kconfig"
