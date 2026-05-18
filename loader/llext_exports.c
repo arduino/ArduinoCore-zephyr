@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <zephyr/llext/symbol.h>
 #include <zephyr/usb/usb_device.h>
+#include <zephyr/sys/reboot.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +52,7 @@ EXPORT_LIBC_SYM(strstr);
 EXPORT_LIBC_SYM(strncmp);
 EXPORT_LIBC_SYM(strncpy);
 EXPORT_LIBC_SYM(strcasecmp);
+EXPORT_LIBC_SYM(strncasecmp);
 EXPORT_LIBC_SYM(strcmp);
 EXPORT_LIBC_SYM(strlen);
 EXPORT_LIBC_SYM(strnlen);
@@ -323,6 +325,7 @@ EXPORT_SYMBOL(k_work_submit_to_queue);
 
 EXPORT_SYMBOL(time);
 EXPORT_SYMBOL(sys_clock_settime);
+
 EXPORT_SYMBOL(mktime);
 EXPORT_SYMBOL(gmtime);
 
@@ -369,6 +372,7 @@ EXPORT_AEABI_SYM(__aeabi_fcmpun);
 EXPORT_AEABI_SYM(__aeabi_d2iz);
 EXPORT_AEABI_SYM(__aeabi_d2uiz);
 EXPORT_AEABI_SYM(__aeabi_d2lz);
+EXPORT_AEABI_SYM(__aeabi_d2ulz);
 EXPORT_AEABI_SYM(__aeabi_i2d);
 EXPORT_AEABI_SYM(__aeabi_ui2d);
 EXPORT_AEABI_SYM(__aeabi_l2d);

@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(sketch);
 
 #include <zephyr/devicetree/fixed-partitions.h>
 #include "../cores/arduino/zephyr_sketch_header.h"
+#include "ota/ota_sketch_check.h"
 
 #define SKETCH_RAM_BUFFER_LEN 131072
 
@@ -113,6 +114,10 @@ static int loader(const struct shell *sh) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
 	}
+
+#if defined(CONFIG_OTA)
+	try_ota_update(fa);
+#endif
 
 	uintptr_t base_addr =
 		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
