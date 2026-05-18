@@ -24,8 +24,11 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/usb/usb_device.h>
 
 #include <zephyr/devicetree/fixed-partitions.h>
+#include <zephyr/fs/fs.h>
 
 #define HEADER_LEN 16
+
+#define OTA_UPDATE_PATH   "/ota:/UPDATE.BIN"
 
 struct sketch_header_v1 {
 	uint8_t ver;    // @ 0x07
@@ -116,6 +119,153 @@ struct backup_store {
 };
 volatile __stm32_backup_sram_section struct backup_store backup;
 
+#if defined(CONFIG_FILE_SYSTEM)
+/*
+ * Install a pending OTA update if one is present on /ota:.
+ *
+ * Trigger: /ota:/UPDATE.BIN exists. The sketch is responsible for
+ * validating the OTA payload (magic, CRC32, optional decompression)
+ * before writing UPDATE.BIN and rebooting — the loader trusts the
+ * file and only re-checks the inner sketch_header_v1 for bounds.
+ *
+ * Recovery policy on failure:
+ *   - Pre-erase errors (bad header, bad bounds, file too small):
+ *     UPDATE.BIN is removed and the loader proceeds to boot the
+ *     existing sketch.
+ *   - Post-erase errors (flash write fault, truncated read mid-stream):
+ *     the partition is already partially written, so UPDATE.BIN is
+ *     KEPT IN PLACE. The next boot will retry from the same UPDATE.BIN,
+ *     which is the only way back from an in-progress flash without DFU.
+ *     If the failure is persistent the user must recover externally.
+ */
+static int try_ota_update(const struct flash_area *fa) {
+	struct fs_dirent entry;
+	int rc;
+
+	/* Check for pending OTA update */
+	if (fs_stat(OTA_UPDATE_PATH, &entry) != 0) {
+		printk("OTA: no update pending\n");
+		return 0;
+	}
+
+	printk("OTA: update pending, validating...\n");
+
+	/* Open UPDATE.BIN */
+	struct fs_file_t file;
+	fs_file_t_init(&file);
+	rc = fs_open(&file, OTA_UPDATE_PATH, FS_O_READ);
+	if (rc < 0) {
+		printk("OTA: failed to open %s, rc %d\n", OTA_UPDATE_PATH, rc);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	/* Get file size */
+	off_t file_size;
+	if (fs_seek(&file, 0, FS_SEEK_END) < 0 ||
+	    (file_size = fs_tell(&file)) < 0 ||
+	    fs_seek(&file, 0, FS_SEEK_SET) < 0) {
+		printk("OTA: failed to determine file size\n");
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	if (file_size < HEADER_LEN) {
+		printk("OTA: file too small (%ld bytes)\n", (long)file_size);
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	/* Read and validate sketch header */
+	char header[HEADER_LEN];
+	rc = fs_read(&file, header, HEADER_LEN);
+	if (rc != HEADER_LEN) {
+		printk("OTA: failed to read header\n");
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	struct sketch_header_v1 *hdr = (struct sketch_header_v1 *)(header + 7);
+	if (hdr->ver != 0x1 || hdr->magic != 0x2341) {
+		printk("OTA: invalid sketch header (ver=0x%x magic=0x%x)\n", hdr->ver, hdr->magic);
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	size_t sketch_len = hdr->len;
+	printk("OTA: sketch length = %u bytes\n", (unsigned)sketch_len);
+
+	/* Bounds-check header before the destructive erase: refuse to brick
+	 * the device on a malformed/oversized header or a truncated file. */
+	if (sketch_len > fa->fa_size) {
+		printk("OTA: sketch too large for partition (%u > %u)\n", (unsigned)sketch_len,
+			   (unsigned)fa->fa_size);
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+	if ((off_t)sketch_len > file_size) {
+		printk("OTA: header len exceeds file size (%u > %ld)\n", (unsigned)sketch_len,
+			   (long)file_size);
+		fs_close(&file);
+		fs_unlink(OTA_UPDATE_PATH);
+		return -1;
+	}
+
+	/* From here on the partition is about to become inconsistent.
+	 * On failure we leave UPDATE.BIN in place so the next boot can
+	 * retry. */
+	printk("OTA: erasing flash partition (%u bytes)...\n", (unsigned)fa->fa_size);
+	rc = flash_area_erase(fa, 0, fa->fa_size);
+	if (rc) {
+		printk("OTA: flash erase failed, rc %d — retry on next boot\n", rc);
+		fs_close(&file);
+		return -1;
+	}
+
+	/* Write sketch data from file to flash in chunks */
+	if (fs_seek(&file, 0, FS_SEEK_SET) < 0) {
+		printk("OTA: failed to seek to start of file — retry on next boot\n");
+		fs_close(&file);
+		return -1;
+	}
+	uint8_t chunk[4096];
+	off_t offset = 0;
+	size_t remaining = sketch_len;
+	ssize_t n;
+	while (remaining > 0 &&
+		   (n = fs_read(&file, chunk, remaining < sizeof(chunk) ? remaining : sizeof(chunk))) > 0) {
+		rc = flash_area_write(fa, offset, chunk, n);
+		if (rc) {
+			printk("OTA: flash write failed at offset %ld, rc %d — retry on next boot\n",
+				   (long)offset, rc);
+			fs_close(&file);
+			return -1;
+		}
+		offset += n;
+		remaining -= n;
+	}
+	fs_close(&file);
+
+	if (remaining > 0) {
+		printk("OTA: short read, %u bytes missing — retry on next boot\n", (unsigned)remaining);
+		return -1;
+	}
+
+	printk("OTA: wrote %ld bytes to flash\n", (long)offset);
+
+	/* Success — clear update file so the next boot is normal. */
+	fs_unlink(OTA_UPDATE_PATH);
+
+	printk("OTA: update complete\n");
+	return 0;
+}
+#endif /* CONFIG_FILE_SYSTEM */
+
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
@@ -126,6 +276,10 @@ static int loader(const struct shell *sh) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
 	}
+
+#if defined(CONFIG_FILE_SYSTEM)
+	try_ota_update(fa);
+#endif
 
 	uintptr_t base_addr =
 		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));

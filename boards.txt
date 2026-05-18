@@ -70,6 +70,11 @@ giga.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 giga.debug.cortex-debug.custom.request=attach
 giga.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
 
+giga.build.ota.magic=0x23410266
+giga.build.ota.sketch_offset=0xA0000
+giga.build.ota.pack_command_loader="{runtime.tools.ota-pack.path}/ota-pack" {build.ota.loader.extra_flags} {build.ota.compress_flag} -loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -sketch "{build.path}/{build.project_name}.{upload.extension}" -offset {build.ota.sketch_offset} -magic {build.ota.magic} -output "{build.path}/{build.project_name}.loader.ota"
+giga.build.ota.pack_command_sketch="{runtime.tools.ota-pack.path}/ota-pack" --sketch-only {build.ota.compress_flag} -sketch "{build.path}/{build.project_name}.{upload.extension}" -magic {build.ota.magic} -output "{build.path}/{build.project_name}.ota"
+
 ##########################################################################################
 
 nano33ble.name=Arduino Nano 33 BLE
@@ -310,6 +315,11 @@ portentah7.bootloader.interface=0
 portentah7.bootloader.file=zephyr-{build.variant}.bin
 portentah7.bootloader.address=0x08040000
 
+portentah7.build.ota.magic=0x2341025B
+portentah7.build.ota.sketch_offset=0xA0000
+portentah7.build.ota.pack_command_loader="{runtime.tools.ota-pack.path}/ota-pack" {build.ota.loader.extra_flags} {build.ota.compress_flag} -loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -sketch "{build.path}/{build.project_name}.{upload.extension}" -offset {build.ota.sketch_offset} -magic {build.ota.magic} -output "{build.path}/{build.project_name}.loader.ota"
+portentah7.build.ota.pack_command_sketch="{runtime.tools.ota-pack.path}/ota-pack" --sketch-only {build.ota.compress_flag} -sketch "{build.path}/{build.project_name}.{upload.extension}" -magic {build.ota.magic} -output "{build.path}/{build.project_name}.ota"
+
 portentah7.debug.tool=gdb
 portentah7.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
 portentah7.debug.server.openocd.scripts.1={programmer.transport_script}
@@ -377,6 +387,11 @@ nicla_vision.bootloader.pid=0x035f
 nicla_vision.bootloader.interface=0
 nicla_vision.bootloader.file=zephyr-{build.variant}.bin
 nicla_vision.bootloader.address=0x08040000
+
+nicla_vision.build.ota.magic=0x2341025F
+nicla_vision.build.ota.sketch_offset=0xA0000
+nicla_vision.build.ota.pack_command_loader="{runtime.tools.ota-pack.path}/ota-pack" {build.ota.loader.extra_flags} {build.ota.compress_flag} -loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -sketch "{build.path}/{build.project_name}.{upload.extension}" -offset {build.ota.sketch_offset} -magic {build.ota.magic} -output "{build.path}/{build.project_name}.loader.ota"
+nicla_vision.build.ota.pack_command_sketch="{runtime.tools.ota-pack.path}/ota-pack" --sketch-only {build.ota.compress_flag} -sketch "{build.path}/{build.project_name}.{upload.extension}" -magic {build.ota.magic} -output "{build.path}/{build.project_name}.ota"
 
 nicla_vision.debug.tool=gdb
 nicla_vision.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -560,6 +575,11 @@ portentac33.bootloader.interface=0
 portentac33.bootloader.address=0x10000
 portentac33.bootloader.dfuse=-Q
 
+portentac33.build.ota.magic=0x23410068
+portentac33.build.ota.sketch_offset=0xF0000
+portentac33.build.ota.pack_command_loader="{runtime.tools.ota-pack.path}/ota-pack" {build.ota.loader.extra_flags} {build.ota.compress_flag} -loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -sketch "{build.path}/{build.project_name}.{upload.extension}" -offset {build.ota.sketch_offset} -magic {build.ota.magic} -output "{build.path}/{build.project_name}.loader.ota"
+portentac33.build.ota.pack_command_sketch="{runtime.tools.ota-pack.path}/ota-pack" --sketch-only {build.ota.compress_flag} -sketch "{build.path}/{build.project_name}.{upload.extension}" -magic {build.ota.magic} -output "{build.path}/{build.project_name}.ota"
+
 ##########################################################################################
 
 opta.name=Arduino Opta
@@ -627,6 +647,11 @@ opta.debug.server.openocd.scripts.1={programmer.transport_script}
 opta.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 opta.debug.cortex-debug.custom.request=attach
 opta.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+
+opta.build.ota.magic=0x23410064
+opta.build.ota.sketch_offset=0xA0000
+opta.build.ota.pack_command_loader="{runtime.tools.ota-pack.path}/ota-pack" {build.ota.loader.extra_flags} {build.ota.compress_flag} -loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -sketch "{build.path}/{build.project_name}.{upload.extension}" -offset {build.ota.sketch_offset} -magic {build.ota.magic} -output "{build.path}/{build.project_name}.loader.ota"
+opta.build.ota.pack_command_sketch="{runtime.tools.ota-pack.path}/ota-pack" --sketch-only {build.ota.compress_flag} -sketch "{build.path}/{build.project_name}.{upload.extension}" -magic {build.ota.magic} -output "{build.path}/{build.project_name}.ota"
 
 ##########################################################################################
 
