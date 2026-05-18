@@ -1,0 +1,44 @@
+#
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig OTA
+	bool "Enable lookup for sketch update at boot"
+	depends on FILE_SYSTEM
+	select REBOOT
+	select RTC if SOC_SERIES_STM32H7X
+	default n
+	help
+	  Enable checking for an update inside of the filesystem. If a file inside of
+	  OTA_SKETCH_UPDATE_PATH is found during the boot, the OTA procedure is started and the
+	  current sketch binary is replaced
+
+if OTA
+
+config OTA_SKETCH_UPDATE_PATH
+	string "The path it is looked for ota"
+	default "/ota:/UPDATE_SKETCH.BIN"
+	help
+	  the path that is checked for a sketch new binary
+
+config OTA_SKETCH_TEMP_PATH_POSTFIX
+	string "temporary file name postfix for sketch ota not ready"
+	default ".TEMP"
+	help
+	  String that is appended to sketch ota filename when it is still not ready to be loaded,
+	  a rename operation is required to make the ota file enabled for next reboot
+
+config OTA_TRANSCRIPTION_CHUNK_SIZE
+	int "The size of the stack allocated chunk in bytes for transcription"
+	default 1024
+	help
+	  The size of the stack allocated chunk in bytes for ota file transcription
+
+module = OTA
+module-str = OTA
+module-help = Sets log level for OTA
+source "subsys/logging/Kconfig.template.log_config"
+
+endif
