@@ -82,8 +82,6 @@ constexpr int max_ngpios = 0;
 
 #endif
 
-void _reinit_peripheral_if_needed(pin_size_t pin, const struct device *dev);
-
 } // namespace arduino
 } // namespace zephyr
 

@@ -6,6 +6,7 @@
  */
 
 #include <Arduino.h>
+#include <zephyrPinctrl.h>
 #include "wiring_private.h"
 
 using namespace zephyr::arduino;
@@ -86,7 +87,6 @@ const struct device *const dac_dev = DEVICE_DT_GET(DAC_NODE);
 static const struct dac_channel_cfg dac_ch_cfg[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), dac_channels, DAC_CHANNEL_DEFINE)};
 
-static bool dac_channel_initialized[NUM_OF_DACS];
 #endif
 
 #endif
@@ -108,7 +108,7 @@ uint32_t map64(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_min, u
 
 #if defined(CONFIG_DAC) || defined(CONFIG_PWM)
 void analogWriteResolution(int bits) {
-	_analog_write_resolution = bits;
+	_analog_write_resolution = CLAMP(bits, 1, 31);
 }
 
 int analogWriteResolution() {
@@ -120,21 +120,24 @@ int analogWriteResolution() {
 
 void analogWrite(pin_size_t pinNumber, int value) {
 	const int maxInput = BIT(_analog_write_resolution) - 1U;
+	const int digitalThreshold = maxInput >> 1;
 	size_t idx = pwm_pin_index(pinNumber);
 
 	if (idx >= ARRAY_SIZE(arduino_pwm)) {
 		pinMode(pinNumber, OUTPUT);
-		digitalWrite(pinNumber, value > 127 ? HIGH : LOW);
+		digitalWrite(pinNumber, value > digitalThreshold ? HIGH : LOW);
 		return;
 	}
+
+	(void)init_dev_apply_channel_pinctrl(arduino_pwm[idx].dev,
+										 state_pin_index_from_spec_index(arduino_pwm, idx));
 
 	if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
 		pinMode(pinNumber, OUTPUT);
-		digitalWrite(pinNumber, value > 127 ? HIGH : LOW);
+		digitalWrite(pinNumber, value > digitalThreshold ? HIGH : LOW);
 		return;
 	}
 
-	_reinit_peripheral_if_needed(pinNumber, arduino_pwm[idx].dev);
 	value = CLAMP(value, 0, maxInput);
 
 	const uint32_t pulse = map64(value, 0, maxInput, 0, arduino_pwm[idx].period);
@@ -158,19 +161,12 @@ void analogWrite(enum dacPins dacName, int value) {
 		return;
 	}
 
-	if (!dac_channel_initialized[dacName]) {
-		if (!device_is_ready(dac_dev)) {
-			return;
-		}
-
-		// TODO: add reverse map to find pin name from DAC* define
-		// In the meantime, consider A0 == DAC0
-		_reinit_peripheral_if_needed((pin_size_t)(dacName + A0), dac_dev);
-		ret = dac_channel_setup(dac_dev, &dac_ch_cfg[dacName]);
-		if (ret != 0) {
-			return;
-		}
-		dac_channel_initialized[dacName] = true;
+	// TODO: add reverse map to find pin name from DAC* define
+	// In the meantime, consider A0 == DAC0
+	(void)init_dev_apply_pinctrl(dac_dev);
+	ret = dac_channel_setup(dac_dev, &dac_ch_cfg[dacName]);
+	if (ret != 0) {
+		return;
 	}
 
 	value = CLAMP(value, 0, maxInput);
@@ -200,7 +196,7 @@ void __attribute__((weak)) analogReference(uint8_t mode) {
 }
 
 void analogReadResolution(int bits) {
-	read_resolution = bits;
+	read_resolution = CLAMP(bits, 1, 31);
 }
 
 int analogReadResolution() {
@@ -234,7 +230,14 @@ int analogRead(pin_size_t pinNumber) {
 		return -ENOTSUP;
 	}
 
-	_reinit_peripheral_if_needed(pinNumber, arduino_adc[idx].dev);
+	/*
+	 * Init the ADC device for the first acquisition and restore only the required pin to analog
+	 * mode for following operations. The pin is selected from the ADC device "arduino" pinctrl
+	 * state. Not checking the return value because the device might not have pinctrl (e.g. nRF
+	 * SAADC).
+	 */
+	(void)init_dev_apply_channel_pinctrl(arduino_adc[idx].dev,
+										 state_pin_index_from_spec_index(arduino_adc, idx));
 
 	err = adc_channel_setup(arduino_adc[idx].dev, &arduino_adc[idx].channel_cfg);
 	if (err < 0) {

@@ -7,11 +7,15 @@ name: Package, test and upload core
 
 on:
   push:
+    branches:
+      - '**'
+    tags-ignore:
+      - 'tools/**' # do not run on tags created for tool releases
   pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.actor }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' || github.repository != 'arduino/ArduinoCore-zephyr' }}
 
 env:
   # use the head SHA for PR hashes, instead of the merge commit
@@ -139,16 +143,19 @@ jobs:
           (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zstd && rm build-env.tar.zstd)
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.21
+        uses: actions/cache@v5
         with:
-          verbose: 1
           key: ${{ github.job }}-${{ matrix.board }} # independent caches
+          path: ~/.cache/ccache
 
       - name: Build loader
         shell: bash
         run: |
           # create the report directory
           mkdir -p reports
+          echo "::group::ccache stats before build"
+          ccache --show-stats
+          echo "::endgroup::"
           # run the build, capturing stdout and stderr
           if ! ./extra/build.sh ${{ matrix.board }} 1> >(tee $REPORT.stdout) 2> >(tee $REPORT.stderr) ; then
             # build failed, capture errors in summary and stop job without artifacts
@@ -172,7 +179,12 @@ jobs:
                              | awk 'BEGIN {split("B KB MB GB", u); for(i in u) m[u[i]]=1024^(i-1)} /:/ {print "[\"" $1 "\"," $2*m[$3] "," $4*m[$5] "]"}' \
                              | sort \
                              | jq -s "map((select(.[0] == \"FLASH:\") | .[2]) |= ${LOADER_SIZE}) + [ [ \"SKETCH:\", 0, ${SKETCH_SIZE} ] ]" > $REPORT.meminfo
-          jq
+
+          # ccache stats update
+          echo "::group::ccache stats after build"
+          ccache --evict-older-than 30d
+          ccache --show-stats
+          echo "::endgroup::"
 
       - name: Package board artifacts
         if: ${{ !cancelled() }}
@@ -415,6 +427,8 @@ jobs:
         run: |
           # gather the array of job metadata (especially name and ID) for the current workflow run
           export WORKFLOW_JOBS=$(gh run view ${{ github.run_id }} --attempt ${{ github.run_attempt }} --json jobs --jq '.jobs')
+          # Archive the input set of reports for later inspection
+          tar jchf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 zephyr-* arduino-*.json
           # Run the log inspection script
           extra/ci_inspect_logs.py result summary full_log
           cat result
@@ -440,7 +454,7 @@ jobs:
       - name: Compute code size changes
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          export GITHUB_BASE_SHA=$(git describe --always origin/${GITHUB_BASE_REF})
+          export GITHUB_BASE_SHA=$(git rev-list --parents -n 1 HEAD | cut -d' ' -f2)
           # errors due to race conditions with parallel branch runs should not fail the job
           extra/ci_calc_size_reports.py ${GITHUB_BASE_SHA} sketches-reports/ || true
 
@@ -463,12 +477,21 @@ jobs:
           retention-days: 1
 
       # upload new official test size artifact (for AWS storage)
-      - name: Archive sketch report information
+      - name: Archive sketch size information
         uses: actions/upload-artifact@v7
         if: ${{ github.event_name == 'push' }}
         with:
           name: size-reports
           path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          retention-days: 1
+          archive: false
+
+      # upload input set of build reports artifact (for CI debugging)
+      - name: Archive input test reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports
+          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
           retention-days: 1
           archive: false
 

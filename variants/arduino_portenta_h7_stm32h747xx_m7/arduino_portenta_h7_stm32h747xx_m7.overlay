@@ -10,14 +10,17 @@
 
 &usart1 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &uart4 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &usart6 {
 	status = "okay";
+	/* usart6 is not set as deferred-init to catch early boot logs since it is assigned to zephyr,console */
 };
 
 &rtc {
@@ -29,12 +32,14 @@
 
 &fdcan1 {
 	status = "okay";
+	zephyr,deferred-init;
 	clocks = <&rcc STM32_CLOCK(APB1_2, 8)>,
 		 <&rcc STM32_SRC_HSE FDCAN_SEL(0)>;
 };
 
 &i2c3 {
 	status = "okay";
+	zephyr,deferred-init;
 
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
@@ -68,14 +73,17 @@
 
 &i2c1 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &i2c4 {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 &spi2 {
 	status = "okay";
+	zephyr,deferred-init;
 	pinctrl-0 = <&spi2_sck_pi1
 		     &spi2_miso_pc2 &spi2_mosi_pc3>;
 	pinctrl-names = "default";
@@ -87,8 +95,11 @@
 
 	pwm1: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pj11>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim1_ch1_pa8 &tim1_ch2_pj11>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -98,8 +109,11 @@
 
 	pwm3: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim3_ch1_pc6 &tim3_ch2_pc7>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim3_ch1_pc6 &tim3_ch2_pc7>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -109,8 +123,11 @@
 
 	pwm8: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim8_ch3n_ph15 &tim8_ch2_pj10 &tim8_ch2n_pj7>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -120,8 +137,11 @@
 
 	pwm12: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim12_ch1_ph6>;
-		pinctrl-names = "default";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim12_ch1_ph6>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -174,13 +194,16 @@
 
 
 &adc1 {
-	pinctrl-0 = <&adc1_inp12_pc2
-      		     &adc1_inp13_pc3
-      		     &adc1_inp18_pa4
-      		     &adc1_inp3_pa6
-      		     &adc1_inp0_pa0_c
-      		     &adc1_inp1_pa1_c>;
-	pinctrl-names = "default";
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&adc1_inp12_pc2
+       	     &adc1_inp13_pc3
+       	     &adc1_inp18_pa4
+       	     &adc1_inp3_pa6
+       	     &adc1_inp0_pa0_c
+       	     &adc1_inp1_pa1_c>;
+	pinctrl-names = "default", "sleep", "arduino";
 	st,adc-clock-source = "SYNC";
 	st,adc-prescaler = <4>;
 	status = "okay";
@@ -235,9 +258,12 @@
 };
 
 &adc3 {
-	pinctrl-0 = <&adc3_inp0_pc2_c
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&adc3_inp0_pc2_c
 		     &adc3_inp1_pc3_c>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 	st,adc-clock-source = "SYNC";
 	st,adc-prescaler = <4>;
 	status = "okay";
@@ -264,6 +290,8 @@
 / {
 	chosen {
 		zephyr,camera = &dcmi;
+		zephyr,display = &ltdc;
+		zephyr,mipi-dsi = &mipi_dsi;
 		zephyr,console = &usart6;
 		zephyr,shell-uart = &usart6;
 		zephyr,cdc-acm-uart0 = &usart6;
@@ -305,18 +333,18 @@
 					#size-cells = <1>;
 
 					boot_partition: partition@0 {
-							label = "mcuboot";
-							reg = <0x00000000 0x00040000>;
-							read-only;
+						label = "mcuboot";
+						reg = <0x00000000 0x00040000>;
+						read-only;
 					};
 
 					slot0_partition: partition@40000 {
-							label = "image-0";
-							reg = <0x00040000 0x000A0000>;
+						label = "image-0";
+						reg = <0x00040000 0x000A0000>;
 					};
 
 					user_sketch: partition@e0000 {
-						reg = <0x0E0000 0x20000>;
+						reg = <0x000E0000 0x00040000>;
 					};
 				};
 			};
@@ -414,5 +442,88 @@ qspi_flash: &mx25l12833f {};
 			      <&adc1 3>,
 			      <&adc1 12>, /* Hack for D19 */
 			      <&adc1 13>; /* Hack for D20 */
+	};
+};
+
+&sram1 {
+	reg = <0x30000000 DT_SIZE_K(256)>;
+};
+
+/delete-node/ &sram2;
+
+&sdram1 {
+	/* Frame buffer memory cache will cause screen flickering. */
+	zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE) )>;
+};
+
+/*
+ *PLL3 calculation for 1024x768@60Hz (57.8 MHz pixel clock)
+ * Portenta H7 uses 25 MHz HSE crystal
+ * VCO input = HSE / div-m = 25 MHz / 25 = 1 MHz
+ * VCO output = VCO input × mul-n = 1 MHz × 289 = 289 MHz
+ * Pixel clock = VCO output / div-r = 289 MHz / 5 = 57.8 MHz
+ */
+&pll3 {
+	status = "okay";
+	clocks = <&clk_hse>;
+	div-m = <25>;   /* HSE_VALUE/1MHz: 25MHz/25 = 1 MHz VCO input */
+	mul-n = <289>;  /* pixelclock/200kHz: 57800/200 = 289 */
+	div-p = <2>;
+	div-q = <7>;
+	div-r = <5>;    /* 1000/200kHz = 5 -> 289MHz/5 = 57.8 MHz */
+};
+
+&ltdc {
+	status = "okay";
+	ext-sdram = <&sdram1>;
+	width = <1024>;
+	height = <768>;
+	def-back-color-red = <0>;
+	def-back-color-green = <0>;
+	def-back-color-blue = <0>;
+	pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+
+	display-timings {
+		compatible = "zephyr,panel-timing";
+		hsync-active = <0>;
+		vsync-active = <0>;
+		de-active = <0>;
+		pixelclk-active = <0>;
+		hsync-len = <68>;
+		hfront-porch = <24>;
+		hback-porch = <80>;
+		vsync-len = <6>;
+		vfront-porch = <3>;
+		vback-porch = <29>;
+	};
+};
+
+&mipi_dsi {
+	status = "okay";
+
+	pll-ndiv = <40>;
+	pll-idf = <2>;
+	pll-odf = <0>;
+
+	de-active-high;
+	bta-ack-disable;  /* ANX7625 bridge doesn't respond to BTA requests */
+	largest-packet-size = <16>;
+
+	phy-timings = <35 35 35 35 0 10>;
+
+	/*
+	 * This binding allows adding child node with with data-lanes property
+	 * as required by STM32 MIPI-DSI driver.
+	 */
+	anx7625: anx7625@0 {
+		status = "okay";
+		compatible = "analogix,anx7625";
+		reg = <0>;  /* Virtual channel 0 */
+		pixel-format = <0>;  /* Not used */
+		data-lanes = <2>;  /* 2 data lanes */
+		i2c-bus = <&i2c1>;
+		video-on-gpios = <&gpiok 2 GPIO_ACTIVE_HIGH>;
+		video-rst-gpios = <&gpioj 3 GPIO_ACTIVE_HIGH>;
+		otg-on-gpios = <&gpioj 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
 	};
 };

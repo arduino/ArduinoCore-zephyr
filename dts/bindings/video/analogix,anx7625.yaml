@@ -1,0 +1,29 @@
+# Copyright (c) Arduino SRL
+# SPDX-License-Identifier: Apache-2.0
+
+title: Analogix ANX7625 MIPI-DSI to DisplayPort bridge
+
+description: |
+    Analogix ANX7625 MIPI-DSI to DisplayPort converter bridge.
+
+compatible: "analogix,anx7625"
+
+include: [mipi-dsi-device.yaml]
+
+properties:
+  i2c-bus:
+    type: phandle
+    required: true
+    description: I2C controller used for the video bridge
+
+  video-on-gpios:
+    type: phandle-array
+    description: GPIO for powering on the video bridge
+
+  video-rst-gpios:
+    type: phandle-array
+    description: GPIO for resetting the video bridge
+
+  otg-on-gpios:
+    type: phandle-array
+    description: GPIO for OTG control

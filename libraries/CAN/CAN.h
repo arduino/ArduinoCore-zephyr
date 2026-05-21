@@ -10,6 +10,7 @@
 #include <zephyr/drivers/can.h>
 #include <zephyr/kernel.h>
 #include <api/HardwareCAN.h>
+#include <zephyrPinctrl.h>
 
 namespace arduino {
 

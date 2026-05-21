@@ -14,10 +14,11 @@
 #include <math.h>
 #include <zephyr/kernel.h>
 #include <time.h>
+#include <zephyr/drivers/pinctrl.h>
 
-#define FORCE_EXPORT_SYM(name) \
-       extern void name(void); \
-       EXPORT_SYMBOL(name);
+#define FORCE_EXPORT_SYM(name)                                                                     \
+	extern void name(void);                                                                        \
+	EXPORT_SYMBOL(name);
 
 /*
  * Libc functions are exported with a __real_ prefix so that the sketch
@@ -26,6 +27,14 @@
  * fail when the LLEXT is loaded in a different memory region (>16 MB away).
  */
 #define EXPORT_LIBC_SYM(name) EXPORT_SYMBOL_NAMED(name, __real_##name)
+
+/*
+ * ARM RTABI __aeabi_* functions need naked assembly trampolines to avoid
+ * corrupting argument registers with standard C function prologue/epilogue.
+ */
+#define EXPORT_AEABI_SYM(name)                                                                     \
+	extern void name(void);                                                                        \
+	EXPORT_LIBC_SYM(name)
 
 // string.h
 EXPORT_LIBC_SYM(memcpy);
@@ -123,6 +132,11 @@ EXPORT_SYMBOL(k_msgq_get);
 EXPORT_SYMBOL(k_msgq_num_used_get);
 EXPORT_SYMBOL(k_sys_work_q);
 
+#if defined(CONFIG_PINCTRL)
+EXPORT_SYMBOL(pinctrl_lookup_state);
+EXPORT_SYMBOL(pinctrl_configure_pins);
+#endif
+
 #if defined(CONFIG_USB_DEVICE_STACK)
 EXPORT_SYMBOL(usb_enable);
 EXPORT_SYMBOL(usb_disable);
@@ -151,6 +165,7 @@ FORCE_EXPORT_SYM(net_if_ipv4_set_netmask);
 FORCE_EXPORT_SYM(net_if_ipv4_set_netmask_by_addr);
 #endif
 FORCE_EXPORT_SYM(net_if_lookup_by_dev);
+FORCE_EXPORT_SYM(net_if_get_first_ethernet);
 #endif
 
 #if defined(CONFIG_NET_L2_ETHERNET)
@@ -283,8 +298,8 @@ EXPORT_SYMBOL(k_work_schedule_for_queue);
 EXPORT_SYMBOL(k_work_reschedule_for_queue);
 EXPORT_SYMBOL(k_work_queue_start);
 EXPORT_SYMBOL(k_work_submit_to_queue);
-//FORCE_EXPORT_SYM(k_timer_user_data_set);
-//FORCE_EXPORT_SYM(k_timer_start);
+// FORCE_EXPORT_SYM(k_timer_user_data_set);
+// FORCE_EXPORT_SYM(k_timer_start);
 
 EXPORT_SYMBOL(time);
 EXPORT_SYMBOL(sys_clock_settime);
@@ -309,39 +324,45 @@ EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
 
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
-FORCE_EXPORT_SYM(__aeabi_dcmpun);
-FORCE_EXPORT_SYM(__aeabi_dcmple);
-FORCE_EXPORT_SYM(__aeabi_d2lz);
-FORCE_EXPORT_SYM(__aeabi_uldivmod);
-FORCE_EXPORT_SYM(__aeabi_ui2d);
-FORCE_EXPORT_SYM(__aeabi_dcmplt);
-FORCE_EXPORT_SYM(__aeabi_ddiv);
-FORCE_EXPORT_SYM(__aeabi_dmul);
-FORCE_EXPORT_SYM(__aeabi_d2f);
-FORCE_EXPORT_SYM(__aeabi_fcmpun);
-extern double __aeabi_dadd(double, double);
-EXPORT_LIBC_SYM(__aeabi_dadd);
-FORCE_EXPORT_SYM(__aeabi_fcmple);
-FORCE_EXPORT_SYM(__aeabi_idiv);
-extern int __aeabi_dcmpgt(double, double);
-EXPORT_LIBC_SYM(__aeabi_dcmpgt);
-FORCE_EXPORT_SYM(__aeabi_dsub);
-FORCE_EXPORT_SYM(__aeabi_i2d);
-FORCE_EXPORT_SYM(__aeabi_uidiv);
-FORCE_EXPORT_SYM(__aeabi_l2d);
-FORCE_EXPORT_SYM(__aeabi_d2uiz);
-FORCE_EXPORT_SYM(__aeabi_uidivmod);
-FORCE_EXPORT_SYM(__aeabi_dcmpeq);
-FORCE_EXPORT_SYM(__aeabi_d2iz);
-FORCE_EXPORT_SYM(__aeabi_f2d);
-FORCE_EXPORT_SYM(__aeabi_ul2d);
-FORCE_EXPORT_SYM(__aeabi_l2f);
-FORCE_EXPORT_SYM(__aeabi_idivmod);
-FORCE_EXPORT_SYM(__aeabi_ldivmod);
-FORCE_EXPORT_SYM(__aeabi_ul2f);
-FORCE_EXPORT_SYM(__aeabi_dcmpge);
 
-#if defined (CONFIG_CPP)
+/* compiler ABI helpers: exported as __real_##name for VN() trampolines in llext_wrappers.c */
+/* double arithmetic */
+EXPORT_AEABI_SYM(__aeabi_dadd);
+EXPORT_AEABI_SYM(__aeabi_dsub);
+EXPORT_AEABI_SYM(__aeabi_dmul);
+EXPORT_AEABI_SYM(__aeabi_ddiv);
+/* double comparisons */
+EXPORT_AEABI_SYM(__aeabi_dcmpeq);
+EXPORT_AEABI_SYM(__aeabi_dcmplt);
+EXPORT_AEABI_SYM(__aeabi_dcmple);
+EXPORT_AEABI_SYM(__aeabi_dcmpgt);
+EXPORT_AEABI_SYM(__aeabi_dcmpge);
+EXPORT_AEABI_SYM(__aeabi_dcmpun);
+/* float comparisons */
+EXPORT_AEABI_SYM(__aeabi_fcmple);
+EXPORT_AEABI_SYM(__aeabi_fcmpun);
+/* double <-> integer conversions */
+EXPORT_AEABI_SYM(__aeabi_d2iz);
+EXPORT_AEABI_SYM(__aeabi_d2uiz);
+EXPORT_AEABI_SYM(__aeabi_d2lz);
+EXPORT_AEABI_SYM(__aeabi_i2d);
+EXPORT_AEABI_SYM(__aeabi_ui2d);
+EXPORT_AEABI_SYM(__aeabi_l2d);
+EXPORT_AEABI_SYM(__aeabi_ul2d);
+/* float <-> double / integer conversions */
+EXPORT_AEABI_SYM(__aeabi_d2f);
+EXPORT_AEABI_SYM(__aeabi_f2d);
+EXPORT_AEABI_SYM(__aeabi_l2f);
+EXPORT_AEABI_SYM(__aeabi_ul2f);
+/* integer division */
+EXPORT_AEABI_SYM(__aeabi_idiv);
+EXPORT_AEABI_SYM(__aeabi_uidiv);
+EXPORT_AEABI_SYM(__aeabi_idivmod);
+EXPORT_AEABI_SYM(__aeabi_uidivmod);
+EXPORT_AEABI_SYM(__aeabi_ldivmod);
+EXPORT_AEABI_SYM(__aeabi_uldivmod);
+
+#if defined(CONFIG_CPP)
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
 

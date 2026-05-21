@@ -11,3 +11,6 @@
 libraries/Camera
 libraries/Zephyr_SDRAM
 libraries/CAN
+
+# no SPI on Opta
+libraries/M95M01

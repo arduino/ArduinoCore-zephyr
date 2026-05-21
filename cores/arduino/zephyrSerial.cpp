@@ -60,7 +60,10 @@ void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
 		.flow_ctrl = UART_CFG_FLOW_CTRL_NONE,
 	};
 
-	_reinit_if_needed();
+	/* Re-apply DEFAULT pinctrl state so shared pins
+	 * are remuxed back to Serial after other peripherals have used them.
+	 */
+	(void)zephyr::arduino::init_dev_apply_pinctrl(uart);
 
 	uart_configure(uart, &config);
 	uart_irq_callback_user_data_set(uart, arduino::ZephyrSerial::IrqDispatch, this);

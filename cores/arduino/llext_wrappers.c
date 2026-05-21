@@ -62,6 +62,24 @@
 		__real_##name(a);                                                                          \
 	}
 
+/*
+ * Naked trampoline for compiler ABI helpers (__aeabi_*).
+ *
+ * ARM RTABI passes doubles in core registers r0:r1 / r2:r3 regardless of
+ * -mfloat-abi=hard. A C wrapper compiled with -Os generates "ldr r3, [pc, #0]"
+ * which clobbers r3 (the high-word of the second double argument) before the
+ * tail-call, corrupting the comparison result.
+ *
+ * The naked trampoline uses r12 (ip, AAPCS inter-procedure scratch register)
+ * which is never an argument register, so r0–r3 and d0–d7 are untouched.
+ */
+#define VN(name)                                                                                   \
+	__attribute__((naked)) void name(void) {                                                       \
+		__asm__("movw r12, #:lower16:__real_" #name "\n\t"                                         \
+				"movt r12, #:upper16:__real_" #name "\n\t"                                         \
+				"bx   r12");                                                                       \
+	}
+
 /* string.h */
 W3(void *, memcpy, void *, const void *, size_t)
 W3(void *, memmove, void *, const void *, size_t)
@@ -144,9 +162,42 @@ W1(float, sinf, float)
 W1(float, sqrtf, float)
 W1(float, tanf, float)
 
-/* compiler double helper functions */
-W2(double, __aeabi_dadd, double, double)
-W2(int, __aeabi_dcmpgt, double, double)
+/* compiler ABI helpers: need to preserve all RTABI argument registers */
+/* double arithmetic */
+VN(__aeabi_dadd)
+VN(__aeabi_dsub)
+VN(__aeabi_dmul)
+VN(__aeabi_ddiv)
+/* double comparisons */
+VN(__aeabi_dcmpeq)
+VN(__aeabi_dcmplt)
+VN(__aeabi_dcmple)
+VN(__aeabi_dcmpgt)
+VN(__aeabi_dcmpge)
+VN(__aeabi_dcmpun)
+/* float comparisons */
+VN(__aeabi_fcmple)
+VN(__aeabi_fcmpun)
+/* double <-> integer conversions */
+VN(__aeabi_d2iz)
+VN(__aeabi_d2uiz)
+VN(__aeabi_d2lz)
+VN(__aeabi_i2d)
+VN(__aeabi_ui2d)
+VN(__aeabi_l2d)
+VN(__aeabi_ul2d)
+/* float <-> double / integer conversions */
+VN(__aeabi_d2f)
+VN(__aeabi_f2d)
+VN(__aeabi_l2f)
+VN(__aeabi_ul2f)
+/* integer division */
+VN(__aeabi_idiv)
+VN(__aeabi_uidiv)
+VN(__aeabi_idivmod)
+VN(__aeabi_uidivmod)
+VN(__aeabi_ldivmod)
+VN(__aeabi_uldivmod)
 
 /* stdio.h */
 W1(int, puts, const char *)

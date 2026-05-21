@@ -10,6 +10,7 @@
 #include <api/HardwareI2C.h>
 #include <api/Print.h>
 #include <zephyr/sys/ring_buffer.h>
+#include <zephyrPinctrl.h>
 
 typedef void (*voidFuncPtrParamInt)(int);
 

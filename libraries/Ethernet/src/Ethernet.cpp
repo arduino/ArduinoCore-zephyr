@@ -67,19 +67,15 @@ EthernetLinkStatus EthernetClass::linkStatus() {
 }
 
 EthernetHardwareStatus EthernetClass::hardwareStatus() {
-	const struct device *const dev = DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(ethernet_phy));
-	if (device_is_ready(dev)) {
-		for (int i = 1; i < 4; i++) {
-			auto _if = net_if_get_by_index(i);
-			if (_if && !net_eth_type_is_wifi(_if)) {
-				netif = _if;
-				break;
-			}
-		}
-		return EthernetOk;
-	} else {
+	if (netif == nullptr) {
+		netif = net_if_get_first_ethernet();
+	}
+
+	if (netif == nullptr) {
 		return EthernetNoHardware;
 	}
+
+	return EthernetOk;
 }
 
 void EthernetClass::setRetransmissionTimeout(uint16_t milliseconds) {

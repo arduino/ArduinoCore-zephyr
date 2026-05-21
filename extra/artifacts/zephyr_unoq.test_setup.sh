@@ -20,7 +20,15 @@ get_branch_tip libraries arduino-libraries/ArduinoBLE master \
 	examples/Peripheral/ButtonLED \
 
 # Arduino_RouterBridge
-get_branch_tip libraries arduino-libraries/Arduino_RouterBridge main
+get_branch_tip libraries arduino-libraries/Arduino_RouterBridge main \
+	examples/client \
+	examples/hci \
+	examples/monitor \
+	examples/server \
+	examples/udp_ntp_client \
 
 # Arduino_RPClite
-get_branch_tip libraries arduino-libraries/Arduino_RPClite main
+get_branch_tip libraries arduino-libraries/Arduino_RPClite main \
+	examples/rpc_lite_client \
+	examples/rpc_lite_server \
+

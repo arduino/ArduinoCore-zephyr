@@ -74,7 +74,7 @@
 &flash0 {
 	partitions {
 		user_sketch: partition@e0000 {
-			reg = <0x0E0000 0x20000>;
+			reg = <0x000E0000 0x00040000>;
 		};
 	};
 };
@@ -133,6 +133,12 @@
 				<&adc3 9>;
 	};
 };
+
+&sram1 {
+	reg = <0x30000000 DT_SIZE_K(256)>;
+};
+
+/delete-node/ &sram2;
 
 /* Include common flash filesystem configuration */
 #include "../common/arduino_flash_fs.dtsi"

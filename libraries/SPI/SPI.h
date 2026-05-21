@@ -10,6 +10,7 @@
 #include <api/HardwareSPI.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyrPinctrl.h>
 
 #undef SPI
 #undef SPI1

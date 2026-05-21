@@ -8,25 +8,6 @@
 #include <Arduino.h>
 #include "wiring_private.h"
 
-namespace zephyr {
-namespace arduino {
-
-// create an array of arduino_pins with functions to reinitialize pins if needed
-static const struct device *pinmux_array[DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios)] = {
-	nullptr};
-
-void _reinit_peripheral_if_needed(pin_size_t pin, const struct device *dev) {
-	if (pinmux_array[pin] != dev) {
-		pinmux_array[pin] = dev;
-		if (dev != NULL) {
-			dev->ops.init(dev);
-		}
-	}
-}
-
-} // namespace arduino
-} // namespace zephyr
-
 using namespace zephyr::arduino;
 
 void yield(void) {

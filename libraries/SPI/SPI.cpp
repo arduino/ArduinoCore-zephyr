@@ -133,14 +133,16 @@ void arduino::ZephyrSPI::detachInterrupt() {
 }
 
 void arduino::ZephyrSPI::begin() {
-	spi_dev->ops.init(spi_dev);
+
+	/* Re-apply DEFAULT pinctrl state so shared pins
+	 * are remuxed back to SPI after other peripherals have used them.
+	 */
+	(void)zephyr::arduino::init_dev_apply_pinctrl(spi_dev);
 }
 
 void arduino::ZephyrSPI::end() {
 #ifdef CONFIG_DEVICE_DEINIT_SUPPORT
-	if (spi_dev->ops.deinit) {
-		spi_dev->ops.deinit(spi_dev);
-	}
+	(void)device_deinit(spi_dev);
 #endif
 }
 

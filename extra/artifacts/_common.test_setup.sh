@@ -27,5 +27,5 @@ else
 	get_latest_release libraries arduino-libraries/Arduino_JSON \
 
 	# Smoke test for SPI API compatibilty
-	# get_branch_tip libraries PaulStoffregen/SerialFlash master
+	get_branch_tip libraries stefandz/M95M01 master
 fi

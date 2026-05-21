@@ -41,10 +41,6 @@ protected:
 	uint32_t baudrate;
 	static void baudChangeHandler(const struct device *dev, uint32_t rate);
 
-	void _reinit_if_needed() override {
-		/* prevent reinit: USB device is always available */
-	}
-
 private:
 	bool started = false;
 

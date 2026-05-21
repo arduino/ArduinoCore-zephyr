@@ -19,7 +19,6 @@ using namespace zephyr::arduino;
 void pinMode(pin_size_t pinNumber, PinMode pinMode) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	_reinit_peripheral_if_needed(pinNumber, NULL);
 	if (pinMode == INPUT) { // input mode
 		gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_INPUT | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == INPUT_PULLUP) { // input with internal pull-up

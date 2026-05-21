@@ -108,7 +108,6 @@ jobs:
           name: ${{ matrix.tool }}-${{ matrix.version }}.json
           path: distrib/*.json
           archive: false
-          retention-days: 7
 
   # Upload the built tool packages to the S3 bucket for public distribution.
 
