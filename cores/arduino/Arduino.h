@@ -143,6 +143,9 @@ int digitalPinToPinIndex(pin_size_t pinNumber);
 
 #if defined(CONFIG_PWM) || defined(CONFIG_DAC)
 void analogWriteResolution(int bits);
+void analogWriteFrequency(pin_size_t pin, float freq);
+float analogWriteFrequency(pin_size_t pin);
+int analogWriteLastStatus();
 #endif
 
 #if defined(__arm__)

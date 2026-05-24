@@ -39,6 +39,11 @@ namespace {
 const struct pwm_dt_spec arduino_pwm[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_DT_SPEC)};
 
+// To enable change the frequency on the fly we can not rely fully on the
+// period value in the pwm_dt_spec, and that structure is read-only so we need
+// an array to save updated periods into.
+uint32_t arduino_pwm_periods[sizeof(arduino_pwm) / sizeof(arduino_pwm[0])] = {0};
+
 /* pwm-pins node provides a mapping digital pin numbers to pwm channels */
 const pin_size_t arduino_pwm_pins[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, PWM_PINS)};
@@ -97,6 +102,10 @@ static const struct dac_channel_cfg dac_ch_cfg[] = {
 int _analog_write_resolution = 8;
 #endif
 
+#if defined(CONFIG_PWM)
+int _analog_write_last_status = 0;
+#endif
+
 // Note: We can not update the arduino_adc structure as it is read only...
 static int read_resolution = 10;
 
@@ -126,7 +135,12 @@ void analogWrite(pin_size_t pinNumber, int value) {
 	if (idx >= ARRAY_SIZE(arduino_pwm)) {
 		pinMode(pinNumber, OUTPUT);
 		digitalWrite(pinNumber, value > digitalThreshold ? HIGH : LOW);
+		_analog_write_last_status = 0;
 		return;
+	}
+
+	if (arduino_pwm_periods[idx] == 0) {
+		arduino_pwm_periods[idx] = arduino_pwm[idx].period;
 	}
 
 	(void)init_dev_apply_channel_pinctrl(arduino_pwm[idx].dev,
@@ -135,18 +149,50 @@ void analogWrite(pin_size_t pinNumber, int value) {
 	if (!pwm_is_ready_dt(&arduino_pwm[idx])) {
 		pinMode(pinNumber, OUTPUT);
 		digitalWrite(pinNumber, value > digitalThreshold ? HIGH : LOW);
+		_analog_write_last_status = 0;
 		return;
 	}
 
 	value = CLAMP(value, 0, maxInput);
 
-	const uint32_t pulse = map64(value, 0, maxInput, 0, arduino_pwm[idx].period);
+	const uint32_t pulse = map64(value, 0, maxInput, 0, arduino_pwm_periods[idx]);
 
 	/*
 	 * A duty ratio determines by the period value defined in dts
 	 * and the value arguments. So usually the period value sets as 255.
 	 */
-	(void)pwm_set_pulse_dt(&arduino_pwm[idx], pulse);
+	_analog_write_last_status = pwm_set(arduino_pwm[idx].dev, arduino_pwm[idx].channel,
+										arduino_pwm_periods[idx], pulse, arduino_pwm[idx].flags);
+}
+
+void analogWriteFrequency(pin_size_t pin, float freq) {
+	size_t idx = pwm_pin_index(pin);
+
+	// not a valid PWM PIN.
+	if (idx >= ARRAY_SIZE(arduino_pwm)) {
+		return;
+	}
+
+	arduino_pwm_periods[idx] = (uint32_t)(1000000000.0f / freq);
+}
+
+float analogWriteFrequency(pin_size_t pin) {
+	size_t idx = pwm_pin_index(pin);
+
+	// not a valid PWM PIN.
+	if (idx >= ARRAY_SIZE(arduino_pwm)) {
+		return -1.0f;
+	}
+
+	if (arduino_pwm_periods[idx] == 0) {
+		arduino_pwm_periods[idx] = arduino_pwm[idx].period;
+	}
+
+	return 1000000000.0f / (float)arduino_pwm_periods[idx];
+}
+
+int analogWriteLastStatus() {
+	return _analog_write_last_status;
 }
 
 #endif
