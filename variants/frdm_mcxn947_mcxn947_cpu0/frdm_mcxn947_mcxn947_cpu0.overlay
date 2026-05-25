@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/gpio/arduino-header-r3.h>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/mcux-lpadc.h>
+
 &zephyr_udc0 {
 	status = "okay";
 	board_cdc_acm_uart: board_cdc_acm_uart {
@@ -12,26 +16,110 @@
 	};
 };
 
+/delete-node/ &slot1_partition;
+
+&slot0_partition {
+	reg = <0x00014000 DT_SIZE_K(432)>;
+};
+
 &flash {
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		user_sketch: partition@F0000 {
+		user_sketch: partition@80000 {
 			compatible = "zephyr,mapped-partition";
-			reg = <0xF0000 DT_SIZE_K(56)>;
+			reg = <0x80000 DT_SIZE_K(1536)>;
 		};
 	};
 };
 
 / {
+	chosen {
+		/delete-property/ zephyr,code-cpu1-partition;
+	};
+
 	zephyr,user {
-		digital-pin-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
-		builtin-led-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
+		io-channels = <&lpadc0 0>, <&lpadc0 1>, <&lpadc0 2>, <&lpadc0 3>;
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
-		serials = <&flexcomm4_lpuart4>; /* 'Serial1' onwards */
-		i2cs = <&flexcomm2_lpi2c2>;
-		spis = <&flexcomm1_lpspi1>;
+	};
+
+	/*
+	 * Arduino analog header A2..A5 -> LPADC0 (per FRDM-MCXN947 mapping):
+	 *   A2 = PIO0_14 = ADC0_B14   A3 = PIO0_22 = ADC0_A14
+	 *   A4 = PIO0_15 = ADC0_B15   A5 = PIO0_23 = ADC0_A15
+	 * A0/A1 are not routed to ADC on this board's Arduino header.
+	 */
+	arduino_adc: analog-connector {
+		compatible = "arduino,uno-adc";
+		#io-channel-cells = <1>;
+		io-channel-map = <ARDUINO_HEADER_R3_A2 &lpadc0 0>,
+				 <ARDUINO_HEADER_R3_A3 &lpadc0 1>,
+				 <ARDUINO_HEADER_R3_A4 &lpadc0 2>,
+				 <ARDUINO_HEADER_R3_A5 &lpadc0 3>;
+	};
+
+	/*
+	 * Arduino PWM pins on FRDM-MCXN947 (classic D3/D5/D6/D9, none of which
+	 * overlap the I2C/SPI/UART pins). D6/D9 are also the on-board blue/red
+	 * LEDs (disabled by default), so analogWrite() fades those LEDs.
+	 *   D3 = PIO1_23 = SCT0_OUT5    D5 = PIO1_21 = CT3_MAT3
+	 *   D6 = PIO1_2  = CT1_MAT0     D9 = PIO0_10 = CT0_MAT0
+	 */
+	arduino_pwm: pwm-connector {
+		compatible = "arduino-header-pwm";
+		#pwm-cells = <3>;
+		pwm-map-mask = <0xffffffff 0x0 0x0>;
+		pwm-map-pass-thru = <0x0 0xffffffff 0xffffffff>;
+		pwm-map = <ARDUINO_HEADER_R3_D3 0 0 &sc_timer 5 0 0>,
+			  <ARDUINO_HEADER_R3_D5 0 0 &ctimer3_pwm 3 0 0>,
+			  <ARDUINO_HEADER_R3_D6 0 0 &ctimer1_pwm 0 0 0>,
+			  <ARDUINO_HEADER_R3_D9 0 0 &ctimer0_pwm 0 0 0>;
+	};
+};
+
+&lpadc0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {	/* A2 */
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH14B>;
+	};
+
+	channel@1 {	/* A3 */
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH14A>;
+	};
+
+	channel@2 {	/* A4 */
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH15B>;
+	};
+
+	channel@3 {	/* A5 */
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH15A>;
 	};
 };
