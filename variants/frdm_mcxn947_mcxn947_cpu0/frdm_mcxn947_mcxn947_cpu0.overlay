@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/gpio/arduino-header-r3.h>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/mcux-lpadc.h>
+
 &zephyr_udc0 {
 	status = "okay";
 	board_cdc_acm_uart: board_cdc_acm_uart {
@@ -26,11 +30,171 @@
 
 / {
 	zephyr,user {
-		digital-pin-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
-		builtin-led-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
-		serials = <&flexcomm4_lpuart4>; /* 'Serial1' onwards */
-		i2cs = <&flexcomm2_lpi2c2>;
-		spis = <&flexcomm1_lpspi1>;
+	};
+
+	arduino_header: arduino-connector {
+		compatible = "arduino-header-r3";
+		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
+		gpio-map = <ARDUINO_HEADER_R3_A2 0 &gpio0 14 0>,
+			   <ARDUINO_HEADER_R3_A3 0 &gpio0 22 0>,
+			   <ARDUINO_HEADER_R3_A4 0 &gpio0 15 0>,
+			   <ARDUINO_HEADER_R3_A5 0 &gpio0 23 0>,
+			   <ARDUINO_HEADER_R3_D0 0 &gpio4 3 0>,   /* RX */
+			   <ARDUINO_HEADER_R3_D1 0 &gpio4 2 0>,   /* TX */
+			   <ARDUINO_HEADER_R3_D2 0 &gpio0 29 0>,
+			   <ARDUINO_HEADER_R3_D3 0 &gpio1 23 0>,
+			   <ARDUINO_HEADER_R3_D4 0 &gpio0 30 0>,
+			   <ARDUINO_HEADER_R3_D5 0 &gpio1 21 0>,
+			   <ARDUINO_HEADER_R3_D6 0 &gpio1 2 0>,
+			   <ARDUINO_HEADER_R3_D7 0 &gpio0 31 0>,
+			   <ARDUINO_HEADER_R3_D8 0 &gpio0 28 0>,
+			   <ARDUINO_HEADER_R3_D9 0 &gpio0 10 0>,
+			   <ARDUINO_HEADER_R3_D10 0 &gpio0 27 0>, /* CS */
+			   <ARDUINO_HEADER_R3_D11 0 &gpio0 24 0>, /* MOSI */
+			   <ARDUINO_HEADER_R3_D12 0 &gpio0 26 0>, /* MISO */
+			   <ARDUINO_HEADER_R3_D13 0 &gpio0 25 0>, /* SCK */
+			   <ARDUINO_HEADER_R3_D14 0 &gpio4 0 0>,  /* SDA */
+			   <ARDUINO_HEADER_R3_D15 0 &gpio4 1 0>;  /* SCL */
+	};
+
+	/*
+	 * Arduino analog header A2..A5 -> LPADC0 (per FRDM-MCXN947 mapping):
+	 *   A2 = PIO0_14 = ADC0_B14   A3 = PIO0_22 = ADC0_A14
+	 *   A4 = PIO0_15 = ADC0_B15   A5 = PIO0_23 = ADC0_A15
+	 * A0/A1 are not routed to ADC on this board's Arduino header.
+	 */
+	arduino_adc: analog-connector {
+		compatible = "arduino,uno-adc";
+		#io-channel-cells = <1>;
+		io-channel-map = <ARDUINO_HEADER_R3_A2 &lpadc0 0>,
+				 <ARDUINO_HEADER_R3_A3 &lpadc0 1>,
+				 <ARDUINO_HEADER_R3_A4 &lpadc0 2>,
+				 <ARDUINO_HEADER_R3_A5 &lpadc0 3>;
+	};
+
+	/*
+	 * Arduino PWM pins on FRDM-MCXN947 (classic D3/D5/D6/D9, none of which
+	 * overlap the I2C/SPI/UART pins). D6/D9 are also the on-board blue/red
+	 * LEDs (disabled by default), so analogWrite() fades those LEDs.
+	 *   D3 = PIO1_23 = SCT0_OUT5    D5 = PIO1_21 = SCT0_OUT9
+	 *   D6 = PIO1_2  = CT1_MAT0     D9 = PIO0_10 = CT0_MAT0
+	 */
+	arduino_pwm: pwm-connector {
+		compatible = "arduino-header-pwm";
+		#pwm-cells = <3>;
+		pwm-map-mask = <0xffffffff 0x0 0x0>;
+		pwm-map-pass-thru = <0x0 0xffffffff 0xffffffff>;
+		pwm-map = <ARDUINO_HEADER_R3_D3 0 0 &sc_timer 5 0 0>,
+			  <ARDUINO_HEADER_R3_D5 0 0 &sc_timer 9 0 0>,
+			  <ARDUINO_HEADER_R3_D6 0 0 &ctimer1_pwm 0 0 0>,
+			  <ARDUINO_HEADER_R3_D9 0 0 &ctimer0_pwm 0 0 0>;
 	};
 };
+
+&lpadc0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {	/* A2 */
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH14B>;
+	};
+
+	channel@1 {	/* A3 */
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH14A>;
+	};
+
+	channel@2 {	/* A4 */
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH15B>;
+	};
+
+	channel@3 {	/* A5 */
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_EXTERNAL0";
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <MCUX_LPADC_CH15A>;
+	};
+};
+
+/* PWM pin routing for the arduino_pwm connector */
+&pinctrl {
+	pinmux_ctimer0_arduino: pinmux_ctimer0_arduino {
+		group0 {
+			pinmux = <CT0_MAT0_PIO0_10>;	/* D9 */
+			slew-rate = "fast";
+			drive-strength = "low";
+		};
+	};
+
+	pinmux_ctimer1_arduino: pinmux_ctimer1_arduino {
+		group0 {
+			pinmux = <CT1_MAT0_PIO1_2>;	/* D6 */
+			slew-rate = "fast";
+			drive-strength = "low";
+		};
+	};
+
+	pinmux_sctimer_arduino: pinmux_sctimer_arduino {
+		group0 {
+			pinmux = <SCT0_OUT5_PIO1_23>,	/* D3 */
+				 <SCT0_OUT9_PIO1_21>;	/* D5 */
+			slew-rate = "fast";
+			drive-strength = "low";
+		};
+	};
+};
+
+ctimer0_pwm: &ctimer0 {
+	compatible = "nxp,ctimer-pwm";
+	status = "okay";
+	clk-source = <1>;
+	clocks = <&syscon MCUX_CTIMER0_CLK>;
+	prescaler = <0>;
+	pinctrl-0 = <&pinmux_ctimer0_arduino>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+};
+
+ctimer1_pwm: &ctimer1 {
+	compatible = "nxp,ctimer-pwm";
+	status = "okay";
+	clk-source = <1>;
+	clocks = <&syscon MCUX_CTIMER1_CLK>;
+	prescaler = <0>;
+	pinctrl-0 = <&pinmux_ctimer1_arduino>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+};
+
+&sc_timer {
+	status = "okay";
+	pinctrl-0 = <&pinmux_sctimer_arduino>;
+	pinctrl-names = "default";
+};
+
+arduino_spi: &flexcomm1_lpspi1 {};
+arduino_i2c: &flexcomm2_lpi2c2 {};
+arduino_serial: &flexcomm2_lpuart2 {};
