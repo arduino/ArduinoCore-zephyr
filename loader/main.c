@@ -21,6 +21,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/uart/cdc_acm.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/usb/usb_device.h>
 
 #include <zephyr/devicetree/fixed-partitions.h>
@@ -121,7 +122,7 @@ __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
 struct backup_store {
 	uint32_t wait_for_app_magic;
 };
-volatile __stm32_backup_sram_section struct backup_store backup;
+extern volatile __stm32_backup_sram_section struct backup_store backup;
 
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
@@ -186,7 +187,7 @@ static int loader(const struct shell *sh) {
 #endif
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_UNO_Q)
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 	void matrixBegin(void);
 	void matrixEnd(void);
 	void matrixPlay(uint8_t *buf, uint32_t len);

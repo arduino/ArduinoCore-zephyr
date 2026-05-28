@@ -10,6 +10,8 @@
 #include <zephyr/drivers/counter.h>
 #include <string.h>
 
+#if defined(CONFIG_BOARD_ARDUINO_UNO_Q)
+
 static const uint8_t pins[][2] = {
     { 0, 1 }, // 0
     { 1, 0 },
@@ -117,14 +119,6 @@ static const uint8_t pins[][2] = {
     { 10, 6 },
   };
 
-
-#define NUM_MATRIX_LEDS 104
-static uint8_t __attribute__((aligned)) framebuffer[NUM_MATRIX_LEDS / 8];
-static uint8_t __attribute__((aligned)) framebuffer_color[NUM_MATRIX_LEDS];
-
-static bool color = false;
-static uint8_t _max_grayscale_bits = 3;
-
 static void turnLed(int idx, bool on) {
     GPIOF->MODER &= 0xF0000000U;
     if (on) {
@@ -135,6 +129,137 @@ static void turnLed(int idx, bool on) {
         GPIOF->MODER |= (1U << (pin0 << 1)) | (1U << (pin1 << 1));
     }
 }
+
+#endif
+
+#if defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
+
+static const uint8_t pins[][2] = {
+    { 2, 3 }, // 0
+    { 3, 2 },
+    { 2, 4 },
+    { 4, 2 },
+    { 3, 4 },
+    { 4, 3 },
+    { 2, 5 },
+    { 5, 2 },
+    { 3, 5 },
+    { 5, 3 },
+    { 4, 5 }, // 10
+    { 5, 4 },
+    { 2, 6 },
+    { 6, 2 },
+    { 3, 6 },
+    { 6, 3 },
+    { 4, 6 },
+    { 6, 4 },
+    { 5, 6 },
+    { 6, 5 },
+    { 2, 7 }, // 20
+    { 7, 2 },
+    { 3, 7 },
+    { 7, 3 },
+    { 4, 7 },
+    { 7, 4 },
+    { 5, 7 },
+    { 7, 5 },
+    { 6, 7 },
+    { 7, 6 },
+    { 2, 9 }, // 30
+    { 9, 2 },
+    { 3, 9 },
+    { 9, 3 },
+    { 4, 9 },
+    { 9, 4 },
+    { 5, 9 },
+    { 9, 5 },
+    { 6, 9 },
+    { 9, 6 },
+    { 7, 9 }, // 40
+    { 9, 7 },
+    { 2, 10 },
+    { 10, 2 },
+    { 3, 10 },
+    { 10, 3 },
+    { 4, 10 },
+    { 10, 4 },
+    { 5, 10 },
+    { 10, 5 },
+    { 6, 10 }, // 50
+    { 10, 6 },
+    { 7, 10 },
+    { 10, 7 },
+    { 9, 10 },
+    { 10, 9 },
+    { 2, 13 },
+    { 13, 2 },
+    { 3, 13 },
+    { 13, 3 },
+    { 4, 13 }, // 60
+    { 13, 4 },
+    { 5, 13 },
+    { 13, 5 },
+    { 6, 13 },
+    { 13, 6 },
+    { 7, 13 },
+    { 13, 7 },
+    { 9, 13 },
+    { 13, 9 },
+    { 10, 13 }, // 70
+    { 13, 10 },
+    { 2, 14 },
+    { 14, 2 },
+    { 3, 14 },
+    { 14, 3 },
+    { 4, 14 },
+    { 14, 4 },
+    { 5, 14 },
+    { 14, 5 },
+    { 6, 14 }, // 80
+    { 14, 6 },
+    { 7, 14 },
+    { 14, 7 },
+    { 9, 14 },
+    { 14, 9 },
+    { 10, 14 },
+    { 14, 10 },
+    { 13, 14 },
+    { 14, 13 },
+    { 2, 15 }, // 90
+    { 15, 2 },
+    { 3, 15 },
+    { 15, 3 },
+    { 4, 15 },
+    { 15, 4 },
+    { 5, 15 },
+    { 15, 5 },
+    { 6, 15 },
+    { 15, 6 },
+    { 7, 15 }, // 100
+    { 15, 7 },
+    { 9, 15 },
+    { 15, 9 },
+  };
+
+static void turnLed(int idx, bool on) {
+    GPIOH->MODER &= 0x03C3000FU;               // don't touch pins 0, 1, 8, 11, 12
+    if (on) {
+        uint8_t pin0 = pins[idx][0];
+        uint8_t pin1 = pins[idx][1];
+
+        GPIOH->BSRR |= (1U << pin0) | (1U << (pin1 + 16));
+        GPIOH->MODER |= (1U << (pin0 << 1)) | (1U << (pin1 << 1));
+    }
+}
+
+#endif
+
+#define NUM_MATRIX_LEDS 104
+static uint8_t __attribute__((aligned)) framebuffer[NUM_MATRIX_LEDS / 8];
+static uint8_t __attribute__((aligned)) framebuffer_color[NUM_MATRIX_LEDS];
+
+static bool color = false;
+static uint8_t _max_grayscale_bits = 3;
 
 static void timer_irq_handler_fn(const struct device *counter_dev, void *user_data) {
     static volatile int i_isr = 0;

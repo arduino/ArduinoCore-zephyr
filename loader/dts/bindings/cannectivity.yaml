@@ -1,0 +1,79 @@
+# Copyright (c) 2024 Henrik Brix Andersen <henrik@brixandersen.dk>
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  CANnectivity hardware configuration
+
+  Example:
+    cannectivity: cannectivity {
+      compatible = "cannectivity";
+      timestamp-counter = <&counter0>;
+
+      channel {
+        compatible = "cannectivity-channel";
+        can-controller = <&can0>;
+        termination-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+        state-led = <&ch0_state_led>;
+        error-led = <&ch0_error_led>;
+        activity-leds = <&ch0_activity_led>;
+      };
+
+      channel {
+        compatible = "cannectivity-channel";
+        can-controller = <&can1>;
+        termination-gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+        state-led = <&ch1_state_led>;
+        error-led = <&ch1_error_led>;
+        activity-leds = <&ch1_activity_led>;
+      };
+    };
+
+compatible: "cannectivity"
+
+include: base.yaml
+
+properties:
+  timestamp-counter:
+    type: phandle
+    description: |
+      Phandle to 32-bit counter node running @ 1MHz. This counter is used for hardware timestamping
+      of received and transmitted CAN frames.
+
+child-binding:
+  description: |
+    CANnectivity CAN channel configuration. Channels are indexed in the order they appear in the
+    final devicetree.
+
+  compatible: "cannectivity-channel"
+
+  properties:
+    can-controller:
+      type: phandle
+      required: true
+      description: |
+        Phandle to the CAN controller node for this CAN channel.
+
+    termination-gpios:
+      type: phandle-array
+      description: |
+        GPIO to use to enable/disable the CAN channel termination resistor. This GPIO is driven
+        active when the CAN termination is enabled and inactive when the CAN termination is
+        disabled.
+
+    state-led:
+      type: phandle
+      description: |
+        Phandle for the CAN channel state LED.
+
+    error-led:
+      type: phandle
+      description: |
+        Phandle for the CAN channel error LED.
+
+    activity-leds:
+      type: phandles
+      description: |
+        Phandle(s) for the CAN channel activity LED(s).
+
+        If two LED phandles are specified, the LED phandle at index 0 will be used for indicating RX
+        activity, and the LED phandle at index 1 will be used for indicating TX activity.

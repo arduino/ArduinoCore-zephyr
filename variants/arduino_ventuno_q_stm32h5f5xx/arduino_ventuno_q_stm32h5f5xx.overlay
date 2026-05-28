@@ -1,0 +1,248 @@
+&timers17 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_matrix: counter {
+		status = "okay";
+		label = "LED_MATRIX_COUNTER";
+	};
+};
+
+&rtc {
+    status = "okay";
+
+	clocks = <&rcc STM32_CLOCK(APB3, 21U)>,
+             <&rcc STM32_SRC_LSE RTC_SEL(1)>;
+};
+
+&fdcan1 {
+	status = "okay";
+};
+
+&fdcan2 {
+	status = "okay";
+};
+
+&fdcan3 {
+	status = "okay";
+};
+
+&flash0 {
+	partitions {
+		bootanimation: partition@90000 {
+			reg = <0x090000 DT_SIZE_K(64)>;
+		};
+		user_sketch: partition@100000 {
+			reg = <0x100000 DT_SIZE_M(1)>;
+		};
+	};
+};
+
+&i2c1 {
+	fan_control: eeprom@2f {
+		reg = <0x2f>;
+		size = <256>;
+		compatible = "zephyr,i2c-target-eeprom";
+		status = "okay";
+	};
+	gpio_control: eeprom@22 {
+		reg = <0x22>;
+		size = <256>;
+		compatible = "zephyr,i2c-target-eeprom";
+		status = "okay";
+	};
+};
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&gpiob 11 GPIO_ACTIVE_HIGH>, /* D0 - PB11 */
+				    <&gpiob 10 GPIO_ACTIVE_HIGH>, /* D1 - PB10 */
+				    <&gpiob 0 GPIO_ACTIVE_HIGH>, /* D2 - PB0 */
+				    <&gpiob 1 GPIO_ACTIVE_HIGH>, /* D3 - PB1 */
+				    <&gpiob 6 GPIO_ACTIVE_HIGH>, /* D4 - PB6 */
+				    <&gpiob 5 GPIO_ACTIVE_HIGH>, /* D5 - PB5 */
+				    <&gpiob 2 GPIO_ACTIVE_HIGH>, /* D6 - PB2 */
+				    <&gpiob 3 GPIO_ACTIVE_HIGH>, /* D7 - PB3 */
+				    <&gpiob 4 GPIO_ACTIVE_HIGH>, /* D8 - PB4 */
+				    <&gpiob 7 GPIO_ACTIVE_HIGH>, /* D9 - PB7 */
+				    <&gpiob 12 GPIO_ACTIVE_HIGH>, /* D10 - PB12 */
+				    <&gpiob 15 GPIO_ACTIVE_HIGH>, /* D11 - PB15 */
+				    <&gpiob 14 GPIO_ACTIVE_HIGH>, /* D12 - PB14 */
+				    <&gpiob 13 GPIO_ACTIVE_HIGH>, /* D13 - PB13 */
+
+					/* ADCs */
+				    <&gpioa 4 GPIO_ACTIVE_HIGH>, /* A0 - PA4 */
+				    <&gpioa 5 GPIO_ACTIVE_HIGH>, /* A1 - PA5 */
+				    <&gpioe 12 GPIO_ACTIVE_HIGH>, /* A2 - PE12 */
+				    <&gpioe 13 GPIO_ACTIVE_HIGH>, /* A3 - PE13 */
+				    <&gpioe 14 GPIO_ACTIVE_HIGH>, /* A4 - PE14 */
+				    <&gpioe 15 GPIO_ACTIVE_HIGH>, /* A5 - PE15 */
+
+				    <&gpioh 11 GPIO_ACTIVE_HIGH>,  /* D20 - PH11 */
+				    <&gpioh 12 GPIO_ACTIVE_HIGH>,  /* D21 - PH12 */
+
+					/* JSPI */
+				    <&gpioc 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 14 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 12 GPIO_ACTIVE_HIGH>,
+					
+					/* JMISC */
+					<&gpioa 9 GPIO_ACTIVE_HIGH>,	//PIN1  = D25
+				    <&gpioe 2 GPIO_ACTIVE_HIGH>,	//PIN2  = D26
+					<&gpioc 7 GPIO_ACTIVE_HIGH>,	//PIN3  = D27
+				    <&gpioe 3 GPIO_ACTIVE_HIGH>,	//PIN4  = D28
+				    <&gpioc 8 GPIO_ACTIVE_HIGH>,	//PIN5  = D29
+				    <&gpioe 4 GPIO_ACTIVE_HIGH>,	//PIN6  = D30
+				    <&gpioe 1 GPIO_ACTIVE_HIGH>,	//PIN7  = D31
+				    <&gpioe 5 GPIO_ACTIVE_HIGH>,	//PIN8  = D32
+					<&gpioc 11 GPIO_ACTIVE_HIGH>,	//PIN9  = D33
+				    <&gpioe 6 GPIO_ACTIVE_HIGH>,	//PIN10 = D34
+					<&gpiod 3 GPIO_ACTIVE_HIGH>,	//PIN11 = D35
+				    <&gpioe 7 GPIO_ACTIVE_HIGH>,	//PIN12 = D36
+					<&gpiof 4 GPIO_ACTIVE_HIGH>,	//PIN13 = D37
+				    <&gpioe 8 GPIO_ACTIVE_HIGH>,	//PIN14 = D38
+					<&gpioi 7 GPIO_ACTIVE_HIGH>,	//PIN15 = D39
+				    <&gpiof 1 GPIO_ACTIVE_HIGH>,	//PIN16 = D40
+					<&gpioa 6 GPIO_ACTIVE_HIGH>,	//PIN17 = D41
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,	//PIN18 = D42
+					<&gpioi 5 GPIO_ACTIVE_HIGH>,	//PIN19 = D43
+				    <&gpioa 0 GPIO_ACTIVE_HIGH>,	//PIN20 = D44
+					<&gpioh 8 GPIO_ACTIVE_HIGH>,	//PIN21 = D45
+				    <&gpioa 1 GPIO_ACTIVE_HIGH>,	//PIN22 = D46
+					<&gpioa 11 GPIO_ACTIVE_HIGH>,	//PIN23 = D47
+				    <&gpioa 2 GPIO_ACTIVE_HIGH>,	//PIN24 = D48
+				    <&gpioa 12 GPIO_ACTIVE_HIGH>,	//PIN25 = D49
+
+					/* JOMEGA */
+					<&gpioc 0 GPIO_ACTIVE_HIGH>,
+					<&gpioc 1 GPIO_ACTIVE_HIGH>,
+					<&gpioc 2 GPIO_ACTIVE_HIGH>,
+					<&gpioc 3 GPIO_ACTIVE_HIGH>,
+					<&gpiod 12 GPIO_ACTIVE_HIGH>,
+					<&gpiod 13 GPIO_ACTIVE_HIGH>,
+					<&gpiod 14 GPIO_ACTIVE_HIGH>,
+					<&gpiod 15 GPIO_ACTIVE_HIGH>,
+					<&gpioi 2 GPIO_ACTIVE_HIGH>,
+
+					/* LEDs GBR */
+				    <&gpiog 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 2 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 1 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 5 GPIO_ACTIVE_HIGH>,
+				    <&gpiok 0 GPIO_ACTIVE_HIGH>,
+				    <&gpiod 11 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 8 GPIO_ACTIVE_HIGH>,
+				    <&gpioc 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 2 GPIO_ACTIVE_HIGH>,
+
+					/* LED matrix */
+				    <&gpiof 0 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 1 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 2 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 3 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 4 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 5 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 6 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 7 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 8 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 9 GPIO_ACTIVE_HIGH>,
+				    <&gpiof 10 GPIO_ACTIVE_HIGH>,
+				    <&gpiog 13 GPIO_ACTIVE_HIGH>,       /* Internal SPI RDY */
+				    <&gpioi 8 GPIO_ACTIVE_HIGH>;        /* Analog switch for VREF */
+
+					/* LEDs GBR */
+		builtin-led-gpios = <&gpiog 6 GPIO_ACTIVE_LOW>,
+				    <&gpiok 2 GPIO_ACTIVE_LOW>,
+				    <&gpiog 3 GPIO_ACTIVE_LOW>,
+				    <&gpiod 10 GPIO_ACTIVE_LOW>,
+				    <&gpiok 1 GPIO_ACTIVE_LOW>,
+				    <&gpiog 4 GPIO_ACTIVE_LOW>,
+				    <&gpiog 5 GPIO_ACTIVE_LOW>,
+				    <&gpiok 0 GPIO_ACTIVE_LOW>,
+				    <&gpiod 11 GPIO_ACTIVE_LOW>,
+				    <&gpiog 8 GPIO_ACTIVE_LOW>,
+				    <&gpioc 6 GPIO_ACTIVE_LOW>,
+				    <&gpiog 2 GPIO_ACTIVE_LOW>;
+
+		adc-pin-gpios =	<&gpioa  4 0>,
+				    <&gpioa  5 0>,
+				    <&gpioe 12 0>,
+				    <&gpioe 13 0>,
+				    <&gpioe 14 0>,
+				    <&gpioe 15 0>;
+
+		arduino,router-serial = <&board_cdc_acm_uart>; /* 'Serial' is provided by the Monitor */
+		cdc-acm-serial = <&board_cdc_acm_uart>;
+		serials = <&usart3>, <&board_cdc_acm_uart>;
+
+		i2cs = <&i2c2>, <&i2c4>, <&i2c3>;
+		spis = <&spi2>, <&spi3>;
+
+		pwms = <>;
+		pwm-pin-gpios =	<>;
+		dacs = <>;
+		dac-channels = <1>;
+		dac-resolution = <12>;
+
+		analog-switch-gpios = <&gpioi 8 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
+
+		control-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>,    /* Internal SPI RDY, connected to GPIO_MD_95 */
+				<&gpiok 10 GPIO_ACTIVE_HIGH>,    /* if read as 0, we are in USB flashing mode */
+				<&gpiod 6 GPIO_ACTIVE_HIGH>;     /* used to measure eventually 1V8 fault */
+
+		power-button-gpios = <&gpiok 13 GPIO_ACTIVE_HIGH>,  /* Read as vertical button press */
+				     <&gpiog 9 GPIO_ACTIVE_HIGH>,   /* Should follow vertical button */
+				     <&gpiok 11 GPIO_ACTIVE_HIGH>;  /* Force to 1 to reboot the board */
+
+		fan-gpios = <&gpioa 7 GPIO_ACTIVE_HIGH>,
+				<&gpiog 15 GPIO_ACTIVE_HIGH>;
+
+		io-channels = <&adc1 18>,
+				    <&adc1 19>,
+				    <&adc3  6>,
+				    <&adc3  7>,
+				    <&adc3  8>,
+				    <&adc3  9>;
+
+		dac = <&dac1>;
+		dac-channels = <1>, <2>;
+		dac-resolution = <12>;
+
+		cans = <&fdcan1>;
+	};
+
+	gs_usb0: gs_usb0 {
+		compatible = "gs_usb";
+		label = "gs_usb";
+	};
+
+	cannectivity: cannectivity {
+		compatible = "cannectivity";
+		timestamp-counter = <&counter0>;
+		status = "okay";
+
+		channel0 {
+			compatible = "cannectivity-channel";
+			can-controller = <&fdcan1>;
+			/* TODO: changeme Use TX LED for channel 0 state + activity */
+			state-led = <&red_led_3>;
+		};
+
+		channel1 {
+			compatible = "cannectivity-channel";
+			can-controller = <&fdcan2>;
+			/* TODO: changeme Use TX LED for channel 0 state + activity */
+			state-led = <&red_led_3>;
+		};
+
+		channel2 {
+			compatible = "cannectivity-channel";
+			can-controller = <&fdcan3>;
+			/* TODO: changeme Use TX LED for channel 0 state + activity */
+			state-led = <&red_led_3>;
+		};
+	};
+};

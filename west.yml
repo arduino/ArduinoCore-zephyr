@@ -50,3 +50,8 @@ manifest:
       path: modules/lib/ArduinoCore-API
       revision: master
       url: https://github.com/arduino/ArduinoCore-API
+
+    - name: cannectivity
+      path: modules/lib/cannectivity
+      url: https://github.com/CANnectivity/cannectivity.git
+      revision: main
