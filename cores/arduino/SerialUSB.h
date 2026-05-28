@@ -53,6 +53,8 @@ private:
 };
 } // namespace arduino
 
+extern arduino::SerialUSB_ SerialUSB;
+
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 extern arduino::SerialUSB_ Serial;
 #endif

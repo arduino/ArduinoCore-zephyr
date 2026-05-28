@@ -130,14 +130,9 @@ protected:
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm_serial)
 /* Devicetree requires a SerialUSB object for 'Serial'. */
 #define ZARD_SKIP_FIRST_SERIAL 1
-#if (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS)
+#if (CONFIG_USB_CDC_ACM || CONFIG_USBD_CDC_ACM_CLASS) && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
 /* SerialUSB can be compiled in the project. */
 #define ZARD_FIRST_SERIAL_IS_SERIALUSB 1
-#else
-/* SerialUSB is required but no driver was enabled for the USB CDC ACM device.
- * Define a stub Serial object to avoid build errors.
- */
-#define ZARD_FIRST_SERIAL_IS_STUB 1
 #endif
 #endif
 
@@ -172,6 +167,7 @@ protected:
 #define ZARD_GENERIC_SERIAL_COUNT 0
 
 #else
+
 /* Neither 'serials' property, nor 'arduino,serial' node, nor a special Serial
  * is present. Define a stub Serial object to avoid build errors.
  */
