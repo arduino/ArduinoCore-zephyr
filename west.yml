@@ -29,6 +29,7 @@ manifest:
           - littlefs
           - tinycrypt
           - mbedtls
+          - tf-psa-crypto
           - segger
           - thrift
           - mcuboot
