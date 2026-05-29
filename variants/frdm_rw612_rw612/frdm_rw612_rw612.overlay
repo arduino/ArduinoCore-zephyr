@@ -12,13 +12,11 @@
 	};
 };
 
-&flexspi {
-	w25q512jvfiq: w25q512jvfiq@0 {
-			partitions {
-				user_sketch: partition@323000 {
-					reg = <0x00323000 (DT_SIZE_M(3) - 0x3000)>;
-				};
-			};
+&w25q512jvfiq {
+	partitions {
+		user_sketch: partition@323000 {
+			reg = <0x00323000 (DT_SIZE_M(3) - 0x3000)>;
+		};
 	};
 };
 
