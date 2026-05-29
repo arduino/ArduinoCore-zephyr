@@ -60,6 +60,7 @@
 	ov7670: ov7670@21 {
 		compatible = "ovti,ov7670";
 		reg = <0x21>;
+		zephyr,deferred-init;
 
 		reset-gpios = <&gpioe 3 GPIO_ACTIVE_LOW>;
 		pwdn-gpios = <&gpiod 5 GPIO_ACTIVE_LOW>;
@@ -74,7 +75,6 @@
 
 &i2c1 {
 	status = "okay";
-	zephyr,deferred-init;
 };
 
 &i2c4 {
