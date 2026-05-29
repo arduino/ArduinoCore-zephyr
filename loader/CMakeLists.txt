@@ -22,7 +22,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
 # Memory region relocation based on Kconfig
 # Relocate LLEXT heap if region specified
 if(NOT "${CONFIG_LLEXT_HEAP_REGION}" STREQUAL "")
-    zephyr_code_relocate(FILES ${ZEPHYR_BASE}/subsys/llext/llext_mem.c
+    zephyr_code_relocate(FILES ${ZEPHYR_BASE}/subsys/llext/llext_kheap.c
                          LOCATION ${CONFIG_LLEXT_HEAP_REGION}_BSS_NOINIT)
 endif()
 
