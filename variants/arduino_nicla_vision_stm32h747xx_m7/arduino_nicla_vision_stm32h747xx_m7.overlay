@@ -30,7 +30,6 @@
 
 &i2c3 {
     status = "okay";
-    zephyr,deferred-init;
 };
 
 /* SPI buses */
