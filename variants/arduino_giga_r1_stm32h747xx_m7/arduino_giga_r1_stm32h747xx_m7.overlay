@@ -55,6 +55,7 @@
 		compatible = "galaxycore,gc2145";
 		zephyr,deferred-init;
 		reg = <0x3c>;
+		zephyr,deferred-init;
 		reset-gpios = <&gpiod 4 GPIO_ACTIVE_LOW>;
 		pwdn-gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
 
