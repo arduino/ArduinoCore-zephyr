@@ -162,8 +162,19 @@
 	#size-cells = <0>;
 	interrupts = <87 1>, <88 1>, <89 1>, <90 1>;
 	interrupt-names = "rxi", "txi", "tei", "eri";
-	clock-frequency = <DT_FREQ_M(1)>;
+	clock-frequency = <I2C_BITRATE_FAST>;
 	pinctrl-0 = <&iic0_default>;
+	pinctrl-names = "default";
+};
+
+&iic1 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	interrupts = <91 1>, <92 1>, <93 1>, <94 1>;
+	interrupt-names = "rxi", "txi", "tei", "eri";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&iic1_default>;
 	pinctrl-names = "default";
 };
 
