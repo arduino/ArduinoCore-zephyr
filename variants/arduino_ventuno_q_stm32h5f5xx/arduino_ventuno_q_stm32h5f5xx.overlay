@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
 &timers17 {
 	status = "okay";
 	st,prescaler = <4>;
@@ -35,6 +43,62 @@
 		user_sketch: partition@100000 {
 			reg = <0x100000 DT_SIZE_M(1)>;
 		};
+	};
+};
+
+&timers3 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	pwm3: pwm {
+		status = "okay";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim3_ch4_pb1 &tim3_ch2_pb5>;
+		pinctrl-names = "default", "sleep", "arduino";
+	};
+};
+
+&timers4 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	pwm4: pwm {
+		status = "okay";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim4_ch2_pb7>;
+		pinctrl-names = "default", "sleep", "arduino";
+	};
+};
+
+&timers8 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	pwm8: pwm {
+		status = "okay";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim8_ch4n_pb2>;
+		pinctrl-names = "default", "sleep", "arduino";
+	};
+};
+
+&timers12 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	pwm12: pwm {
+		status = "okay";
+		zephyr,deferred-init;
+		pinctrl-0 = <>;
+		pinctrl-1 = <>;
+		pinctrl-2 = <&tim12_ch2_pb15>;
+		pinctrl-names = "default", "sleep", "arduino";
 	};
 };
 
@@ -181,11 +245,18 @@
 		i2cs = <&i2c2>, <&i2c4>, <&i2c3>;
 		spis = <&spi2>, <&spi3>;
 
-		pwms = <>;
-		pwm-pin-gpios =	<>;
-		dacs = <>;
-		dac-channels = <1>;
-		dac-resolution = <12>;
+		pwms = <&pwm3 4 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm3 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm8 4 PWM_HZ(500) (PWM_POLARITY_NORMAL | STM32_PWM_COMPLEMENTARY)>,
+		       <&pwm4 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm12 2 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		pwm-pin-gpios =	<&gpiob 1 0>,
+                                <&gpiob 5 0>,
+                                <&gpiob 2 0>,
+                                <&gpiob 7 0>,
+                                /* <&gpiob 12 0>, */
+                                <&gpiob 15 0>;
 
 		analog-switch-gpios = <&gpioi 8 GPIO_ACTIVE_HIGH>;    /* Analog switch for VREF */
 
@@ -206,6 +277,9 @@
 				    <&adc3  7>,
 				    <&adc3  8>,
 				    <&adc3  9>;
+
+		dac-pin-gpios =	<&gpioa 4 0>,
+				<&gpioa 5 0>;
 
 		dac = <&dac1>;
 		dac-channels = <1>, <2>;
