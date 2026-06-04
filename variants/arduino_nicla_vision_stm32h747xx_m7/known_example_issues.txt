@@ -8,5 +8,3 @@
 # Each line in this file is treated as a regular expression and will be matched
 # against the path of each sketch found in this repo. If a match is found, the
 # sketch compilation result will be ignored.
-
-libraries/Camera
