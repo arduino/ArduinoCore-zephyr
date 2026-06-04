@@ -16,7 +16,7 @@
     {
       "packager": "zephyr",
       "name": "arm-zephyr-eabi",
-      "version": "0.16.8"
+      "version": "1.0.1"
     },
     {
       "packager": "arduino",
