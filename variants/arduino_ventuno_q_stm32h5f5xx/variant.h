@@ -24,11 +24,12 @@
 #define SDA     0
 #define SCL     0
 
+#define ST_VREF_MASK        0x80
+
 #define AR_DEFAULT          0
-#define AR_INTERNAL1V5      1
-#define AR_INTERNAL1V8      2
-#define AR_INTERNAL2V5      3
-#define AR_INTERNAL2V05     4
+#define AR_INTERNAL1V8      (SYSCFG_VREFBUF_VOLTAGE_SCALE2 | ST_VREF_MASK)
+#define AR_INTERNAL2V5      (SYSCFG_VREFBUF_VOLTAGE_SCALE0 | ST_VREF_MASK)
+#define AR_INTERNAL2V05     (SYSCFG_VREFBUF_VOLTAGE_SCALE1 | ST_VREF_MASK)
 #define AR_EXTERNAL         5
 #define AR_INTERNAL         AR_INTERNAL2V5
 
