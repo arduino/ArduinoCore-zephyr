@@ -152,7 +152,7 @@ struct usbd_context *usbd_setup_device(usbd_msg_cb_t msg_cb) {
 	/* doc functions register end */
 
 	#if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)
-	register_cdc_acm_0(&usbd, USBD_SPEED_HS);
+	register_cdc_acm_0(&usbd, USBD_SPEED_FS);
 	#endif
 
 	sample_fix_code_triple(&usbd, USBD_SPEED_FS);
