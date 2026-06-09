@@ -179,9 +179,6 @@
 		     &dcmi_d0_ph9 &dcmi_d1_ph10 &dcmi_d2_ph11 &dcmi_d3_ph12
 		     &dcmi_d4_ph14 &dcmi_d5_pi4 &dcmi_d6_pi6 &dcmi_d7_pi7>;
 	pinctrl-names = "default";
-	dmas = <&dma1 0 75 (STM32_DMA_PERIPH_TO_MEMORY | STM32_DMA_PERIPH_NO_INC |
-			    STM32_DMA_MEM_INC | STM32_DMA_PERIPH_32BITS | STM32_DMA_MEM_32BITS |
-			    STM32_DMA_PRIORITY_HIGH) STM32_DMA_FIFO_FULL>; //FULL for 7670, default FIFO_1_4
 
 	port {
 		dcmi_ep_in: endpoint {
