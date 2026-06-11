@@ -46,6 +46,13 @@ manifest:
         #
         #   west config -d manifest.project-filter
 
+    - name: hal_microchip
+      revision: master
+      url: https://github.com/Zephyr4Microchip/microchip-hal
+      path: modules/hal/microchip
+      groups:
+        - hal
+
     - name: ArduinoCore-API
       path: modules/lib/ArduinoCore-API
       revision: master

@@ -22,6 +22,10 @@
 #include <mbedtls/debug.h>
 #endif
 
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
+extern uint32_t SystemCoreClock;
+#endif
+
 /*
  * Provide errno access for LLEXT modules.
  *
@@ -427,7 +431,7 @@ FORCE_EXPORT_SYM(matrixSetGrayscaleBits);
 FORCE_EXPORT_SYM(matrixEnd);
 #endif
 
-#if defined(CONFIG_FLASH)
+#if defined(CONFIG_FLASH_MAP)
 FORCE_EXPORT_SYM(flash_area_open);
 FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);

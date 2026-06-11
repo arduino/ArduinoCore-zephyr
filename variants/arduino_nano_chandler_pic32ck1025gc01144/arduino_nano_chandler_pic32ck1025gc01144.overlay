@@ -1,0 +1,163 @@
+/*
+ * Copyright (c) 2026 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+&adc0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@5 {
+		reg = <5>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@8 {
+		reg = <8>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@b {
+		reg = <11>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_VDD_1";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+		zephyr,resolution = <12>;
+	};
+};
+
+/ {
+	aliases {
+		pwm-led0 = &pwm_led0;
+		pwm-led1 = &pwm_led1;
+		pwm-led2 = &pwm_led2;
+		red-pwm-led = &pwm_led0;
+		green-pwm-led = &pwm_led1;
+		blue-pwm-led = &pwm_led2;
+	};
+
+	zephyr,user {
+
+		digital-pin-gpios = <&portd 9 0>,   /* D0  (UART1 RX) */
+					    <&portd 8 0>,   /* D1  (UART1 TX) */
+					    <&portc 19 0>,  /* D2  */
+					    <&portc 20 0>,  /* D3  */
+					    <&porta 20 0>,  /* D4  */
+					    <&porta 21 0>,  /* D5  */
+					    <&portb 11 0>,  /* D6  */
+					    <&portd 11 0>,  /* D7  */
+					    <&porta 23 0>,  /* D8  */
+					    <&portb 24 0>,  /* D9  */
+					    <&porta 26 0>,  /* D10 */
+					    <&portc 0 0>,   /* D11 */
+					    <&porta 24 0>,  /* D12 */
+					    <&porta 25 0>,  /* D13 */
+					    <&portb 12 0>,  /* D14 / A0 */
+					    <&porta 5 0>,   /* D15 / A1 */
+					    <&porta 6 0>,   /* D16 / A2 */
+					    <&porta 7 0>,   /* D17 / A3 */
+					    <&porta 11 0>,  /* D18 / A4 */
+					    <&porta 12 0>,  /* D19 / A5 */
+					    <&porta 9 0>,   /* D20 / A6 */
+					    <&porta 10 0>,  /* D21 / A7 */
+					    <&portb 14 0>,  /* D22 */
+					    <&portb 15 0>,  /* D23 */
+					    <&portb 16 0>;  /* D24 / LED_BUILTIN */
+
+		builtin-led-gpios = <&portb 16 0>; /* LED_BUILTIN = PB16 (yellow DL2) */
+
+		serials = <&sercom1>, <&sercom0>, <&sercom6>;
+
+		/* CAN -> CAN0 (TX=PB08, RX=PB09). */
+		cans = <&can0>;
+
+		i2cs = <&sercom4>, <&sercom3>;
+		spis = <&sercom2>, <&sercom5>;
+
+		pwm-pin-gpios = <&portc 19 0>,
+				<&portc 20 0>,
+				<&porta 20 0>,
+				<&porta 21 0>,
+				<&portb 11 0>,
+				<&portd 11 0>,
+				<&porta 23 0>,
+				<&portb 24 0>;
+
+		adc-pin-gpios = <&portb 12 0>,
+				<&porta 5 0>,
+				<&porta 6 0>,
+				<&porta 7 0>,
+				<&porta 11 0>,
+				<&porta 12 0>,
+				<&porta 9 0>,
+				<&porta 10 0>;
+
+		pwms = <&tcc1 4 PWM_HZ(500) 0>,
+		       <&tcc1 5 PWM_HZ(500) 0>,
+		       <&tcc4 0 PWM_HZ(500) 0>,
+		       <&tcc4 1 PWM_HZ(500) 0>,
+		       <&tcc3 0 PWM_HZ(500) 0>,	
+		       <&tcc2 2 PWM_HZ(500) 0>,
+		       <&tcc5 1 PWM_HZ(500) 0>,
+		       <&tcc6 1 PWM_HZ(500) 0>;
+
+		io-channels = <&adc0 11>,
+			      <&adc0 1>,
+			      <&adc0 2>,
+			      <&adc0 3>,
+			      <&adc0 7>,
+			      <&adc0 8>,
+			      <&adc0 5>,
+			      <&adc0 6>;
+	};
+};

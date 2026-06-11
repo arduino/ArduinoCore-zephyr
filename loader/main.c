@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/logging/log_ctrl.h>
 
 #include <stdlib.h>
+#include <string.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/uart/cdc_acm.h>
@@ -125,25 +126,32 @@ struct backup_store {
 extern volatile __stm32_backup_sram_section struct backup_store backup;
 
 static int loader(const struct shell *sh) {
+	#if defined(CONFIG_FLASH_MAP)
 	const struct flash_area *fa;
+	#endif
 	int rc;
+	uintptr_t base_addr =
+		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
 
+	#if defined(CONFIG_FLASH_MAP)
 	/* Test that attempting to open a disabled flash area fails */
 	rc = flash_area_open(FIXED_PARTITION_ID(user_sketch), &fa);
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
 	}
-
-	uintptr_t base_addr =
-		DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(user_sketch))) + DT_REG_ADDR(DT_NODELABEL(user_sketch));
+	#endif
 
 	char header[HEADER_LEN];
+	#if defined(CONFIG_FLASH_MAP)
 	rc = flash_area_read(fa, 0, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
 	}
+	#else
+	memcpy(header, (const void *)base_addr, sizeof(header));
+	#endif
 
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
@@ -306,11 +314,15 @@ static int loader(const struct shell *sh) {
 		return -ENOMEM;
 	}
 
+	#if defined(CONFIG_FLASH_MAP)
 	rc = flash_area_read(fa, 0, sketch_buf, sketch_buf_len);
 	if (rc) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		return rc;
 	}
+	#else
+	memcpy(sketch_buf, (const void *)base_addr, sketch_buf_len);
+	#endif
 #else
 	// Assuming the sketch is stored in the same flash device as the loader
 	uint8_t *sketch_buf = (uint8_t *)base_addr;
