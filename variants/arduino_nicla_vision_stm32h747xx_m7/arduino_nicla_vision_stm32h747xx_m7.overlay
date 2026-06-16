@@ -170,6 +170,10 @@
     };
 };
 
+&die_temp {
+    status = "okay";
+};
+
 / {
 
     chosen {
@@ -190,6 +194,12 @@
         reg = <0xdeadbeef 0x1000>;
         #gpio-cells = <0x2>;
         status = "okay";
+    };
+
+    aliases {
+        die-temp0 = &die_temp;
+        //volt-sensor0 = &vref1;
+        //volt-sensor1 = &vbat4;
     };
 };
 
