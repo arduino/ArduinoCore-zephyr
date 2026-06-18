@@ -190,6 +190,10 @@
 	status = "okay";
 };
 
+&die_temp {
+	status = "okay";
+	zephyr,deferred-init;
+};
 
 /* Currently only the pins marked with ~ on the pin headers are enabled */
 &timers8 {

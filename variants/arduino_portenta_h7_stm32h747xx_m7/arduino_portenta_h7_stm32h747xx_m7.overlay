@@ -292,6 +292,7 @@
 
 &die_temp {
 	status = "okay";
+	zephyr,deferred-init;
 };
 
 
