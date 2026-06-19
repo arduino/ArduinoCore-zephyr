@@ -47,11 +47,15 @@ public:
 	}
 #endif
 	uint8_t connected() override {
-		uint8_t buf;
-		int ret = ::recv(*sock_fd, &buf, 1, MSG_PEEK | MSG_DONTWAIT);
-		if (ret == 0) {
+		int error = 0;
+		size_t len = sizeof(error);
+		int ret = zsock_getsockopt(*sock_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+
+		if (ret < 0 || error != 0) {
+			_connected = false;
 			stop();
 		}
+
 		return _connected;
 	}
 
