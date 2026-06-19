@@ -157,6 +157,13 @@ public:
 			return false;
 		}
 
+		int keepalive = 1;
+		if (IS_ENABLED(CONFIG_NET_TCP_KEEPALIVE) &&
+			setsockopt(raw_sock_fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) < 0) {
+			// TODO: add log message when we split header and source file
+			//  LOG_WRN("Failed to enable SO_KEEPALIVE, errno: %d", errno);
+		}
+
 		if (::connect(*sock_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 			sock_fd = nullptr;
 			return false;
