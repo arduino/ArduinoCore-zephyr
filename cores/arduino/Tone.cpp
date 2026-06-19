@@ -14,7 +14,13 @@ using namespace zephyr::arduino;
 namespace {
 
 #if CONFIG_ARDUINO_MAX_TONES < 0
+#if ZARD_DT_HAS_USER_PINS
 #define MAX_TONE_PINS DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios)
+#elif defined(ZARD_CONNECTOR)
+#define MAX_TONE_PINS DT_PROP_LEN(DT_NODELABEL(ZARD_CONNECTOR), gpio_map)
+#else
+#define MAX_TONE_PINS 1
+#endif
 #else
 #define MAX_TONE_PINS CONFIG_ARDUINO_MAX_TONES
 #endif
