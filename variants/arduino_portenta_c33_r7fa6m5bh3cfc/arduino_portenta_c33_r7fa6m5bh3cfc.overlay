@@ -257,6 +257,11 @@
 	};
 };
 
+&eth {
+	status = "okay";
+	zephyr,deferred-init;
+};
+
 &mdio {
 	zephyr,deferred-init;
 
