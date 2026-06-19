@@ -6,11 +6,14 @@
  */
 
 /*
- * dt_user_pins.h — helper macros for the zephyr,user DT description path.
+ * dt_user_pins.h — helper macros for the zephyr,user DT pin definitions.
  *
- * Collects all helper macros that were previously scattered across
- * Arduino.h and wiring_private.h, and renames them to the ZARD_ namespace.
- * Included unconditionally by Arduino.h.
+ * Included by Arduino.h when zephyr,user provides a digital-pin-gpios list
+ * that explicitly enumerates every Arduino pin.  Provides the same named
+ * interface (ZARD_LED_VALUE, ZARD_LED_IN_LIST, ZARD_PWM_DT_SPEC,
+ * ZARD_ADC_DT_SPEC, ZARD_PWM_PINS, ZARD_ADC_PINS) as dt_connector.h does
+ * for the connector path, so that Arduino.h and wiring_private.h can be
+ * option-agnostic.
  */
 
 #pragma once
@@ -53,6 +56,17 @@
 							   DT_PHA_BY_IDX(node, gpios, 0, pin))
 
 #endif /* DT_PROP_LEN > 0 */
+
+/* -- LED helpers ---------------------------------------------------- */
+
+/*
+ * Resolve a builtin LED (phandle, pin) to its Arduino pin number and verify
+ * the pin is declared in digital_pin_gpios.
+ */
+#define ZARD_LED_VALUE(node_ph, pin_num) DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(node_ph), pin_num)
+#define ZARD_LED_IN_LIST(node_ph, pin_num)                                                         \
+	(DT_FOREACH_PROP_ELEM_SEP_VARGS(DT_PATH(zephyr_user), digital_pin_gpios, DIGITAL_PIN_EXISTS,   \
+									(+), DT_REG_ADDR(node_ph), pin_num) > 0)
 
 /* -- Enum helpers -------------------------------------------------- */
 
