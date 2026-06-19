@@ -208,6 +208,9 @@ EXPORT_SYMBOL(mbedtls_memory_buffer_alloc_init);
 #if defined(CONFIG_MBEDTLS_DEBUG)
 EXPORT_SYMBOL(mbedtls_debug_set_threshold);
 #endif
+#if defined(CONFIG_MBEDTLS_PSA_CRYPTO_CLIENT)
+EXPORT_SYMBOL(psa_crypto_init);
+#endif
 #endif
 
 #if defined(CONFIG_WIFI)
