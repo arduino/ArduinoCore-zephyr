@@ -1,0 +1,11 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# This file contains a list of examples that are shipped with the core (or used
+# by continuous integration tests), but are not applicable for this variant,
+# for example because it uses hardware features not present on the CPU or board.
+#
+# Each line in this file should contain the path to an example to exclude,
+# relative to the root of the repository.
+
+libraries/Arduino_RPClite/extras/integration_test
