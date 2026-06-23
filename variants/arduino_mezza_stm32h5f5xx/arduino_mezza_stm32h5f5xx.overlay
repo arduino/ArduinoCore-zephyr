@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+
+&flash0 {
+	partitions {
+		slot0_partition: partition@0 {
+			label = "loader";
+			reg = <0x00000000 0x00100000>;
+		};
+
+		user_sketch: partition@100000 {
+			label = "user_sketch";
+			reg = <0x00100000 0x00300000>;
+		};
+	};
+};
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>,   /* D0 user button */
+				    /* LEDS */
+				    <&gpiof 4 GPIO_ACTIVE_LOW>,    /* D1 LED1 blue */
+				    <&gpioi 14 GPIO_ACTIVE_LOW>,   /* D2 LED1 green */
+				    <&gpioi 12 GPIO_ACTIVE_LOW>,   /* D3 LED1 red */
+				    <&gpiof 2 GPIO_ACTIVE_LOW>,    /* D4 LED2 blue */
+				    <&gpioc 13 GPIO_ACTIVE_LOW>,   /* D5 LED2 green */
+				    <&gpiok 13 GPIO_ACTIVE_LOW>,   /* D6 LED2 red */
+				    <&gpioi 5 GPIO_ACTIVE_LOW>,    /* D7 LED3 blue */
+				    <&gpioe 2 GPIO_ACTIVE_LOW>,    /* D8 LED3 green */
+				    <&gpioi 7 GPIO_ACTIVE_LOW>,    /* D9 LED3 red */
+				    <&gpiog 15 GPIO_ACTIVE_HIGH>,  /* D10 LED RADIO */
+				    <&gpiob 7 GPIO_ACTIVE_HIGH>,   /* D11 LED ETH */
+				    /* RELAY */
+				    <&gpioh 2 GPIO_ACTIVE_HIGH>,   /* D12 RELAY 1 */
+				    <&gpioh 3 GPIO_ACTIVE_HIGH>,   /* D13 RELAY 2*/
+				    /* DETECT OUT */
+				    <&gpiob 0 GPIO_ACTIVE_HIGH>,   /* D14 DETECT OUT */
+				    /* RS485 RE */
+					 <&gpiof 8 GPIO_ACTIVE_HIGH>,   /* D15 RE rs485 */
+				    /* RS485 DE */
+					 <&gpiof 9 GPIO_ACTIVE_HIGH>,   /* D16 DE rs485 */
+				    /* ADCs */
+				    <&gpiof 13 GPIO_ACTIVE_HIGH>,  /* A0 */
+				    <&gpiof 14 GPIO_ACTIVE_HIGH>;  /* A1 */
+
+		builtin-led-gpios = <&gpiof 4 GPIO_ACTIVE_LOW>,    /* D1 LED1 blue */
+				    <&gpioi 14 GPIO_ACTIVE_LOW>,   /* D2 LED1 green */
+				    <&gpioi 12 GPIO_ACTIVE_LOW>,   /* D3 LED1 red */
+				    <&gpiof 2 GPIO_ACTIVE_LOW>,    /* D4 LED2 blue */
+				    <&gpioc 13 GPIO_ACTIVE_LOW>,   /* D5 LED2 green */
+				    <&gpiok 13 GPIO_ACTIVE_LOW>,   /* D6 LED2 red */
+				    <&gpioi 5 GPIO_ACTIVE_LOW>,    /* D7 LED3 blue */
+				    <&gpioe 2 GPIO_ACTIVE_LOW>,    /* D8 LED3 green */
+				    <&gpioi 7 GPIO_ACTIVE_LOW>,    /* D9 LED3 red */
+				    <&gpiog 15 GPIO_ACTIVE_HIGH>,  /* D10 LED RADIO */
+				    <&gpiob 7 GPIO_ACTIVE_HIGH>;   /* D11 LED ETH */
+
+		adc-pin-gpios =	<&gpiof 13 0>,
+								<&gpiof 14 0>;
+
+		io-channels = <&adc2 2>,   /* Corresponds to the first analog pin */
+				        <&adc2 6>;   /* Corresponds to the second analog pin*/
+		
+		pwm-pin-gpios = <&gpiof 4 0>;
+		
+		cdc-acm-serial = <&board_cdc_acm_uart>;
+		serials = <&uart7>;
+
+		i2cs = <&i2c2>, <&i2c1>, <&i2c4>;
+		spis = <&spi4>, <&spi1>;
+
+		pwms = <&pwm14 3 PWM_HZ(12000000) PWM_POLARITY_NORMAL>;
+
+		cans = <&fdcan2>, <&fdcan1>;
+	};
+
+};
+
+&phy0 {
+	compatible = "microchip,ksz8081", "arduino,eth-phy";
+};
+
