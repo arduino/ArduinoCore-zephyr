@@ -17,6 +17,8 @@ zephyr_sources(Tone.cpp)
 zephyr_sources(WMath.cpp)
 zephyr_sources(WInterrupts.cpp)
 
+zephyr_sources(usb_device_descriptor.c)
+
 if(DEFINED CONFIG_ARDUINO_ENTRY)
 zephyr_sources(main.cpp)
 zephyr_sources(threads.cpp)
