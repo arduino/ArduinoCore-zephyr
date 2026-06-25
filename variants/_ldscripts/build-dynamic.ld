@@ -22,10 +22,6 @@ SECTIONS {
         *(.llvmbc)
         *(.llvmcmd)
         *(.eh_frame)
-        *stdexcept.o
-        *eh_*.o
-        *cow-stdexcept.o
-        *cow-string-inst.o
     }
 
     .text 0x00000000 : ALIGN(4) {

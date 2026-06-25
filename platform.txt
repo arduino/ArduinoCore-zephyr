@@ -42,10 +42,17 @@ compiler.zephyr.cflags_file={build.variant.path}/cflags.txt
 compiler.zephyr.cxxflags_file={build.variant.path}/cxxflags.txt
 compiler.zephyr.macros="-imacros{build.variant.path}/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h" "-imacros{build.variant.path}/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h"
 compiler.zephyr.common_cxxflags=-fno-exceptions -fno-rtti -fdata-sections -ffunction-sections -fno-unwind-tables
-compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -lstdc++ -lsupc++ -lnosys -nostdlib
+# NOTE: -lstdc++/-lsupc++ are intentionally NOT listed here. They are linked
+# inside the --start-group of build.link_command (see compiler.zephyr.extra_ldflags)
+# so that the core archive is scanned before libstdc++. Together with
+# -Wl,-u,__cxa_allocate_exception this guarantees the core's exception-ABI stubs
+# (cores/arduino/abi.cpp) win over libstdc++'s eh_*.o, keeping the C++ exception
+# machinery and the libgcc unwinder (whose __gnu_Unwind_Find_exidx / __exidx_*
+# references cannot be resolved by the llext loader) out of the sketch llext.
+compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -lnosys -nostdlib -Wl,-u,__cxa_allocate_exception
 
 compiler.zephyr.extra_cxxflags=
-compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++ -lm
+compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++ -lm -lgcc -lc
 
 # these can be overriden in boards.txt
 build.extra_flags=
@@ -55,7 +62,7 @@ build.boot_mode=wait
 upload.extension=elf-zsk.bin
 
 build.ldscript.path={runtime.platform.path}/variants/_ldscripts
-build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} --specs=nano.specs --specs=nosys.specs {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
+build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
 
 build.check_command-dynamic={build.link_command} {build.link_args.check-dynamic} -o "{build.path}/{build.project_name}_check.tmp"
 build.check_command-static=true
