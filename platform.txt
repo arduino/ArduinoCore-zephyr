@@ -41,7 +41,15 @@ compiler.zephyr.machine_flags_file={build.variant.path}/machine_flags.txt
 compiler.zephyr.cflags_file={build.variant.path}/cflags.txt
 compiler.zephyr.cxxflags_file={build.variant.path}/cxxflags.txt
 compiler.zephyr.macros="-imacros{build.variant.path}/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h" "-imacros{build.variant.path}/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h"
-compiler.zephyr.common_cxxflags=-fno-exceptions -fno-rtti -fdata-sections -ffunction-sections -fno-unwind-tables
+# NOTE: -fno-extern-tls-init prevents the C++ frontend from emitting guarded
+# references to the thread-local init function (e.g. _ZTH5errno) for extern
+# thread_local variables such as picolibc's `errno`. These variables are
+# statically initialized and need no dynamic init, but with the default
+# -fextern-tls-init the compiler emits a weak `_ZTH<var>` reference that the
+# llext loader cannot process, failing with "Undefined symbol ... _ZTH5errno"
+# (ret -61). The toolchain 1.0.1 update made this surface for std::stoi/std::stol
+# and any other libstdc++ code that touches errno (e.g. Arduino_RouterBridge).
+compiler.zephyr.common_cxxflags=-fno-exceptions -fno-rtti -fdata-sections -ffunction-sections -fno-unwind-tables -fno-extern-tls-init
 # NOTE: -lstdc++/-lsupc++ are intentionally NOT listed here. They are linked
 # inside the --start-group of build.link_command (see compiler.zephyr.extra_ldflags)
 # so that the core archive is scanned before libstdc++. Together with
