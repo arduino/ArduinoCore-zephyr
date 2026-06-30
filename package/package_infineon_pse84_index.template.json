@@ -1,0 +1,125 @@
+{
+  "packages": [
+    {
+      "name": "infineon",
+      "maintainer": "Infineon Technologies AG",
+      "websiteURL": "https://www.infineon.com/",
+      "email": "maker@infineon.com",
+      "platforms": [
+        {
+          "name": "Infineon PSOC Edge Boards",
+          "architecture": "zephyr_pse84",
+          "version": "",
+          "category": "Contributed",
+          "url": "",
+          "archiveFileName": "",
+          "checksum": "",
+          "size": "",
+          "help": {
+            "online": ""
+          },
+          "boards": [
+            {
+              "name": "Infineon KIT-PSE84-AI (PSOC Edge E84)"
+            }
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "infineon",
+              "name": "openocd",
+              "version": "5.16.1.4486"
+            },
+            {
+              "packager": "arduino",
+              "name": "gen-rodata-ld",
+              "version": "0.1.1"
+            },
+            {
+              "packager": "arduino",
+              "name": "zephyr-sketch-tool",
+              "version": "0.3.0"
+            },
+            {
+              "packager": "zephyr",
+              "name": "arm-zephyr-eabi",
+              "version": "1.0.1"
+            },
+            {
+              "packager": "arduino",
+              "name": "zephyr-check-size",
+              "version": "0.1.0"
+            }
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "name": "openocd",
+          "version": "5.16.1.4486",
+          "systems": [
+            {
+              "host": "i686-mingw32",
+              "archiveFileName": "openocd-5.16.1.4486-windows.zip",
+              "url": "https://github.com/Infineon/openocd/releases/download/release-v5.16.1/openocd-5.16.1.4486-windows.zip",
+              "checksum": "SHA-256:5bfde009a525c6a2490f50456efc18ba8420892d0e7b5a2a47e7727603deec87",
+              "size": "5690850"
+            },
+            {
+              "host": "x86_64-pc-linux-gnu",
+              "archiveFileName": "openocd-5.16.1.4486-linux.tar.gz",
+              "url": "https://github.com/Infineon/openocd/releases/download/release-v5.16.1/openocd-5.16.1.4486-linux.tar.gz",
+              "checksum": "SHA-256:d3c6d0142d29c898f11c124140d44e0ca64fe58794aea15769eb6a981293c637",
+              "size": "5339070"
+            },
+            {
+              "host": "arm64-apple-darwin",
+              "archiveFileName": "openocd-5.16.1.4486-macos-arm64.zip",
+              "url": "https://github.com/Infineon/openocd/releases/download/release-v5.16.1/openocd-5.16.1.4486-macos-arm64.zip",
+              "checksum": "SHA-256:7b1b3dfb3fc13c2c189bdcc14b25c08fa06cc50c5e37b21fd093305fa0eedafd",
+              "size": "5576669"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "zephyr",
+      "maintainer": "The Zephyr Project",
+      "websiteURL": "https://zephyrproject.org/",
+      "email": "devel@zephyrproject.org",
+      "help": {
+        "online": "https://docs.zephyrproject.org/latest/"
+      },
+      "platforms": [],
+      "tools": [
+        {
+          "name": "arm-zephyr-eabi",
+          "version": "1.0.1",
+          "systems": [
+            {
+              "host": "i686-mingw32",
+              "archiveFileName": "toolchain_gnu_windows-x86_64_arm-zephyr-eabi-1.0.1.tar.xz",
+              "url": "https://github.com/Infineon/ArduinoCore-zephyr/releases/download/windows_toolchain_1.0.1/toolchain_gnu_windows-x86_64_arm-zephyr-eabi-1.0.1.tar.xz",
+              "checksum": "SHA-256:bca104bc09a3c5173622ccd17b80ab26aff1d2370d85258b6b7aba429fab3f61",
+              "size": "96856296"
+            },
+            {
+              "host": "x86_64-linux-gnu",
+              "archiveFileName": "toolchain_gnu_linux-x86_64_arm-zephyr-eabi-1.0.1.tar.xz",
+              "url": "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz",
+              "checksum": "SHA-256:21b85981cb5a1818d9bc53d82af80f208946ec038b982ff1907287572ed3a634",
+              "size": "101752776"
+            },
+            {
+              "host": "arm64-apple-darwin",
+              "archiveFileName": "toolchain_gnu_macos-aarch64_arm-zephyr-eabi.tar.xz",
+              "url": "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_macos-aarch64_arm-zephyr-eabi.tar.xz",
+              "checksum": "SHA-256:4008edb5d4840cd994aedd7f1309bfb63e7243729d57839ebf1cc83c1f17c886",
+              "size": "89958448"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

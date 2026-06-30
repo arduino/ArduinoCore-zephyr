@@ -22,709 +22,753 @@ menu.wait_linux_boot=Startup mode
 
 ##########################################################################################
 
-giga.name=Arduino Giga R1
-giga.build.core=arduino
-giga.build.crossprefix=arm-zephyr-eabi-
-giga.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-giga.menu.debug.false=Standard
-giga.menu.debug.true=Debug
-giga.menu.debug.true.build.zsk_args.debug=-debug
-
-giga.menu.link_mode.dynamic=Dynamic
-giga.menu.link_mode.static=Static
-giga.menu.link_mode.static.build.link_mode=static
-giga.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-giga.build.zephyr_target=arduino_giga_r1//m7
-giga.build.zephyr_args=--shield arduino_giga_display_shield
-giga.build.zephyr_hals=hal_stm32 hal_infineon
-giga.build.variant=arduino_giga_r1_stm32h747xx_m7
-giga.build.artifact=zephyr_main
-
-giga.build.extra_flags=
-giga.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-giga.build.board=GIGA
-giga.vid.0=0x2341
-giga.pid.0=0x0066
-giga.upload_port.0.vid=0x2341
-giga.upload_port.0.pid=0x0066
-
-giga.upload.tool=dfu-util
-giga.upload.tool.default=dfu-util
-giga.upload.protocol=
-giga.upload.transport=
-giga.upload.vid=0x2341
-giga.upload.pid=0x0366
-giga.upload.interface=0
-giga.upload.use_1200bps_touch=true
-giga.upload.wait_for_upload_port=true
-giga.upload.native_usb=true
-
-giga.bootloader.tool=dfu-util
-giga.bootloader.tool.default=dfu-util
-giga.bootloader.vid=0x2341
-giga.bootloader.pid=0x0366
-giga.bootloader.interface=0
-giga.bootloader.file=zephyr-{build.variant}.bin
-giga.bootloader.address=0x08040000
-
-giga.debug.tool=gdb
-giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-giga.debug.server.openocd.scripts.1={programmer.transport_script}
-giga.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
-giga.debug.cortex-debug.custom.request=attach
-giga.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
-
-##########################################################################################
-
-nano33ble.name=Arduino Nano 33 BLE
-nano33ble.build.core=arduino
-nano33ble.build.crossprefix=arm-zephyr-eabi-
-nano33ble.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-nano33ble.menu.debug.false=Standard
-nano33ble.menu.debug.true=Debug
-nano33ble.menu.debug.true.build.zsk_args.debug=-debug
-
-nano33ble.menu.link_mode.dynamic=Dynamic
-nano33ble.menu.link_mode.static=Static
-nano33ble.menu.link_mode.static.build.link_mode=static
-nano33ble.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-nano33ble.build.zephyr_target=arduino_nano_33_ble//sense
-nano33ble.build.zephyr_args=
-nano33ble.build.zephyr_hals=hal_nordic
-nano33ble.build.artifact=zephyr_main
-nano33ble.build.variant=arduino_nano_33_ble_nrf52840_sense
-
-nano33ble.build.extra_flags=
-nano33ble.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nano33ble.build.board=NANO33BLE
-nano33ble.vid.0=0x2341
-nano33ble.pid.0=0x035a
-nano33ble.upload_port.0.vid=0x2341
-nano33ble.upload_port.0.pid=0x005a
-
-nano33ble.upload.tool=bossac
-nano33ble.upload.tool.default=bossac
-nano33ble.upload.protocol=
-nano33ble.upload.transport=
-nano33ble.upload.vid=0x2341
-nano33ble.upload.pid=0x005a
-nano33ble.upload.interface=0
-nano33ble.upload.use_1200bps_touch=true
-nano33ble.upload.wait_for_upload_port=true
-nano33ble.upload.native_usb=true
-nano33ble.upload.offset=0x10000 # bootloader skips its own partition
-
-nano33ble.bootloader.tool=bossac
-nano33ble.bootloader.tool.default=bossac
-nano33ble.bootloader.vid=0x2341
-nano33ble.bootloader.pid=0x035b
-nano33ble.bootloader.interface=0
-nano33ble.bootloader.file=zephyr-{build.variant}.bin
-nano33ble.bootloader.address=0x0000
-
-nano33ble.debug.tool=gdb
-nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-nano33ble.debug.server.openocd.scripts.1={programmer.transport_script}
-nano33ble.debug.server.openocd.scripts.2=target/nrf52.cfg
-nano33ble.debug.cortex-debug.custom.request=attach
-
-##############################################################################################################
-
-ek_ra8d1.name=Renesas RA8D1 EK
-ek_ra8d1.build.core=arduino
-ek_ra8d1.build.crossprefix=arm-zephyr-eabi-
-ek_ra8d1.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-ek_ra8d1.menu.debug.false=Standard
-ek_ra8d1.menu.debug.true=Debug
-ek_ra8d1.menu.debug.true.build.zsk_args.debug=-debug
-
-ek_ra8d1.menu.link_mode.dynamic=Dynamic
-ek_ra8d1.menu.link_mode.static=Static
-ek_ra8d1.menu.link_mode.static.build.link_mode=static
-ek_ra8d1.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-ek_ra8d1.build.zephyr_target=ek_ra8d1
-ek_ra8d1.build.zephyr_args=
-ek_ra8d1.build.zephyr_hals=hal_renesas
-ek_ra8d1.build.variant=ek_ra8d1_r7fa8d1bhecbd
-
-ek_ra8d1.build.extra_flags=
-ek_ra8d1.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-ek_ra8d1.build.board=EK_RA8D1
-
-#ek_ra8d1.recipe.hooks.objcopy.postobjcopy.4.pattern=cp {build.variant.path}/flasher.jlink "{build.path}/flasher.jlink"
-#ek_ra8d1.recipe.hooks.objcopy.postobjcopy.5.pattern=sed -i 's|SKETCH|"{build.path}/{build.project_name}.llext.dfu.bin"|g' "{build.path}/flasher.jlink"
-
-ek_ra8d1.vid.0=0x2341
-ek_ra8d1.pid.0=0x0077
-ek_ra8d1.upload_port.0.vid=0x2341
-ek_ra8d1.upload_port.0.pid=0x0077
-
-ek_ra8d1.upload.tool=pyocd
-ek_ra8d1.upload.tool.default=pyocd
-ek_ra8d1.upload.protocol=
-ek_ra8d1.upload.transport=
-ek_ra8d1.upload.vid=0x2341
-ek_ra8d1.upload.pid=0x0366
-ek_ra8d1.upload.interface=0
-ek_ra8d1.upload.use_1200bps_touch=false
-ek_ra8d1.upload.wait_for_upload_port=false
-ek_ra8d1.upload.native_usb=true
-ek_ra8d1.upload.target=R7FA8D1AH
-
-ek_ra8d1.bootloader.tool=pyocd
-ek_ra8d1.bootloader.tool.default=pyocd
-ek_ra8d1.bootloader.file=zephyr-{build.variant}.elf
-ek_ra8d1.bootloader.target=R7FA8D1AH
-
-
-##############################################################################################################
-
-frdm_mcxn947.name=NXP FRDM MCXN947
-frdm_mcxn947.build.core=arduino
-frdm_mcxn947.build.crossprefix=arm-zephyr-eabi-
-frdm_mcxn947.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-frdm_mcxn947.menu.debug.false=Standard
-frdm_mcxn947.menu.debug.true=Debug
-frdm_mcxn947.menu.debug.true.build.zsk_args.debug=-debug
-
-frdm_mcxn947.menu.link_mode.dynamic=Dynamic
-frdm_mcxn947.menu.link_mode.static=Static
-frdm_mcxn947.menu.link_mode.static.build.link_mode=static
-frdm_mcxn947.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-frdm_mcxn947.build.zephyr_target=frdm_mcxn947//cpu0
-frdm_mcxn947.build.zephyr_args=
-frdm_mcxn947.build.zephyr_hals=hal_nxp
-frdm_mcxn947.build.variant=frdm_mcxn947_mcxn947_cpu0
-
-frdm_mcxn947.build.extra_flags=
-frdm_mcxn947.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-frdm_mcxn947.build.board=FRDM_MCXN947
-frdm_mcxn947.vid.0=0x1fc9
-frdm_mcxn947.pid.0=0x0143
-frdm_mcxn947.upload_port.0.vid=0x1fc9
-frdm_mcxn947.upload_port.0.pid=0x0143
-frdm_mcxn947.upload.target=mcxn947vdf
-
-frdm_mcxn947.upload.tool=pyocd
-frdm_mcxn947.upload.tool.default=pyocd
-frdm_mcxn947.upload.protocol=
-frdm_mcxn947.upload.transport=
-frdm_mcxn947.upload.vid=0x1fc9
-frdm_mcxn947.upload.pid=0x0143
-frdm_mcxn947.upload.interface=0
-frdm_mcxn947.upload.use_1200bps_touch=false
-frdm_mcxn947.upload.wait_for_upload_port=false
-frdm_mcxn947.upload.native_usb=true
-
-frdm_mcxn947.bootloader.tool=pyocd
-frdm_mcxn947.bootloader.tool.default=pyocd
-frdm_mcxn947.bootloader.file=zephyr-{build.variant}.elf
-frdm_mcxn947.bootloader.target=mcxn947vdf
-
-
-##########################################################################################
-
-portentah7.name=Arduino Portenta H7
-portentah7.build.core=arduino
-portentah7.build.crossprefix=arm-zephyr-eabi-
-portentah7.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-portentah7.menu.debug.false=Standard
-portentah7.menu.debug.true=Debug
-portentah7.menu.debug.true.build.zsk_args.debug=-debug
-
-portentah7.menu.link_mode.dynamic=Dynamic
-portentah7.menu.link_mode.static=Static
-portentah7.menu.link_mode.static.build.link_mode=static
-portentah7.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-portentah7.build.zephyr_target=arduino_portenta_h7@1.0.0//m7
-portentah7.build.zephyr_args=
-portentah7.build.zephyr_hals=hal_stm32 hal_infineon
-portentah7.build.artifact=zephyr_main
-portentah7.build.variant=arduino_portenta_h7_stm32h747xx_m7
-
-portentah7.build.extra_flags=
-portentah7.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-portentah7.build.board=PORTENTA_H7_M7
-portentah7.vid.0=0x2341
-portentah7.pid.0=0x005b
-portentah7.upload_port.0.vid=0x2341
-portentah7.upload_port.0.pid=0x035b
-
-portentah7.upload.tool=dfu-util
-portentah7.upload.tool.default=dfu-util
-portentah7.upload.protocol=
-portentah7.upload.transport=
-portentah7.upload.vid=0x2341
-portentah7.upload.pid=0x035b
-portentah7.upload.interface=0
-portentah7.upload.use_1200bps_touch=true
-portentah7.upload.wait_for_upload_port=true
-portentah7.upload.native_usb=true
-
-portentah7.bootloader.tool=dfu-util
-portentah7.bootloader.tool.default=dfu-util
-portentah7.bootloader.vid=0x2341
-portentah7.bootloader.pid=0x035b
-portentah7.bootloader.interface=0
-portentah7.bootloader.file=zephyr-{build.variant}.bin
-portentah7.bootloader.address=0x08040000
-
-portentah7.debug.tool=gdb
-portentah7.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-portentah7.debug.server.openocd.scripts.1={programmer.transport_script}
-portentah7.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
-portentah7.debug.cortex-debug.custom.request=attach
-portentah7.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
-
-##############################################################################################################
-
-nicla_vision.name=Arduino Nicla Vision
-nicla_vision.build.core=arduino
-nicla_vision.build.crossprefix=arm-zephyr-eabi-
-nicla_vision.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-nicla_vision.menu.debug.false=Standard
-nicla_vision.menu.debug.true=Debug
-nicla_vision.menu.debug.true.build.zsk_args.debug=-debug
-
-nicla_vision.menu.link_mode.dynamic=Dynamic
-nicla_vision.menu.link_mode.static=Static
-nicla_vision.menu.link_mode.static.build.link_mode=static
-nicla_vision.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-nicla_vision.build.zephyr_target=arduino_nicla_vision//m7
-nicla_vision.build.zephyr_args=
-nicla_vision.build.zephyr_hals=hal_stm32 hal_infineon
-nicla_vision.build.artifact=zephyr_main
-nicla_vision.build.variant=arduino_nicla_vision_stm32h747xx_m7
-
-nicla_vision.build.extra_flags=
-nicla_vision.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nicla_vision.build.board=NICLA_VISION
-nicla_vision.vid.0=0x2341
-nicla_vision.pid.0=0x005b
-nicla_vision.upload_port.0.vid=0x2341
-nicla_vision.upload_port.0.pid=0x025f
-
-nicla_vision.upload.tool=dfu-util
-nicla_vision.upload.tool.default=dfu-util
-nicla_vision.upload.protocol=
-nicla_vision.upload.transport=
-nicla_vision.upload.vid=0x2341
-nicla_vision.upload.pid=0x035f
-nicla_vision.upload.interface=0
-nicla_vision.upload.use_1200bps_touch=true
-nicla_vision.upload.wait_for_upload_port=true
-nicla_vision.upload.native_usb=true
-
-nicla_vision.bootloader.tool=dfu-util
-nicla_vision.bootloader.tool.default=dfu-util
-nicla_vision.bootloader.vid=0x2341
-nicla_vision.bootloader.pid=0x035f
-nicla_vision.bootloader.interface=0
-nicla_vision.bootloader.file=zephyr-{build.variant}.bin
-nicla_vision.bootloader.address=0x08040000
-
-nicla_vision.debug.tool=gdb
-nicla_vision.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-nicla_vision.debug.server.openocd.scripts.1={programmer.transport_script}
-nicla_vision.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
-nicla_vision.debug.cortex-debug.custom.request=attach
-nicla_vision.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
-
-##############################################################################################################
-
-frdm_rw612.name=NXP FRDM RW612
-frdm_rw612.build.core=arduino
-frdm_rw612.build.crossprefix=arm-zephyr-eabi-
-frdm_rw612.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-frdm_rw612.menu.debug.false=Standard
-frdm_rw612.menu.debug.true=Debug
-frdm_rw612.menu.debug.true.build.zsk_args.debug=-debug
-
-frdm_rw612.menu.link_mode.dynamic=Dynamic
-frdm_rw612.menu.link_mode.static=Static
-frdm_rw612.menu.link_mode.static.build.link_mode=static
-frdm_rw612.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-frdm_rw612.build.zephyr_target=frdm_rw612
-frdm_rw612.build.zephyr_args=
-frdm_rw612.build.zephyr_hals=hal_stm32
-frdm_rw612.build.variant=frdm_rw612_rw612
-
-frdm_rw612.build.extra_flags=
-frdm_rw612.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-frdm_rw612.build.board=FRDM_RW612
-frdm_rw612.vid.0=0x1fc9
-frdm_rw612.pid.0=0x0143
-frdm_rw612.upload_port.0.vid=0x1fc9
-frdm_rw612.upload_port.0.pid=0x0143
-frdm_rw612.upload.target=rw612
-
-frdm_rw612.upload.tool=pyocd
-frdm_rw612.upload.tool.default=pyocd
-frdm_rw612.upload.protocol=
-frdm_rw612.upload.transport=
-frdm_rw612.upload.vid=0x1fc9
-frdm_rw612.upload.pid=0x0143
-frdm_rw612.upload.interface=0
-frdm_rw612.upload.use_1200bps_touch=false
-frdm_rw612.upload.wait_for_upload_port=false
-frdm_rw612.upload.native_usb=true
-
-frdm_rw612.bootloader.tool=pyocd
-frdm_rw612.bootloader.tool.default=pyocd
-frdm_rw612.bootloader.file=zephyr-{build.variant}.elf
-frdm_rw612.bootloader.target=rw612
-
-##########################################################################################
-
-nicla_sense.name=Arduino Nicla Sense ME
-nicla_sense.build.core=arduino
-nicla_sense.build.crossprefix=arm-zephyr-eabi-
-nicla_sense.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-nicla_sense.menu.link_mode.dynamic=Dynamic
-nicla_sense.menu.link_mode.static=Static
-nicla_sense.menu.link_mode.static.build.link_mode=static
-nicla_sense.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-nicla_sense.build.zephyr_target=arduino_nicla_sense_me
-nicla_sense.build.zephyr_args=
-nicla_sense.build.zephyr_hals=hal_nordic
-nicla_sense.build.artifact=zephyr_main
-nicla_sense.build.variant=arduino_nicla_sense_me_nrf52832
-
-nicla_sense.openocd_cfg=flash_sketch.cfg
-nicla_sense.build.extra_flags=
-nicla_sense.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nicla_sense.build.board=NICLA_SENSE_ME
-nicla_sense.vid.0=0x2341
-nicla_sense.pid.0=0x0360
-nicla_sense.upload_port.0.vid=0x2341
-nicla_sense.upload_port.0.pid=0x0060
-
-nicla_sense.upload.tool=openocd
-nicla_sense.upload.tool.default=openocd
-nicla_sense.upload.protocol=
-nicla_sense.upload.config=-f target/nrf52.cfg
-nicla_sense.upload.programmer=-f interface/cmsis-dap.cfg
-nicla_sense.upload.vid=0x2341
-nicla_sense.upload.pid=0x0060
-nicla_sense.upload.interface=0
-nicla_sense.upload.use_1200bps_touch=false
-nicla_sense.upload.wait_for_upload_port=false
-nicla_sense.upload.native_usb=false
-nicla_sense.upload.target=nrf52
-
-nicla_sense.bootloader.tool=openocd
-nicla_sense.bootloader.tool.default=openocd
-nicla_sense.bootloader.vid=0x2341
-nicla_sense.bootloader.pid=0x0360
-nicla_sense.bootloader.interface=0
-nicla_sense.bootloader.file=zephyr-{build.variant}.hex
-nicla_sense.bootloader.target=nrf52
-
-nicla_sense.debug.tool=gdb
-nicla_sense.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-nicla_sense.debug.server.openocd.scripts.1={programmer.transport_script}
-nicla_sense.debug.server.openocd.scripts.2=target/nrf52.cfg
-nicla_sense.debug.cortex-debug.custom.request=attach
-
-
-##########################################################################################
-
-portentac33.name=Arduino Portenta C33
-portentac33.build.core=arduino
-portentac33.build.crossprefix=arm-zephyr-eabi-
-portentac33.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-portentac33.menu.debug.false=Standard
-portentac33.menu.debug.true=Debug
-portentac33.menu.debug.true.build.zsk_args.debug=-debug
-
-portentac33.menu.link_mode.dynamic=Dynamic
-portentac33.menu.link_mode.static=Static
-portentac33.menu.link_mode.static.build.link_mode=static
-portentac33.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-portentac33.build.zephyr_target=arduino_portenta_c33
-portentac33.build.zephyr_args=
-portentac33.build.zephyr_hals=hal_renesas nanopb
-portentac33.build.artifact=zephyr_main
-portentac33.build.variant=arduino_portenta_c33_r7fa6m5bh3cfc
-
-portentac33.build.extra_flags=
-portentac33.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-portentac33.build.board=PORTENTA_C33
-portentac33.vid.0=0x2341
-portentac33.pid.0=0x0068
-portentac33.upload_port.0.vid=0x2341
-portentac33.upload_port.0.pid=0x0068
-portentac33.upload.target=portentac33
-
-portentac33.upload.tool=dfu-util
-portentac33.upload.tool.default=dfu-util
-portentac33.upload.protocol=
-portentac33.upload.transport=
-portentac33.upload.vid=0x2341
-portentac33.upload.pid=0x0368
-portentac33.upload.interface=1
-portentac33.upload.use_1200bps_touch=true
-portentac33.upload.wait_for_upload_port=false
-portentac33.upload.native_usb=true
-portentac33.upload.dfuse=-Q -w
-
-portentac33.bootloader.tool=dfu-util
-portentac33.bootloader.tool.default=dfu-util
-portentac33.bootloader.file=zephyr-{build.variant}.bin
-portentac33.bootloader.interface=0
-portentac33.bootloader.address=0x10000
-portentac33.bootloader.dfuse=-Q
-
-##########################################################################################
-
-opta.name=Arduino Opta
-opta.build.core=arduino
-opta.build.crossprefix=arm-zephyr-eabi-
-opta.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-opta.menu.debug.false=Standard
-opta.menu.debug.true=Debug
-opta.menu.debug.true.build.zsk_args.debug=-debug
-
-opta.menu.link_mode.dynamic=Dynamic
-opta.menu.link_mode.static=Static
-opta.menu.link_mode.static.build.link_mode=static
-opta.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-opta.build.zephyr_target=arduino_opta//m7
-opta.build.zephyr_args=
-opta.build.zephyr_hals=hal_stm32 hal_infineon
-opta.build.artifact=zephyr_main
-opta.build.variant=arduino_opta_stm32h747xx_m7
-
-opta.build.extra_flags=
-opta.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-opta.build.board=OPTA
-opta.vid.0=0x2341
-opta.pid.0=0x0064
-opta.upload_port.0.vid=0x2341
-opta.upload_port.0.pid=0x0364
-
-opta.upload.tool=dfu-util
-opta.upload.tool.default=dfu-util
-opta.upload.protocol=
-opta.upload.transport=
-opta.upload.vid=0x2341
-opta.upload.pid=0x0364
-opta.upload.interface=0
-opta.upload.use_1200bps_touch=true
-opta.upload.wait_for_upload_port=true
-opta.upload.native_usb=true
-
-opta.bootloader.tool=dfu-util
-opta.bootloader.tool.default=dfu-util
-opta.bootloader.vid=0x2341
-opta.bootloader.pid=0x0364
-opta.bootloader.interface=0
-opta.bootloader.file=zephyr-{build.variant}.bin
-opta.bootloader.address=0x08040000
-
-opta.debug.tool=gdb
-opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-opta.debug.server.openocd.scripts.1={programmer.transport_script}
-opta.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
-opta.debug.cortex-debug.custom.request=attach
-opta.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
-
-##########################################################################################
-
-nano_matter.name=Arduino Nano Matter
-nano_matter.build.core=arduino
-nano_matter.build.crossprefix=arm-zephyr-eabi-
-nano_matter.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-nano_matter.menu.link_mode.dynamic=Dynamic
-nano_matter.menu.link_mode.static=Static
-nano_matter.menu.link_mode.static.build.link_mode=static
-nano_matter.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-nano_matter.build.zephyr_target=arduino_nano_matter
-nano_matter.build.zephyr_args=
-nano_matter.build.zephyr_hals=hal_silabs
-nano_matter.build.artifact=zephyr_main
-nano_matter.build.variant=arduino_nano_matter_mgm240sd22vna
-
-nano_matter.openocd_cfg=flash_sketch.cfg
-nano_matter.build.extra_flags=
-nano_matter.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nano_matter.build.board=ARDUINO_NANO_MATTER
-nano_matter.vid.0=0x2341
-nano_matter.pid.0=0x0072
-nano_matter.upload_port.0.vid=0x2341
-nano_matter.upload_port.0.pid=0x0072
-
-nano_matter.upload.tool=openocd
-nano_matter.upload.tool.default=openocd
-nano_matter.upload.config=-f target/efm32s2_g23.cfg
-nano_matter.upload.programmer=-f interface/cmsis-dap.cfg
-nano_matter.upload.protocol=SWD
-nano_matter.upload.setup_command=
-nano_matter.upload.use_1200bps_touch=false
-nano_matter.upload.wait_for_upload_port=false
-nano_matter.upload.native_usb=false
-
-nano_matter.bootloader.tool=openocd
-nano_matter.bootloader.tool.default=openocd
-nano_matter.bootloader.vid=0x2341
-nano_matter.bootloader.pid=0x0072
-nano_matter.bootloader.interface=0
-nano_matter.bootloader.file=zephyr-{build.variant}.hex
-nano_matter.bootloader.target=arduino_nano_matter
-
-nano_matter.debug.server=openocd
-nano_matter.debug.server.openocd.scripts.0=interface/cmsis-dap.cfg
-nano_matter.debug.server.openocd.scripts.1=target/efm32s2_g23.cfg
-nano_matter.debug.cortex-debug.custom.postAttachCommands.0=monitor reset halt
-#nano_matter.debug.cortex-debug.custom.postAttachCommands.1=monitor reset_config srst_nogate
-#nano_matter.debug.cortex-debug.custom.postAttachCommands.2=monitor gdb_breakpoint_override hard
-nano_matter.debug.cortex-debug.custom.postAttachCommands.3=monitor gdb_sync
-nano_matter.debug.cortex-debug.custom.postAttachCommands.4=c
-nano_matter.debug.cortex-debug.custom.overrideRestartCommands.0=monitor reset halt
-nano_matter.debug.cortex-debug.custom.overrideRestartCommands.1=monitor gdb_sync
-nano_matter.debug.cortex-debug.custom.overrideRestartCommands.2=c
-nano_matter.debug.cortex-debug.custom.request=attach
-
-##############################################################################################################
-
-unoq.name=Arduino UNO Q
-unoq.build.core=arduino
-unoq.build.crossprefix=arm-zephyr-eabi-
-unoq.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-unoq.menu.link_mode.dynamic=Dynamic
-unoq.menu.link_mode.static=Static
-unoq.menu.link_mode.static.build.link_mode=static
-unoq.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-unoq.menu.wait_linux_boot.yes=Wait for Linux
-unoq.menu.wait_linux_boot.no=Immediate
-unoq.menu.wait_linux_boot.no.build.boot_mode=immediate
-unoq.menu.wait_linux_boot.app=Wait for App
-unoq.menu.wait_linux_boot.app.build.boot_mode=app
-
-unoq.build.zephyr_target=arduino_uno_q
-unoq.build.zephyr_args=
-unoq.build.variant=arduino_uno_q_stm32u585xx
-unoq.build.artifact=zephyr_unoq
-unoq.build.subarch=zephyr
-
-unoq.openocd_cfg=flash_sketch.cfg
-unoq.build.extra_flags=
-unoq.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-unoq.build.board=UNO_Q
-unoq.build.zephyr_hals=hal_stm32
-unoq.build.zephyr_toolchain=arm-zephyr-eabi
-unoq.vid.0=0x2341
-unoq.pid.0=0x0078
-unoq.upload_port.0.vid=0x2341
-unoq.upload_port.0.pid=0x0078
-unoq.upload.target=stm32u585zitxq
-
-unoq.upload.tool=remoteocd
-unoq.upload.tool.default=remoteocd
-unoq.upload.tool.network=remoteocd_network
-unoq.upload.protocol=
-unoq.upload.transport=
-unoq.upload.vid=0x2341
-unoq.upload.pid=0x0078
-unoq.upload.interface=0
-unoq.upload.use_1200bps_touch=false
-unoq.upload.wait_for_upload_port=false
-unoq.upload.native_usb=true
-
-unoq.bootloader.tool=remoteocd
-unoq.bootloader.tool.default=remoteocd
-unoq.bootloader.file=zephyr-{build.variant}.elf
-unoq.bootloader.target=stm32u585zitxq
-
-##############################################################################################################
-
-nano_connect.name=Arduino Nano RP2040 Connect
-nano_connect.build.core=arduino
-nano_connect.build.crossprefix=arm-zephyr-eabi-
-nano_connect.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
-
-nano_connect.menu.debug.false=Standard
-nano_connect.menu.debug.true=Debug
-nano_connect.menu.debug.true.build.zsk_args.debug=-debug
-
-nano_connect.menu.link_mode.dynamic=Dynamic
-nano_connect.menu.link_mode.static=Static
-nano_connect.menu.link_mode.static.build.link_mode=static
-nano_connect.menu.link_mode.static.upload.extension=bin-zsk.bin
-
-nano_connect.build.zephyr_target=arduino_nano_connect
-nano_connect.build.zephyr_args=
-nano_connect.build.zephyr_hals=hal_rpi_pico
-nano_connect.build.artifact=zephyr_main
-nano_connect.build.variant=arduino_nano_connect_rp2040
-nano_connect.build.mcu=cortex-m0plus
-nano_connect.build.fpu=
-nano_connect.build.architecture=cortex-m0plus
-nano_connect.compiler.zephyr.arch.define=
-
-nano_connect.build.float-abi=-mfloat-abi=soft
-nano_connect.build.extra_flags=
-nano_connect.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
-nano_connect.recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.bin2uf2.path}/bin2uf2" {upload.address} {upload.familyid} "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.uf2"
-nano_connect.build.board=NANO_RP2040_CONNECT
-nano_connect.compiler.zephyr=
-nano_connect.vid.0=0x2341
-nano_connect.pid.0=0x005E
-nano_connect.upload_port.0.vid=0x2341
-nano_connect.upload_port.0.pid=0x005E
-
-nano_connect.upload.tool=picotool
-nano_connect.upload.tool.default=picotool
-nano_connect.upload.protocol=
-nano_connect.upload.transport=
-nano_connect.upload.vid=0x2341
-nano_connect.upload.pid=0x005E
-nano_connect.upload.interface=0
-nano_connect.upload.use_1200bps_touch=true
-nano_connect.upload.wait_for_upload_port=false
-nano_connect.upload.native_usb=true
-nano_connect.upload.maximum_size=16777216
-nano_connect.upload.maximum_data_size=270336
-
-nano_connect.upload.address=0x100E0000
-nano_connect.upload.familyid=0xe48bff56
-
-nano_connect.bootloader.tool=picotool
-nano_connect.bootloader.tool.default=picotool
-nano_connect.bootloader.vid=0x2341
-nano_connect.bootloader.pid=0x005E
-nano_connect.bootloader.interface=0
-nano_connect.bootloader.file=zephyr-{build.variant}
-
-nano_connect.debug.tool=gdb
-nano_connect.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
-nano_connect.debug.server.openocd.scripts.1={programmer.transport_script}
-nano_connect.debug.server.openocd.scripts.2=target/rp2040-core0.cfg
-nano_connect.debug.cortex-debug.custom.request=attach
-nano_connect.debug.svd_file={runtime.platform.path}/svd/rp2040.svd
+# giga.menu.link_mode.dynamic=Dynamic
+# giga.menu.link_mode.static=Static
+# giga.menu.link_mode.static.build.link_mode=static
+# giga.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# giga.build.zephyr_target=arduino_giga_r1//m7
+# giga.build.zephyr_args=--shield arduino_giga_display_shield
+# giga.build.zephyr_hals=hal_stm32 hal_infineon
+# giga.build.variant=arduino_giga_r1_stm32h747xx_m7
+# giga.build.artifact=zephyr_main
+# 
+# giga.build.extra_flags=
+# giga.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# giga.build.board=GIGA
+# giga.vid.0=0x2341
+# giga.pid.0=0x0066
+# giga.upload_port.0.vid=0x2341
+# giga.upload_port.0.pid=0x0066
+# 
+# giga.upload.tool=dfu-util
+# giga.upload.tool.default=dfu-util
+# giga.upload.protocol=
+# giga.upload.transport=
+# giga.upload.vid=0x2341
+# giga.upload.pid=0x0366
+# giga.upload.interface=0
+# giga.upload.use_1200bps_touch=true
+# giga.upload.wait_for_upload_port=true
+# giga.upload.native_usb=true
+# 
+# giga.bootloader.tool=dfu-util
+# giga.bootloader.tool.default=dfu-util
+# giga.bootloader.vid=0x2341
+# giga.bootloader.pid=0x0366
+# giga.bootloader.interface=0
+# giga.bootloader.file=zephyr-{build.variant}.bin
+# giga.bootloader.address=0x08040000
+# 
+# giga.debug.tool=gdb
+# giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# giga.debug.server.openocd.scripts.1={programmer.transport_script}
+# giga.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
+# giga.debug.cortex-debug.custom.request=attach
+# giga.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+# 
+# ##########################################################################################
+# 
+# nano33ble.name=Arduino Nano 33 BLE
+# nano33ble.build.core=arduino
+# nano33ble.build.crossprefix=arm-zephyr-eabi-
+# nano33ble.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# nano33ble.menu.debug.false=Standard
+# nano33ble.menu.debug.true=Debug
+# nano33ble.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# nano33ble.menu.link_mode.dynamic=Dynamic
+# nano33ble.menu.link_mode.static=Static
+# nano33ble.menu.link_mode.static.build.link_mode=static
+# nano33ble.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nano33ble.build.zephyr_target=arduino_nano_33_ble//sense
+# nano33ble.build.zephyr_args=
+# nano33ble.build.zephyr_hals=hal_nordic
+# nano33ble.build.artifact=zephyr_main
+# nano33ble.build.variant=arduino_nano_33_ble_nrf52840_sense
+# 
+# nano33ble.build.extra_flags=
+# nano33ble.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# nano33ble.build.board=NANO33BLE
+# nano33ble.vid.0=0x2341
+# nano33ble.pid.0=0x035a
+# nano33ble.upload_port.0.vid=0x2341
+# nano33ble.upload_port.0.pid=0x005a
+# 
+# nano33ble.upload.tool=bossac
+# nano33ble.upload.tool.default=bossac
+# nano33ble.upload.protocol=
+# nano33ble.upload.transport=
+# nano33ble.upload.vid=0x2341
+# nano33ble.upload.pid=0x005a
+# nano33ble.upload.interface=0
+# nano33ble.upload.use_1200bps_touch=true
+# nano33ble.upload.wait_for_upload_port=true
+# nano33ble.upload.native_usb=true
+# nano33ble.upload.offset=0x10000 # bootloader skips its own partition
+# 
+# nano33ble.bootloader.tool=bossac
+# nano33ble.bootloader.tool.default=bossac
+# nano33ble.bootloader.vid=0x2341
+# nano33ble.bootloader.pid=0x035b
+# nano33ble.bootloader.interface=0
+# nano33ble.bootloader.file=zephyr-{build.variant}.bin
+# nano33ble.bootloader.address=0x0000
+# 
+# nano33ble.debug.tool=gdb
+# nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# nano33ble.debug.server.openocd.scripts.1={programmer.transport_script}
+# nano33ble.debug.server.openocd.scripts.2=target/nrf52.cfg
+# nano33ble.debug.cortex-debug.custom.request=attach
+# 
+# ##############################################################################################################
+# 
+# ek_ra8d1.name=Renesas RA8D1 EK
+# ek_ra8d1.build.core=arduino
+# ek_ra8d1.build.crossprefix=arm-zephyr-eabi-
+# ek_ra8d1.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# ek_ra8d1.menu.debug.false=Standard
+# ek_ra8d1.menu.debug.true=Debug
+# ek_ra8d1.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# ek_ra8d1.menu.link_mode.dynamic=Dynamic
+# ek_ra8d1.menu.link_mode.static=Static
+# ek_ra8d1.menu.link_mode.static.build.link_mode=static
+# ek_ra8d1.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# ek_ra8d1.build.zephyr_target=ek_ra8d1
+# ek_ra8d1.build.zephyr_args=
+# ek_ra8d1.build.zephyr_hals=hal_renesas
+# ek_ra8d1.build.variant=ek_ra8d1_r7fa8d1bhecbd
+# 
+# ek_ra8d1.build.extra_flags=
+# ek_ra8d1.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# ek_ra8d1.build.board=EK_RA8D1
+# 
+# #ek_ra8d1.recipe.hooks.objcopy.postobjcopy.4.pattern=cp {build.variant.path}/flasher.jlink "{build.path}/flasher.jlink"
+# #ek_ra8d1.recipe.hooks.objcopy.postobjcopy.5.pattern=sed -i 's|SKETCH|"{build.path}/{build.project_name}.llext.dfu.bin"|g' "{build.path}/flasher.jlink"
+# 
+# ek_ra8d1.vid.0=0x2341
+# ek_ra8d1.pid.0=0x0077
+# ek_ra8d1.upload_port.0.vid=0x2341
+# ek_ra8d1.upload_port.0.pid=0x0077
+# 
+# ek_ra8d1.upload.tool=pyocd
+# ek_ra8d1.upload.tool.default=pyocd
+# ek_ra8d1.upload.protocol=
+# ek_ra8d1.upload.transport=
+# ek_ra8d1.upload.vid=0x2341
+# ek_ra8d1.upload.pid=0x0366
+# ek_ra8d1.upload.interface=0
+# ek_ra8d1.upload.use_1200bps_touch=false
+# ek_ra8d1.upload.wait_for_upload_port=false
+# ek_ra8d1.upload.native_usb=true
+# ek_ra8d1.upload.target=R7FA8D1AH
+# 
+# ek_ra8d1.bootloader.tool=pyocd
+# ek_ra8d1.bootloader.tool.default=pyocd
+# ek_ra8d1.bootloader.file=zephyr-{build.variant}.elf
+# ek_ra8d1.bootloader.target=R7FA8D1AH
+# 
+# 
+# ##############################################################################################################
+# 
+# frdm_mcxn947.name=NXP FRDM MCXN947
+# frdm_mcxn947.build.core=arduino
+# frdm_mcxn947.build.crossprefix=arm-zephyr-eabi-
+# frdm_mcxn947.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# frdm_mcxn947.menu.debug.false=Standard
+# frdm_mcxn947.menu.debug.true=Debug
+# frdm_mcxn947.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# frdm_mcxn947.menu.link_mode.dynamic=Dynamic
+# frdm_mcxn947.menu.link_mode.static=Static
+# frdm_mcxn947.menu.link_mode.static.build.link_mode=static
+# frdm_mcxn947.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# frdm_mcxn947.build.zephyr_target=frdm_mcxn947//cpu0
+# frdm_mcxn947.build.zephyr_args=
+# frdm_mcxn947.build.zephyr_hals=hal_nxp
+# frdm_mcxn947.build.variant=frdm_mcxn947_mcxn947_cpu0
+# 
+# frdm_mcxn947.build.extra_flags=
+# frdm_mcxn947.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# frdm_mcxn947.build.board=FRDM_MCXN947
+# frdm_mcxn947.vid.0=0x1fc9
+# frdm_mcxn947.pid.0=0x0143
+# frdm_mcxn947.upload_port.0.vid=0x1fc9
+# frdm_mcxn947.upload_port.0.pid=0x0143
+# frdm_mcxn947.upload.target=mcxn947vdf
+# 
+# frdm_mcxn947.upload.tool=pyocd
+# frdm_mcxn947.upload.tool.default=pyocd
+# frdm_mcxn947.upload.protocol=
+# frdm_mcxn947.upload.transport=
+# frdm_mcxn947.upload.vid=0x1fc9
+# frdm_mcxn947.upload.pid=0x0143
+# frdm_mcxn947.upload.interface=0
+# frdm_mcxn947.upload.use_1200bps_touch=false
+# frdm_mcxn947.upload.wait_for_upload_port=false
+# frdm_mcxn947.upload.native_usb=true
+# 
+# frdm_mcxn947.bootloader.tool=pyocd
+# frdm_mcxn947.bootloader.tool.default=pyocd
+# frdm_mcxn947.bootloader.file=zephyr-{build.variant}.elf
+# frdm_mcxn947.bootloader.target=mcxn947vdf
+# 
+# 
+# ##########################################################################################
+# 
+# portentah7.name=Arduino Portenta H7
+# portentah7.build.core=arduino
+# portentah7.build.crossprefix=arm-zephyr-eabi-
+# portentah7.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# portentah7.menu.debug.false=Standard
+# portentah7.menu.debug.true=Debug
+# portentah7.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# portentah7.menu.link_mode.dynamic=Dynamic
+# portentah7.menu.link_mode.static=Static
+# portentah7.menu.link_mode.static.build.link_mode=static
+# portentah7.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# portentah7.build.zephyr_target=arduino_portenta_h7@1.0.0//m7
+# portentah7.build.zephyr_args=
+# portentah7.build.zephyr_hals=hal_stm32 hal_infineon
+# portentah7.build.artifact=zephyr_main
+# portentah7.build.variant=arduino_portenta_h7_stm32h747xx_m7
+# 
+# portentah7.build.extra_flags=
+# portentah7.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# portentah7.build.board=PORTENTA_H7_M7
+# portentah7.vid.0=0x2341
+# portentah7.pid.0=0x005b
+# portentah7.upload_port.0.vid=0x2341
+# portentah7.upload_port.0.pid=0x035b
+# 
+# portentah7.upload.tool=dfu-util
+# portentah7.upload.tool.default=dfu-util
+# portentah7.upload.protocol=
+# portentah7.upload.transport=
+# portentah7.upload.vid=0x2341
+# portentah7.upload.pid=0x035b
+# portentah7.upload.interface=0
+# portentah7.upload.use_1200bps_touch=true
+# portentah7.upload.wait_for_upload_port=true
+# portentah7.upload.native_usb=true
+# 
+# portentah7.bootloader.tool=dfu-util
+# portentah7.bootloader.tool.default=dfu-util
+# portentah7.bootloader.vid=0x2341
+# portentah7.bootloader.pid=0x035b
+# portentah7.bootloader.interface=0
+# portentah7.bootloader.file=zephyr-{build.variant}.bin
+# portentah7.bootloader.address=0x08040000
+# 
+# portentah7.debug.tool=gdb
+# portentah7.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# portentah7.debug.server.openocd.scripts.1={programmer.transport_script}
+# portentah7.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
+# portentah7.debug.cortex-debug.custom.request=attach
+# portentah7.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+# 
+# ##############################################################################################################
+# 
+# nicla_vision.name=Arduino Nicla Vision
+# nicla_vision.build.core=arduino
+# nicla_vision.build.crossprefix=arm-zephyr-eabi-
+# nicla_vision.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# nicla_vision.menu.debug.false=Standard
+# nicla_vision.menu.debug.true=Debug
+# nicla_vision.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# nicla_vision.menu.link_mode.dynamic=Dynamic
+# nicla_vision.menu.link_mode.static=Static
+# nicla_vision.menu.link_mode.static.build.link_mode=static
+# nicla_vision.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nicla_vision.build.zephyr_target=arduino_nicla_vision//m7
+# nicla_vision.build.zephyr_args=
+# nicla_vision.build.zephyr_hals=hal_stm32 hal_infineon
+# nicla_vision.build.artifact=zephyr_main
+# nicla_vision.build.variant=arduino_nicla_vision_stm32h747xx_m7
+# 
+# nicla_vision.build.extra_flags=
+# nicla_vision.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# nicla_vision.build.board=NICLA_VISION
+# nicla_vision.vid.0=0x2341
+# nicla_vision.pid.0=0x005b
+# nicla_vision.upload_port.0.vid=0x2341
+# nicla_vision.upload_port.0.pid=0x025f
+# 
+# nicla_vision.upload.tool=dfu-util
+# nicla_vision.upload.tool.default=dfu-util
+# nicla_vision.upload.protocol=
+# nicla_vision.upload.transport=
+# nicla_vision.upload.vid=0x2341
+# nicla_vision.upload.pid=0x035f
+# nicla_vision.upload.interface=0
+# nicla_vision.upload.use_1200bps_touch=true
+# nicla_vision.upload.wait_for_upload_port=true
+# nicla_vision.upload.native_usb=true
+# 
+# nicla_vision.bootloader.tool=dfu-util
+# nicla_vision.bootloader.tool.default=dfu-util
+# nicla_vision.bootloader.vid=0x2341
+# nicla_vision.bootloader.pid=0x035f
+# nicla_vision.bootloader.interface=0
+# nicla_vision.bootloader.file=zephyr-{build.variant}.bin
+# nicla_vision.bootloader.address=0x08040000
+# 
+# nicla_vision.debug.tool=gdb
+# nicla_vision.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# nicla_vision.debug.server.openocd.scripts.1={programmer.transport_script}
+# nicla_vision.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
+# nicla_vision.debug.cortex-debug.custom.request=attach
+# nicla_vision.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+# 
+# ##############################################################################################################
+# 
+# frdm_rw612.name=NXP FRDM RW612
+# frdm_rw612.build.core=arduino
+# frdm_rw612.build.crossprefix=arm-zephyr-eabi-
+# frdm_rw612.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# frdm_rw612.menu.debug.false=Standard
+# frdm_rw612.menu.debug.true=Debug
+# frdm_rw612.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# frdm_rw612.menu.link_mode.dynamic=Dynamic
+# frdm_rw612.menu.link_mode.static=Static
+# frdm_rw612.menu.link_mode.static.build.link_mode=static
+# frdm_rw612.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# frdm_rw612.build.zephyr_target=frdm_rw612
+# frdm_rw612.build.zephyr_args=
+# frdm_rw612.build.zephyr_hals=hal_stm32
+# frdm_rw612.build.variant=frdm_rw612_rw612
+# 
+# frdm_rw612.build.extra_flags=
+# frdm_rw612.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# frdm_rw612.build.board=FRDM_RW612
+# frdm_rw612.vid.0=0x1fc9
+# frdm_rw612.pid.0=0x0143
+# frdm_rw612.upload_port.0.vid=0x1fc9
+# frdm_rw612.upload_port.0.pid=0x0143
+# frdm_rw612.upload.target=rw612
+# 
+# frdm_rw612.upload.tool=pyocd
+# frdm_rw612.upload.tool.default=pyocd
+# frdm_rw612.upload.protocol=
+# frdm_rw612.upload.transport=
+# frdm_rw612.upload.vid=0x1fc9
+# frdm_rw612.upload.pid=0x0143
+# frdm_rw612.upload.interface=0
+# frdm_rw612.upload.use_1200bps_touch=false
+# frdm_rw612.upload.wait_for_upload_port=false
+# frdm_rw612.upload.native_usb=true
+# 
+# frdm_rw612.bootloader.tool=pyocd
+# frdm_rw612.bootloader.tool.default=pyocd
+# frdm_rw612.bootloader.file=zephyr-{build.variant}.elf
+# frdm_rw612.bootloader.target=rw612
+# 
+# ##########################################################################################
+# 
+# nicla_sense.name=Arduino Nicla Sense ME
+# nicla_sense.build.core=arduino
+# nicla_sense.build.crossprefix=arm-zephyr-eabi-
+# nicla_sense.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# nicla_sense.menu.link_mode.dynamic=Dynamic
+# nicla_sense.menu.link_mode.static=Static
+# nicla_sense.menu.link_mode.static.build.link_mode=static
+# nicla_sense.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nicla_sense.build.zephyr_target=arduino_nicla_sense_me
+# nicla_sense.build.zephyr_args=
+# nicla_sense.build.zephyr_hals=hal_nordic
+# nicla_sense.build.artifact=zephyr_main
+# nicla_sense.build.variant=arduino_nicla_sense_me_nrf52832
+# 
+# nicla_sense.openocd_cfg=flash_sketch.cfg
+# nicla_sense.build.extra_flags=
+# nicla_sense.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# nicla_sense.build.board=NICLA_SENSE_ME
+# nicla_sense.vid.0=0x2341
+# nicla_sense.pid.0=0x0360
+# nicla_sense.upload_port.0.vid=0x2341
+# nicla_sense.upload_port.0.pid=0x0060
+# 
+# nicla_sense.upload.tool=openocd
+# nicla_sense.upload.tool.default=openocd
+# nicla_sense.upload.protocol=
+# nicla_sense.upload.config=-f target/nrf52.cfg
+# nicla_sense.upload.programmer=-f interface/cmsis-dap.cfg
+# nicla_sense.upload.vid=0x2341
+# nicla_sense.upload.pid=0x0060
+# nicla_sense.upload.interface=0
+# nicla_sense.upload.use_1200bps_touch=false
+# nicla_sense.upload.wait_for_upload_port=false
+# nicla_sense.upload.native_usb=false
+# nicla_sense.upload.target=nrf52
+# 
+# nicla_sense.bootloader.tool=openocd
+# nicla_sense.bootloader.tool.default=openocd
+# nicla_sense.bootloader.vid=0x2341
+# nicla_sense.bootloader.pid=0x0360
+# nicla_sense.bootloader.interface=0
+# nicla_sense.bootloader.file=zephyr-{build.variant}.hex
+# nicla_sense.bootloader.target=nrf52
+# 
+# nicla_sense.debug.tool=gdb
+# nicla_sense.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# nicla_sense.debug.server.openocd.scripts.1={programmer.transport_script}
+# nicla_sense.debug.server.openocd.scripts.2=target/nrf52.cfg
+# nicla_sense.debug.cortex-debug.custom.request=attach
+# 
+# 
+# ##########################################################################################
+# 
+# portentac33.name=Arduino Portenta C33
+# portentac33.build.core=arduino
+# portentac33.build.crossprefix=arm-zephyr-eabi-
+# portentac33.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# portentac33.menu.debug.false=Standard
+# portentac33.menu.debug.true=Debug
+# portentac33.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# portentac33.menu.link_mode.dynamic=Dynamic
+# portentac33.menu.link_mode.static=Static
+# portentac33.menu.link_mode.static.build.link_mode=static
+# portentac33.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# portentac33.build.zephyr_target=arduino_portenta_c33
+# portentac33.build.zephyr_args=
+# portentac33.build.zephyr_hals=hal_renesas nanopb
+# portentac33.build.artifact=zephyr_main
+# portentac33.build.variant=arduino_portenta_c33_r7fa6m5bh3cfc
+# 
+# portentac33.build.extra_flags=
+# portentac33.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# portentac33.build.board=PORTENTA_C33
+# portentac33.vid.0=0x2341
+# portentac33.pid.0=0x0068
+# portentac33.upload_port.0.vid=0x2341
+# portentac33.upload_port.0.pid=0x0068
+# portentac33.upload.target=portentac33
+# 
+# portentac33.upload.tool=dfu-util
+# portentac33.upload.tool.default=dfu-util
+# portentac33.upload.protocol=
+# portentac33.upload.transport=
+# portentac33.upload.vid=0x2341
+# portentac33.upload.pid=0x0368
+# portentac33.upload.interface=1
+# portentac33.upload.use_1200bps_touch=true
+# portentac33.upload.wait_for_upload_port=false
+# portentac33.upload.native_usb=true
+# portentac33.upload.dfuse=-Q -w
+# 
+# portentac33.bootloader.tool=dfu-util
+# portentac33.bootloader.tool.default=dfu-util
+# portentac33.bootloader.file=zephyr-{build.variant}.bin
+# portentac33.bootloader.interface=0
+# portentac33.bootloader.address=0x10000
+# portentac33.bootloader.dfuse=-Q
+# 
+# ##########################################################################################
+# 
+# opta.name=Arduino Opta
+# opta.build.core=arduino
+# opta.build.crossprefix=arm-zephyr-eabi-
+# opta.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# opta.menu.debug.false=Standard
+# opta.menu.debug.true=Debug
+# opta.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# opta.menu.link_mode.dynamic=Dynamic
+# opta.menu.link_mode.static=Static
+# opta.menu.link_mode.static.build.link_mode=static
+# opta.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# opta.build.zephyr_target=arduino_opta//m7
+# opta.build.zephyr_args=
+# opta.build.zephyr_hals=hal_stm32 hal_infineon
+# opta.build.artifact=zephyr_main
+# opta.build.variant=arduino_opta_stm32h747xx_m7
+# 
+# opta.build.extra_flags=
+# opta.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# opta.build.board=OPTA
+# opta.vid.0=0x2341
+# opta.pid.0=0x0064
+# opta.upload_port.0.vid=0x2341
+# opta.upload_port.0.pid=0x0364
+# 
+# opta.upload.tool=dfu-util
+# opta.upload.tool.default=dfu-util
+# opta.upload.protocol=
+# opta.upload.transport=
+# opta.upload.vid=0x2341
+# opta.upload.pid=0x0364
+# opta.upload.interface=0
+# opta.upload.use_1200bps_touch=true
+# opta.upload.wait_for_upload_port=true
+# opta.upload.native_usb=true
+# 
+# opta.bootloader.tool=dfu-util
+# opta.bootloader.tool.default=dfu-util
+# opta.bootloader.vid=0x2341
+# opta.bootloader.pid=0x0364
+# opta.bootloader.interface=0
+# opta.bootloader.file=zephyr-{build.variant}.bin
+# opta.bootloader.address=0x08040000
+# 
+# opta.debug.tool=gdb
+# opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# opta.debug.server.openocd.scripts.1={programmer.transport_script}
+# opta.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
+# opta.debug.cortex-debug.custom.request=attach
+# opta.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+# 
+# ##########################################################################################
+# 
+# nano_matter.name=Arduino Nano Matter
+# nano_matter.build.core=arduino
+# nano_matter.build.crossprefix=arm-zephyr-eabi-
+# nano_matter.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# nano_matter.menu.link_mode.dynamic=Dynamic
+# nano_matter.menu.link_mode.static=Static
+# nano_matter.menu.link_mode.static.build.link_mode=static
+# nano_matter.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nano_matter.build.zephyr_target=arduino_nano_matter
+# nano_matter.build.zephyr_args=
+# nano_matter.build.zephyr_hals=hal_silabs
+# nano_matter.build.artifact=zephyr_main
+# nano_matter.build.variant=arduino_nano_matter_mgm240sd22vna
+# 
+# nano_matter.openocd_cfg=flash_sketch.cfg
+# nano_matter.build.extra_flags=
+# nano_matter.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# nano_matter.build.board=ARDUINO_NANO_MATTER
+# nano_matter.vid.0=0x2341
+# nano_matter.pid.0=0x0072
+# nano_matter.upload_port.0.vid=0x2341
+# nano_matter.upload_port.0.pid=0x0072
+# 
+# nano_matter.upload.tool=openocd
+# nano_matter.upload.tool.default=openocd
+# nano_matter.upload.config=-f target/efm32s2_g23.cfg
+# nano_matter.upload.programmer=-f interface/cmsis-dap.cfg
+# nano_matter.upload.protocol=SWD
+# nano_matter.upload.setup_command=
+# nano_matter.upload.use_1200bps_touch=false
+# nano_matter.upload.wait_for_upload_port=false
+# nano_matter.upload.native_usb=false
+# 
+# nano_matter.bootloader.tool=openocd
+# nano_matter.bootloader.tool.default=openocd
+# nano_matter.bootloader.vid=0x2341
+# nano_matter.bootloader.pid=0x0072
+# nano_matter.bootloader.interface=0
+# nano_matter.bootloader.file=zephyr-{build.variant}.hex
+# nano_matter.bootloader.target=arduino_nano_matter
+# 
+# nano_matter.debug.server=openocd
+# nano_matter.debug.server.openocd.scripts.0=interface/cmsis-dap.cfg
+# nano_matter.debug.server.openocd.scripts.1=target/efm32s2_g23.cfg
+# nano_matter.debug.cortex-debug.custom.postAttachCommands.0=monitor reset halt
+# #nano_matter.debug.cortex-debug.custom.postAttachCommands.1=monitor reset_config srst_nogate
+# #nano_matter.debug.cortex-debug.custom.postAttachCommands.2=monitor gdb_breakpoint_override hard
+# nano_matter.debug.cortex-debug.custom.postAttachCommands.3=monitor gdb_sync
+# nano_matter.debug.cortex-debug.custom.postAttachCommands.4=c
+# nano_matter.debug.cortex-debug.custom.overrideRestartCommands.0=monitor reset halt
+# nano_matter.debug.cortex-debug.custom.overrideRestartCommands.1=monitor gdb_sync
+# nano_matter.debug.cortex-debug.custom.overrideRestartCommands.2=c
+# nano_matter.debug.cortex-debug.custom.request=attach
+# 
+# ##############################################################################################################
+# 
+# unoq.name=Arduino UNO Q
+# unoq.build.core=arduino
+# unoq.build.crossprefix=arm-zephyr-eabi-
+# unoq.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# unoq.menu.link_mode.dynamic=Dynamic
+# unoq.menu.link_mode.static=Static
+# unoq.menu.link_mode.static.build.link_mode=static
+# unoq.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# unoq.menu.wait_linux_boot.yes=Wait for Linux
+# unoq.menu.wait_linux_boot.no=Immediate
+# unoq.menu.wait_linux_boot.no.build.boot_mode=immediate
+# unoq.menu.wait_linux_boot.app=Wait for App
+# unoq.menu.wait_linux_boot.app.build.boot_mode=app
+# 
+# unoq.build.zephyr_target=arduino_uno_q
+# unoq.build.zephyr_args=
+# unoq.build.variant=arduino_uno_q_stm32u585xx
+# unoq.build.artifact=zephyr_unoq
+# unoq.build.subarch=zephyr
+# 
+# unoq.openocd_cfg=flash_sketch.cfg
+# unoq.build.extra_flags=
+# unoq.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# unoq.build.board=UNO_Q
+# unoq.build.zephyr_hals=hal_stm32
+# unoq.build.zephyr_toolchain=arm-zephyr-eabi
+# unoq.vid.0=0x2341
+# unoq.pid.0=0x0078
+# unoq.upload_port.0.vid=0x2341
+# unoq.upload_port.0.pid=0x0078
+# unoq.upload.target=stm32u585zitxq
+# 
+# unoq.upload.tool=remoteocd
+# unoq.upload.tool.default=remoteocd
+# unoq.upload.tool.network=remoteocd_network
+# unoq.upload.protocol=
+# unoq.upload.transport=
+# unoq.upload.vid=0x2341
+# unoq.upload.pid=0x0078
+# unoq.upload.interface=0
+# unoq.upload.use_1200bps_touch=false
+# unoq.upload.wait_for_upload_port=false
+# unoq.upload.native_usb=true
+# 
+# unoq.bootloader.tool=remoteocd
+# unoq.bootloader.tool.default=remoteocd
+# unoq.bootloader.file=zephyr-{build.variant}.elf
+# unoq.bootloader.target=stm32u585zitxq
+# 
+# ##############################################################################################################
+# 
+# nano_connect.name=Arduino Nano RP2040 Connect
+# nano_connect.build.core=arduino
+# nano_connect.build.crossprefix=arm-zephyr-eabi-
+# nano_connect.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+# 
+# nano_connect.menu.debug.false=Standard
+# nano_connect.menu.debug.true=Debug
+# nano_connect.menu.debug.true.build.zsk_args.debug=-debug
+# 
+# nano_connect.menu.link_mode.dynamic=Dynamic
+# nano_connect.menu.link_mode.static=Static
+# nano_connect.menu.link_mode.static.build.link_mode=static
+# nano_connect.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nano_connect.build.zephyr_target=arduino_nano_connect
+# nano_connect.build.zephyr_args=
+# nano_connect.build.zephyr_hals=hal_rpi_pico
+# nano_connect.build.artifact=zephyr_main
+# nano_connect.build.variant=arduino_nano_connect_rp2040
+# nano_connect.build.mcu=cortex-m0plus
+# nano_connect.build.fpu=
+# nano_connect.build.architecture=cortex-m0plus
+# nano_connect.compiler.zephyr.arch.define=
+# 
+# nano_connect.build.float-abi=-mfloat-abi=soft
+# nano_connect.build.extra_flags=
+# nano_connect.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+# nano_connect.recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.bin2uf2.path}/bin2uf2" {upload.address} {upload.familyid} "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.uf2"
+# nano_connect.build.board=NANO_RP2040_CONNECT
+# nano_connect.compiler.zephyr=
+# nano_connect.vid.0=0x2341
+# nano_connect.pid.0=0x005E
+# nano_connect.upload_port.0.vid=0x2341
+# nano_connect.upload_port.0.pid=0x005E
+# 
+# nano_connect.upload.tool=picotool
+# nano_connect.upload.tool.default=picotool
+# nano_connect.upload.protocol=
+# nano_connect.upload.transport=
+# nano_connect.upload.vid=0x2341
+# nano_connect.upload.pid=0x005E
+# nano_connect.upload.interface=0
+# nano_connect.upload.use_1200bps_touch=true
+# nano_connect.upload.wait_for_upload_port=false
+# nano_connect.upload.native_usb=true
+# nano_connect.upload.maximum_size=16777216
+# nano_connect.upload.maximum_data_size=270336
+# 
+# nano_connect.upload.address=0x100E0000
+# nano_connect.upload.familyid=0xe48bff56
+# 
+# nano_connect.bootloader.tool=picotool
+# nano_connect.bootloader.tool.default=picotool
+# nano_connect.bootloader.vid=0x2341
+# nano_connect.bootloader.pid=0x005E
+# nano_connect.bootloader.interface=0
+# nano_connect.bootloader.file=zephyr-{build.variant}
+# 
+# nano_connect.debug.tool=gdb
+# nano_connect.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+# nano_connect.debug.server.openocd.scripts.1={programmer.transport_script}
+# nano_connect.debug.server.openocd.scripts.2=target/rp2040-core0.cfg
+# nano_connect.debug.cortex-debug.custom.request=attach
+# nano_connect.debug.svd_file={runtime.platform.path}/svd/rp2040.svd
+# 
+# ##############################################################################################################
+
+kit_pse84_ai.name=Infineon KIT-PSE84-AI (PSOC Edge E84)
+kit_pse84_ai.build.core=arduino
+kit_pse84_ai.build.crossprefix=arm-zephyr-eabi-
+kit_pse84_ai.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+kit_pse84_ai.menu.debug.false=Standard
+kit_pse84_ai.menu.debug.true=Debug
+kit_pse84_ai.menu.debug.true.build.zsk_args.debug=-debug
+kit_pse84_ai.menu.link_mode.dynamic=Dynamic
+kit_pse84_ai.menu.link_mode.static=Static
+kit_pse84_ai.menu.link_mode.static.build.link_mode=static
+kit_pse84_ai.menu.link_mode.static.upload.extension=bin-zsk.bin
+kit_pse84_ai.build.zephyr_target=kit_pse84_ai/pse846gps2dbzc4a/m33
+kit_pse84_ai.build.zephyr_args=
+kit_pse84_ai.build.zephyr_hals=hal_infineon
+kit_pse84_ai.build.variant=kit_pse84_ai_pse846gps2dbzc4a_m33
+kit_pse84_ai.build.mcu=cortex-m33
+kit_pse84_ai.build.fpu=-mfpu=fpv5-sp-d16
+kit_pse84_ai.build.architecture=cortex-m33
+kit_pse84_ai.build.float-abi=-mfloat-abi=hard
+kit_pse84_ai.compiler.zephyr.specs=
+kit_pse84_ai.build.extra_flags=
+kit_pse84_ai.build.specs=
+kit_pse84_ai.build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
+kit_pse84_ai.build.postbuild.cmd="{tools.openocd.path}/{tools.openocd.cmd}" exit
+kit_pse84_ai.build.board=KIT_PSE84_AI
+kit_pse84_ai.upload.address=0x60200000
+kit_pse84_ai.upload.target=pse84
+kit_pse84_ai.upload.tool=openocd
+kit_pse84_ai.upload.tool.default=openocd
+kit_pse84_ai.tools.openocd.path={runtime.tools.openocd.path}
+kit_pse84_ai.tools.openocd.cmd=bin/openocd
+kit_pse84_ai.tools.openocd.cmd.windows=bin/openocd.exe
+kit_pse84_ai.programmer.default=cmsis-dap
+kit_pse84_ai.tools.openocd.upload.pattern="{path}/{cmd}" {upload.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase {{build.path}/{build.project_name}.{upload.extension}} {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase {{build.path}/{build.project_name}.{upload.extension}} {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; program {{runtime.platform.path}/firmwares/zephyr-{build.variant}.hex}; reset run; shutdown"
+kit_pse84_ai.tools.openocd.upload.pattern.windows=cmd /C cd /D "{build.path}" && "{path}/{cmd}" {upload.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set sketch_file [list {build.project_name}.{upload.extension}]; telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase $sketch_file {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.program.pattern.windows=cmd /C cd /D "{build.path}" && "{path}/{cmd}" {program.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set sketch_file [list {build.project_name}.{upload.extension}]; telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase $sketch_file {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.upload.protocol=
+kit_pse84_ai.upload.transport=
+kit_pse84_ai.upload.interface=0
+kit_pse84_ai.upload.use_1200bps_touch=false
+kit_pse84_ai.upload.wait_for_upload_port=false
+kit_pse84_ai.upload.native_usb=false
+kit_pse84_ai.upload.maximum_size=1047552
+kit_pse84_ai.upload.maximum_data_size=135168
+kit_pse84_ai.bootloader.tool=openocd
+kit_pse84_ai.bootloader.tool.default=openocd
+kit_pse84_ai.tools.openocd.bootloader.pattern.windows=cmd /C cd /D "{runtime.platform.path}/firmwares" && "{path}/{cmd}" {bootloader.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set bootloader_file [list zephyr-{build.variant}.hex]; telnet_port disabled; init; reset init; halt; adapter speed 10000; program $bootloader_file; reset run; shutdown"
+kit_pse84_ai.bootloader.target=pse84
 
 ##############################################################################################################

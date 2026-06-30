@@ -1,0 +1,171 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# PSE84-specific release workflow: triggered automatically when package_core.yml
+# completes successfully on main. Bumps the version, tags the commit, and
+# publishes the ArduinoCore-zephyr_contrib package as a GitHub Release.
+
+name: Release PSE84
+
+on:
+  workflow_run:
+    workflows: ["Package, test and upload core"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+
+  bump-version-and-tag:
+    name: Bump version, tag, and create release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && endsWith(github.repository, '/ArduinoCore-zephyr') && github.triggering_actor != 'github-actions[bot]' }}
+    permissions:
+      contents: write
+    outputs:
+      release_tag: ${{ steps.release_tag.outputs.release_tag }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Compute next release tag
+        id: release_tag
+        env:
+          RELEASE_BUMP: patch
+        run: |
+          git fetch --tags
+
+          EXISTING_TAG=$(git tag --points-at "${{ github.event.workflow_run.head_sha }}" --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          if [ -n "${EXISTING_TAG}" ]; then
+            echo "Using existing tag on HEAD: ${EXISTING_TAG}"
+            echo "release_tag=${EXISTING_TAG}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LAST_TAG=$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          if [ -z "${LAST_TAG}" ]; then
+            LAST_TAG="0.0.0"
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${LAST_TAG}"
+          case "${RELEASE_BUMP}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            *)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_TAG="${MAJOR}.${MINOR}.${PATCH}"
+          echo "release_tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release (and tag if missing)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release_tag.outputs.release_tag }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists"
+          else
+            gh release create "${TAG}" \
+              --target "${{ github.event.workflow_run.head_sha }}" \
+              --title "ArduinoCore-zephyr-pse84 ${TAG}" \
+              --notes "Automated release for ${{ github.event.workflow_run.head_sha }}."
+          fi
+
+
+  publish-pse84-release:
+    name: Publish PSE84 release assets
+    runs-on: ubuntu-latest
+    needs:
+      - bump-version-and-tag
+    if: ${{ needs.bump-version-and-tag.result == 'success' }}
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.bump-version-and-tag.outputs.release_tag }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true
+
+      - name: Download zephyr_contrib artifact from triggering workflow run
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ArduinoCore-zephyr_contrib-*
+          path: release-assets
+          merge-multiple: true
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Normalize artifact filename for release tag
+        run: |
+          if [ -z "${TAG}" ]; then
+            echo "Release tag is empty" >&2
+            exit 1
+          fi
+
+          TAR_FILE=$(ls release-assets/ArduinoCore-zephyr_contrib-*.tar.bz2 | head -n1)
+          if [ -z "${TAR_FILE}" ]; then
+            echo "Downloaded artifact does not contain expected tarball" >&2
+            exit 1
+          fi
+
+          OLD_BASENAME=$(basename "${TAR_FILE}")
+          NEW_BASENAME="ArduinoCore-zephyr_contrib-${TAG}.tar.bz2"
+
+          if [ "${OLD_BASENAME}" != "${NEW_BASENAME}" ]; then
+            mv "${TAR_FILE}" "release-assets/${NEW_BASENAME}"
+            echo "Renamed ${OLD_BASENAME} -> ${NEW_BASENAME}"
+          fi
+
+          echo "TAR_BASENAME=${NEW_BASENAME}" >> "$GITHUB_ENV"
+
+      - name: Generate package index JSON
+        run: |
+          ARTIFACT_PATH="release-assets/${TAR_BASENAME}"
+          SIZE=$(wc -c < "${ARTIFACT_PATH}")
+          SHA256=$(sha256sum "${ARTIFACT_PATH}" | cut -d' ' -f1)
+          URL="https://github.com/${GH_REPO}/releases/download/${TAG}/${TAR_BASENAME}"
+
+          python3 - <<EOF
+          import json
+
+          with open("package/package_infineon_pse84_index.template.json") as f:
+              idx = json.load(f)
+
+          p = idx["packages"][0]["platforms"][0]
+          p["version"] = "${TAG}"
+          p["archiveFileName"] = "${TAR_BASENAME}"
+          p["url"] = "${URL}"
+          p["checksum"] = "SHA-256:${SHA256}"
+          p["size"] = "${SIZE}"
+
+          with open("release-assets/package_infineon_pse84_index.json", "w") as f:
+              json.dump(idx, f, indent=2)
+          EOF
+
+      - name: Create or update GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ArduinoCore-zephyr-pse84 ${{ env.TAG }}
+          overwrite_files: true
+          files: |
+            release-assets/${{ env.TAR_BASENAME }}
+            release-assets/package_infineon_pse84_index.json

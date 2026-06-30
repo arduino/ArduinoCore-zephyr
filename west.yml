@@ -20,8 +20,8 @@ manifest:
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.2.0
+      remote: zephyrproject-rtos
+      revision: v4.4.0
       import:
         name-allowlist:
           - cmsis

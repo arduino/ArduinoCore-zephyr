@@ -1,0 +1,49 @@
+From 8e84a1d6677a4b6f9e4b49e8c55dc6f5ea1a9f41 Mon Sep 17 00:00:00 2001
+From: Arduino PSoC Edge BSP contributors
+Date: Mon, 8 Jun 2026 00:00:00 +0000
+Subject: [PATCH] soc: infineon: pse84: install imgtool Python dependencies
+
+The PSE84 SoC metadata step invokes imgtool as part of the Zephyr
+post-build pipeline to produce a metadata-bearing secure HEX image.
+
+In ArduinoCore-zephyr CI and local west workspaces, only Zephyr
+requirements-base.txt is installed by default, which does not include
+all of imgtool's Python dependencies. This causes the PSE84 build to
+fail at post-build time with missing module errors.
+
+Install the required imgtool dependencies at CMake configure time in the
+PSE84 metadata module itself so the requirement is scoped to PSE84
+builds only and does not affect other boards.
+
+This patch is intended as a temporary downstream workaround and should be
+removed once the upstream Zephyr/Infineon flow ensures imgtool
+requirements are installed in the standard workspace bootstrap path.
+
+Signed-off-by: Arduino PSoC Edge BSP contributors
+
+diff --git a/soc/infineon/edge/pse84/pse84_metadata.cmake b/soc/infineon/edge/pse84/pse84_metadata.cmake
+--- a/soc/infineon/edge/pse84/pse84_metadata.cmake
++++ b/soc/infineon/edge/pse84/pse84_metadata.cmake
+@@ -3,6 +3,22 @@
+ #
+ # SPDX-License-Identifier: Apache-2.0
+ 
++# Install imgtool Python dependencies during CMake configuration.
++# imgtool (from mcuboot) is invoked as a post-build step by this file, but its
++# required packages (cryptography, cbor2, click, intelhex, Pillow) are not part
++# of Zephyr's requirements-base.txt and therefore not installed by a standard
++# west bootstrap.
++# TODO: Remove once mcuboot's Python requirements are installed as part of the
++#       standard Zephyr workspace setup.
++execute_process(
++  COMMAND ${PYTHON_EXECUTABLE} -m pip install --quiet
++    cryptography cbor2 click intelhex Pillow
++  RESULT_VARIABLE _imgtool_pip_result
++)
++if(NOT _imgtool_pip_result EQUAL 0)
++  message(WARNING "pse84_metadata: failed to install imgtool Python dependencies")
++endif()
++
+ # Adds mcuboot metadata to the PSE84 CM33 secure image using imgtool
+ # with parameters derived from the DT memory map (header address,
+ # header size, and slot size). Uses default version 0.0.0+0 as imgtool

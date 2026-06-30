@@ -2,16 +2,16 @@
 > This core is in **BETA**. 🧪  
 > Features may change, and bugs may be present. Use for testing only and provide feedback to help us improve.
 >
-> [![Default branch status](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=arduino&event=push)](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml)
+> [![Default branch status](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=arduino&event=push)](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml) (TODO correct repo link)
 
 # 🚧 Arduino Core for Zephyr
 
 This repository is a downstream fork of the [Arduino Core for Zephyr RTOS-based
-boards](https://github.com/zephyrproject-rtos/arduino-core-zephyr) that
-includes support for Arduino software tools, allowing it to be seamlessly used
+boards](https://github.com/arduino/ArduinoCore-zephyr) that
+includes support for Infineon PSOC Edge boards, allowing it to be seamlessly used
 by the [Arduino IDE](https://docs.arduino.cc/software/ide/),
-[Arduino CLI](https://docs.arduino.cc/arduino-cli/) and
-[Arduino App Lab](https://docs.arduino.cc/software/app-lab/).
+[Arduino CLI](https://docs.arduino.cc/arduino-cli/) (untested) and
+[Arduino App Lab](https://docs.arduino.cc/software/app-lab/) (untested).
 
 ## 🧐 What is Zephyr? 
 
@@ -23,24 +23,25 @@ by the [Arduino IDE](https://docs.arduino.cc/software/ide/),
 
 Install the core and its toolchains via Board Manager:
 * Download and install the latest [Arduino IDE](https://www.arduino.cc/en/software) (only versions `2.x.x` are supported).
-* Open the *'Settings / Preferences'* window.
-* Open the *'Boards Manager'* from the side menu and search for *'Zephyr'*.
-  * If it doesn’t appear, add the following URL to the *'Additional Boards Manager URLs'* field: `https://downloads.arduino.cc/packages/package_zephyr_index.json` (if you have multiple URLs, separate them with a comma).
-* Install the `Arduino Zephyr Boards` platform.
+* Navigate to *'File > Preferences'*. Look for the text field called 'Additional boards manager URLs'.
+* Copy the link of the released `.json`-file and paste it into the text field (if you have multiple URLs, separate them with a comma). Examples of a link: 
+  * [version 0.1.81](https://github.com/michal-gora/ArduinoCore-zephyr/releases/tag/0.1.81): `https://github.com/michal-gora/ArduinoCore-zephyr/releases/download/0.1.81/package_infineon_pse84_index.json`,
+  * [latest version](https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest): `https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json`
+* In the *'Boards Manager'* (left side menu), search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a while.
 
 Alternatively, to install the core using the command line, run the following command with the Arduino CLI:
 
 ```bash
-arduino-cli core install arduino:zephyr --additional-urls https://downloads.arduino.cc/packages/package_zephyr_index.json
+arduino-cli core install infineon:zephyr_pse84 --additional-urls https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json
 ```
+(TODO correct repo link, untested)
 
 ## 🏗️ First Use
 
 To get started with your board:
-* Put the board in bootloader mode by double-clicking the RESET button.
-* Run the `Burn Bootloader` option from the IDE/CLI.
-  * Note that due to limitations in the Arduino IDE, you may need to select any programmer from the `Programmers` menu.
-* Once the bootloader is installed, you can load your first sketch by placing the board into bootloader mode again.
+* Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
+* Run the `Tools > Burn Bootloader` option from the IDE/CLI.
+* Once the bootloader is installed, you can load your first sketch.
 
 > [!NOTE]  
 > After the initial setup, future sketches will be loaded automatically without needing to reset the board.
@@ -108,7 +109,7 @@ The most important components of this project are:
 * [LLEXT](https://docs.zephyrproject.org/latest/services/llext/index.html)
 * [Actual core](/cores/arduino) with [variants](/variants) and the usual [platform](/platform.txt) and [boards](/boards) files
 * [ArduinoCore-API](https://github.com/arduino/ArduinoCore-API)
-* [zephyr-sketch-tool](/extra/zephyr-sketch-tool)
+* [zephyr-sketch-tool](/tools/zephyr-sketch-tool)
 
 ## 🏃 Shortcut: using the Core in Arduino IDE/CLI without installing Zephyr
 

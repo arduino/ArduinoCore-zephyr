@@ -1,0 +1,10 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Examples skipped for kit_pse84_ai: these libraries are not yet supported
+# on this board. Remove entries as support is added.
+
+libraries/CAN/
+libraries/Ethernet/
+libraries/RTC/
+libraries/WiFi/

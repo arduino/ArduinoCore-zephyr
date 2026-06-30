@@ -1,0 +1,67 @@
+name: Repackage Windows Toolchain
+
+# The Zephyr SDK only ships arm-zephyr-eabi for Windows as .7z, which Arduino
+# CLI does not support. This workflow downloads the .7z, repacks it as .tar.xz,
+# and uploads it to the specified GitHub release of this repo — the same
+# approach Arduino uses for their own hosted toolchains.
+#
+# Run this once after creating a new release tag, then fill in the checksum and
+# size printed at the end into the Windows entry of the package index template.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdk_version:
+        description: 'Zephyr SDK version (e.g. 1.0.1)'
+        required: true
+        default: '1.0.1'
+      release_tag:
+        description: 'Release tag to upload the artifact to (e.g. 0.1.6)'
+        required: true
+
+permissions: {}
+
+jobs:
+  repackage:
+    runs-on: windows-latest
+    permissions:
+      contents: write  # needed to upload files to a GitHub Release
+    steps:
+      - name: Download arm-zephyr-eabi .7z
+        run: |
+          $version = "${{ github.event.inputs.sdk_version }}"
+          $url = "https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${version}/toolchain_gnu_windows-x86_64_arm-zephyr-eabi.7z"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile "toolchain.7z"
+
+      - name: Extract .7z
+        run: 7z x toolchain.7z -o"toolchain_extracted" -y
+
+      - name: Repack as .tar.xz
+        run: |
+          $version = "${{ github.event.inputs.sdk_version }}"
+          $tarName = "toolchain_gnu_windows-x86_64_arm-zephyr-eabi-${version}.tar.xz"
+          tar -cJf $tarName -C toolchain_extracted .
+          echo "TAR_NAME=$tarName" >> $env:GITHUB_ENV
+
+      - name: Compute SHA-256 and size
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 $env:TAR_NAME).Hash.ToLower()
+          $size = (Get-Item $env:TAR_NAME).Length
+          echo "TAR_SHA256=$hash" >> $env:GITHUB_ENV
+          echo "TAR_SIZE=$size" >> $env:GITHUB_ENV
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          files: ${{ env.TAR_NAME }}
+
+      - name: Print package index values
+        run: |
+          Write-Host ""
+          Write-Host "=== Paste these into the Windows entry of the package index template ==="
+          Write-Host "archiveFileName : $env:TAR_NAME"
+          Write-Host "url             : https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }}/$env:TAR_NAME"
+          Write-Host "checksum        : SHA-256:$env:TAR_SHA256"
+          Write-Host "size            : $env:TAR_SIZE"

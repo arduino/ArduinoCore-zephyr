@@ -378,6 +378,21 @@ jobs:
           tar xf ${CORE_ARTIFACT} # will create ArduinoCore-zephyr/
           echo "REPORT_FILE=$(echo ${FQBN} | tr ':' '-').json" >> $GITHUB_ENV
 
+      - name: Install arm-zephyr-eabi 1.0.1 for zephyr_contrib boards
+        # zephyr_contrib boards (e.g. kit_pse84_ai) use Zephyr 4.4.0 + SDK 1.0.1.
+        # The Board Manager only ships arm-zephyr-eabi-0.16.8 (for SDK 0.16.8/Zephyr 4.2.0).
+        # We install 1.0.1 manually into the arduino-cli packages path so that
+        # {runtime.tools.arm-zephyr-eabi-1.0.1.path} resolves correctly during compilation.
+        if: ${{ matrix.subarch == 'zephyr_contrib' }}
+        run: |
+          TOOL_DIR=~/.arduino15/packages/zephyr/tools/arm-zephyr-eabi/1.0.1
+          if [ ! -d "$TOOL_DIR/bin" ]; then
+            mkdir -p "$TOOL_DIR"
+            wget -q https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz -O /tmp/arm-zephyr-eabi.tar.xz
+            tar -xf /tmp/arm-zephyr-eabi.tar.xz -C "$TOOL_DIR" --strip-components=1
+            rm /tmp/arm-zephyr-eabi.tar.xz
+          fi
+
       - name: Get test sketches
         run: |
           # sets ALL_TESTS and ALL_LIBRARIES env vars in GITHUB_ENV

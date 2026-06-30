@@ -54,14 +54,18 @@ jobs:
         run: |
           echo EXTRA_ZEPHYR_MODULES="$(pwd)/$MODULE_PATH" >> $GITHUB_ENV
 
-      - name: Build fade
+      - name: Apply Zephyr patches
         run: |
-          west build -p -b arduino_nano_33_ble//sense $MODULE_PATH/samples/fade
+          bash $MODULE_PATH/extra/apply_zephyr_patches.sh
 
-      - name: Build i2cdemo
+      - name: Build blinky
         run: |
-          west build -p -b ek_ra8d1 $MODULE_PATH/samples/i2cdemo
+          west build -p -b kit_pse84_ai/pse846gps2dbzc4a/m33 $MODULE_PATH/samples/blinky_arduino
 
-      - name: Build adc
+      - name: Build hello
         run: |
-          west build -p -b arduino_nano_33_ble/nrf52840/sense $MODULE_PATH/samples/analog_input
+          west build -p -b kit_pse84_ai/pse846gps2dbzc4a/m33 $MODULE_PATH/samples/hello_arduino
+
+      - name: Build threads
+        run: |
+          west build -p -b kit_pse84_ai/pse846gps2dbzc4a/m33 $MODULE_PATH/samples/threads_arduino
