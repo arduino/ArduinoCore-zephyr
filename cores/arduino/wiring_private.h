@@ -15,16 +15,6 @@
 		}                                                                                          \
 	} while (0)
 
-#define PWM_DT_SPEC(n, p, i) PWM_DT_SPEC_GET_BY_IDX(n, i),
-#define PWM_PINS(n, p, i)                                                                          \
-	DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), p, i)),         \
-							   DT_PHA_BY_IDX(DT_PATH(zephyr_user), p, i, pin)),
-
-#define ADC_DT_SPEC(n, p, i) ADC_DT_SPEC_GET_BY_IDX(n, i),
-#define ADC_PINS(n, p, i)                                                                          \
-	DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), p, i)),         \
-							   DT_PHA_BY_IDX(DT_PATH(zephyr_user), p, i, pin)),
-
 #ifdef __cplusplus
 
 namespace zephyr {
@@ -39,22 +29,22 @@ constexpr struct gpio_dt_spec arduino_pins[] = {
 #ifdef CONFIG_PWM
 
 constexpr struct pwm_dt_spec arduino_pwm[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_DT_SPEC)};
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, ZARD_PWM_DT_SPEC)};
 
 /* pwm-pins node provides a mapping digital pin numbers to pwm channels */
 constexpr pin_size_t arduino_pwm_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, PWM_PINS)};
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, ZARD_PWM_PINS)};
 
 #endif
 
 #ifdef CONFIG_ADC
 
 constexpr struct adc_dt_spec arduino_adc[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_DT_SPEC)};
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ZARD_ADC_DT_SPEC)};
 
 /* io-channel-pins node provides a mapping digital pin numbers to adc channels */
 constexpr pin_size_t arduino_analog_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ADC_PINS)};
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ZARD_ADC_PINS)};
 
 #endif
 
