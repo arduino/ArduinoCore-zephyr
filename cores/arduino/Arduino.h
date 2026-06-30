@@ -20,40 +20,7 @@
 #include <zephyr/drivers/i2c.h>
 #include <math.h>
 
-#if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
-/* Note: DT_REG_ADDR needs an expanded argument or it will not work properly */
-#define DIGITAL_PIN_MATCHES(dev_pha, pin, dev, num)                                                \
-	(((dev == DT_REG_ADDR(dev_pha)) && (num == pin)) ? 1 : 0)
-#define DIGITAL_PIN_EXISTS(n, p, i, dev, num)                                                      \
-	DIGITAL_PIN_MATCHES(DT_PHANDLE_BY_IDX(n, p, i), DT_PHA_BY_IDX(n, p, i, pin), dev, num)
-
-/* Check all pins are defined only once */
-#define DIGITAL_PIN_CHECK_UNIQUE(i, _)                                                             \
-	((DT_FOREACH_PROP_ELEM_SEP_VARGS(                                                              \
-		 DT_PATH(zephyr_user), digital_pin_gpios, DIGITAL_PIN_EXISTS, (+),                         \
-		 DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), digital_pin_gpios, i)),               \
-		 DT_PHA_BY_IDX(DT_PATH(zephyr_user), digital_pin_gpios, i, pin))) == 1)
-
-#if !LISTIFY(DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios), DIGITAL_PIN_CHECK_UNIQUE, (&&))
-#error "digital_pin_gpios has duplicate definition"
-#endif
-
-#undef DIGITAL_PIN_CHECK_UNIQUE
-#endif
-
-// Helper macro to get Arduino pin number from device tree alias
-#define DIGITAL_PIN_GPIOS_FIND_NODE(node)                                                          \
-	DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(node, gpios, 0)),                     \
-							   DT_PHA_BY_IDX(node, gpios, 0, pin))
-
-/* Return the index of it if matched, otherwise return 0 */
-#define LED_BUILTIN_INDEX_BY_REG_AND_PINNUM(n, p, i, dev, num)                                     \
-	(DIGITAL_PIN_EXISTS(n, p, i, dev, num) ? i : 0)
-
-/* Only matched pin returns non-zero value, so the sum is matched pin's index */
-#define DIGITAL_PIN_GPIOS_FIND_PIN(dev, pin)                                                       \
-	DT_FOREACH_PROP_ELEM_SEP_VARGS(DT_PATH(zephyr_user), digital_pin_gpios,                        \
-								   LED_BUILTIN_INDEX_BY_REG_AND_PINNUM, (+), dev, pin)
+#include "dt_user_pins.h"
 
 #if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), builtin_led_gpios) &&                                   \
 	(DT_PROP_LEN(DT_PATH(zephyr_user), builtin_led_gpios) > 0)
@@ -86,27 +53,21 @@
 
 #endif // builtin_led_gpios
 
-#define DN_ENUMS(n, p, i) D##i = i
-
 /*
  * expand as
  * enum digitalPins { D0, D1, ... LED... NUM_OF_DIGITAL_PINS };
  */
 enum digitalPins {
 #if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
-	DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), digital_pin_gpios, DN_ENUMS, (, )),
+	DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), digital_pin_gpios, ZARD_DN_ENUMS, (, )),
 #endif
 	NUM_OF_DIGITAL_PINS
 };
 
 #ifdef CONFIG_ADC
 
-#define AN_ENUMS(n, p, i)                                                                          \
-	A##i = DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), p, i)),  \
-									  DT_PHA_BY_IDX(DT_PATH(zephyr_user), p, i, pin)),
-
 enum analogPins {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, AN_ENUMS)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ZARD_AN_ENUMS)
 };
 
 // We provide analogReadResolution APIs
@@ -120,11 +81,10 @@ void analogReadResolution(int bits);
 #undef DAC1
 #undef DAC2
 #undef DAC3
-#define DAC_ENUMS(n, p, i) DAC##i = i,
 
 enum dacPins {
 #if DT_PROP_LEN_OR(DT_PATH(zephyr_user), dac_channels, 0) > 0
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), dac_channels, DAC_ENUMS)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), dac_channels, ZARD_DAC_ENUMS)
 #endif
 	NUM_OF_DACS
 };
