@@ -45,8 +45,7 @@ Once the bootloader is flashed, you can upload your first sketch.
 
 ### Pinout
 
-![Pinout](doc/temporaryPinout.PNG)
-TODO fix image
+![Pinout](doc/KIT_PSE84_AI_Pinout.svg)
 
 ### Macros
 
