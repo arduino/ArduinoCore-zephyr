@@ -1,54 +1,123 @@
-> [!IMPORTANT]  
-> This core is in **BETA**. 🧪  
-> Features may change, and bugs may be present. Use for testing only and provide feedback to help us improve.
+# PSOC™ Arduino Core for Zephyr on Infineon PSOC™ Edge E84
+
+> [!IMPORTANT]
+> This project is a work in progress.
+> It does not yet cover the full Arduino API surface or all PSOC™ Edge features.
 >
-> [![Default branch status](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=arduino&event=push)](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml) (TODO correct repo link)
+> [![Default branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=arduino&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml) (TODO correct repo link)
 
-# 🚧 Arduino Core for Zephyr
+This repository contains the Zephyr-based Arduino core port for:
 
-This repository is a downstream fork of the [Arduino Core for Zephyr RTOS-based
-boards](https://github.com/arduino/ArduinoCore-zephyr) that
-includes support for Infineon PSOC Edge boards, allowing it to be seamlessly used
-by the [Arduino IDE](https://docs.arduino.cc/software/ide/),
-[Arduino CLI](https://docs.arduino.cc/arduino-cli/) (untested) and
-[Arduino App Lab](https://docs.arduino.cc/software/app-lab/) (untested).
+- Infineon KIT-PSE84-AI (PSOC™ Edge E84)
 
-## 🧐 What is Zephyr? 
+## ⚙️ Install In Arduino IDE
 
-[Zephyr RTOS](https://zephyrproject.org/) is an open-source, real-time operating system designed for low-power, resource-constrained devices. It's modular, scalable, and supports multiple architectures.
+Use Arduino IDE 2.x and install the platform through Boards Manager.
 
-![Zephyr RTOS Logo](doc/zephyr_logo.jpg)
+1. Open Arduino IDE.
+2. Navigate to *'File > Preferences'*.
+3. In Additional boards manager URLs, add:
 
-## ⚙️ Installation
+```text
+https://github.com/Infineon/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json
+```
 
-Install the core and its toolchains via Board Manager:
-* Download and install the latest [Arduino IDE](https://www.arduino.cc/en/software) (only versions `2.x.x` are supported).
-* Navigate to *'File > Preferences'*. Look for the text field called 'Additional boards manager URLs'.
-* Copy the link of the released `.json`-file and paste it into the text field (if you have multiple URLs, separate them with a comma). Examples of a link: 
-  * [version 0.1.81](https://github.com/michal-gora/ArduinoCore-zephyr/releases/tag/0.1.81): `https://github.com/michal-gora/ArduinoCore-zephyr/releases/download/0.1.81/package_infineon_pse84_index.json`,
-  * [latest version](https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest): `https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json`
-* In the *'Boards Manager'* (left side menu), search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a while.
+4. Open *'Boards Manager'* (left side menu).
+5. Search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a while.
 
 Alternatively, to install the core using the command line, run the following command with the Arduino CLI:
 
 ```bash
-arduino-cli core install infineon:zephyr_pse84 --additional-urls https://github.com/michal-gora/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json
+arduino-cli core install infineon:zephyr_pse84 --additional-urls https://github.com/Infineon/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json
 ```
-(TODO correct repo link, untested)
+(TODO untested)
 
 ## 🏗️ First Use
 
 To get started with your board:
-* Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
-* Run the `Tools > Burn Bootloader` option from the IDE/CLI.
-* Once the bootloader is installed, you can load your first sketch.
+6. Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
+7. Run the `Tools > Burn Bootloader` option from the IDE/CLI.
 
-> [!NOTE]  
-> After the initial setup, future sketches will be loaded automatically without needing to reset the board.
+Once the bootloader is flashed, you can upload your first sketch.
+
+## Current Arduino API Coverage
+
+Current status for this port is summarized below.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Sketch lifecycle (`setup`, `loop`) | ✅ | Core runtime is present and used by samples. |
+| Timing (`millis`, `micros`, `delay`, `yield`) | ✅ | Implemented in Zephyr-backed core code. |
+| Digital GPIO (`pinMode`, `digitalRead`, `digitalWrite`) | ✅ | Implemented in core. |
+| Interrupts (`attachInterrupt`, `detachInterrupt`) | ✅ | Implemented in core. |
+| Analog input (`analogRead`) | ❌ | Not supported yet on this PSOC™ Edge port. |
+| Analog output (`analogWrite`) | ❌ | Not supported yet on this PSOC™ Edge port. |
+| UART Serial | ✅ | Zephyr UART-backed serial is implemented. |
+| USB Serial | ❌ | Current PSOC™ Edge board config is non-native USB for sketch upload/runtime serial. |
+| SPI | ❌ | Not supported yet on this PSOC™ Edge port. |
+| I2C (`Wire`) | ✅ | Supported on this PSOC™ Edge port. |
+| Threads (`Thread`) | ❌ | Not supported yet on this PSOC™ Edge port. |
+| CAN library | ❌ | Explicitly skipped for this board. |
+| Ethernet library | ❌ | Explicitly skipped for this board. |
+| RTC library | ❌ | Explicitly skipped for this board. |
+| WiFi library | ❌ | Explicitly skipped for this board. |
+
+## Known Scope And Limits
+
+- This is an early PSOC™ Edge port focused on enabling core Arduino workflows on Zephyr.
+- API compatibility is incomplete and may change between releases.
+- Some subsystems compile but are not yet fully validated on KIT-PSE84-AI.
+
+## Contributing And Feedback
+
+Feedback and collaboration are highly encouraged.
+
+- Report bugs and request features in [Issues](/../../issues)
+- Submit fixes through [Pull Requests](/../../pulls)
+- Ask questions and discuss roadmap in [Discussions](/../../discussions)
+
+When reporting issues, please include:
+
+- Board and host OS
+- Core version
+- Minimal sketch to reproduce
+- Full build/upload logs
+
+## Development Notes
+
+This core uses Zephyr plus a board-specific loader. Sketches are built as loadable artifacts and executed by the preflashed loader firmware.
+
+- Loader and boot integration: [loader](loader)
+- Core implementation: [cores/arduino](cores/arduino)
+- PSOC™ Edge E84 variant files: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
+
+Key implementation areas in this repository:
+
+- Board definition and upload tooling: [boards.txt](boards.txt)
+- Variant for KIT-PSE84-AI: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
+- Core implementation: [cores/arduino](cores/arduino)
+
+If you are extending support, start by validating small samples first (for example blinky, hello, threads) and then move to subsystem-specific libraries.
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
+
+<!-- #### Sketch Does Not Start
+
+- Build and upload in `Debug` mode, then open serial output and run `sketch` from the Zephyr shell.
+- For hard faults or early crashes, capture logs through the board debug/UART path.
+
+--- -->
+
+#### `llext` Undefined Symbol Errors
+
+If upload succeeds but execution fails with an `Undefined symbol` error, the sketch is using a symbol not exported by the loader image for this build.
+
+- Rebuild and flash the bootloader for this board.
+- If needed, extend exported symbols in loader integration sources and rebuild.
+
+---
 
 #### **Q: My Sketch doesn't start (Serial doesn't appear)**
 **A:** Connect a USB-to-UART adapter to the default UART (eg. TX0/RX0 on Giga, TX/RX on Nano) and read the error message (with the sketch compiled in `Default` mode). If you don't own a USB-to-UART adapter, compile the sketch in `Debug` mode; this will force the shell to wait until you open the Serial Monitor. Then, run `sketch` command and *probably* you'll be able to read the error (if generated by `llext`). For OS crashes, the USB-to-UART adapter is the only way to collect the crash.
@@ -83,13 +152,6 @@ See the [Using the Core in Arduino IDE/CLI](#using-the-core-in-arduino-idecli) s
 
 #### **Q: Wi-Fi is not working, or I get `Communication with WiFi module failed!` in the Serial Monitor**
 **A:** You are probably missing the Wi-Fi firmware, or the firmware is corrupted. Boards should come with the Wi-Fi firmware already flashed, but in case Wi-Fi is not working run the [`FlashFormat`](libraries/Storage/examples/FlashFormat/FlashFormat.ino) sketch to restore the firmware.
-
-## 📚 Libraries
-
-### Included with the core: ###
-
-### Separately supplied: ###
-- **ArduinoBLE**: This library is enabled only for the Arduino Nano 33 BLE. Please use [this branch](https://github.com/facchinm/ArduinoBLE/tree/zephyr_hci) to test it.
 
 ## 🧢 Under the hood
 
@@ -338,27 +400,3 @@ To add a new board that is already supported by mainline Zephyr with the target 
    * `build.zephyr_hals` to the (space-separated list of) HAL modules required by the board;
    * `build.variant` to the variant name identified above.
 * Implement touch support: if your board supports the "1200bps touch" method, implement `_on_1200_bps` in a file located inside the variant folder of your board.
-
-## 🐛 Bug Reporting
-
-To report a bug, open the [issues](/../../issues) and follow the instructions. Any issue opened without the needed information will be discarded.
-
-## 🙌 Contributions
-
-Contributions are always welcome. The preferred way to receive code contribution is by submitting a [Pull request](/../../pulls).
-
-> [!WARNING] 
-> At this stage of development, we only accept Pull requests for bug fixes and features. We do **not** accept support for new targets.
-
-## 📌 Upcoming features
-
-- [ ] USB: switch to `USB_DEVICE_STACK_NEXT` to support PluggableUSB
-- [x] Relocate RODATA in flash to accommodate sketches with large assets
-- [ ] Provide better error reporting for failed llext operations
-- [ ] Replace [`llext_exports.c`](/loader/llext_exports.c) with proper symbols generation (via includes)
-- [ ] Fix corner cases with `std::` includes (like `<iterator>`)
-- [ ] Get rid of all warnings
-
-## 🌟 Acknowledgments
-
-This effort would have been very hard without the [GSoC project](/README.gsoc.md) and the Zephyr community.
