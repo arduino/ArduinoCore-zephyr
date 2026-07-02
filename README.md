@@ -69,34 +69,230 @@ Here is a general explanation:
 - I2C pins are defined as `SDA`/`SCL` and `SDA1`/`SCL1` for the internal (`Wire`), and external (`Wire1`) I2C bus respectively.
 - Expansion header pins include the macros as printed on the board: `SERIAL_INTx` where `x` is the index in the range [0, 3], e.g. `SERIAL_INT0`.
 
-### Working functions
+### PSE84 Arduino API Support Tracking
 
-Current status for this port is summarized below.
+#### Legend
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Confirmed working |
+| ❌ | Confirmed not supported |
+| ⚠️ | Not yet tested |
 
-Legend:
-| Symbol | Definition |
-| --- | --- |
-| ✅ | working/tested |
-| ⚠️ | untested |
-| ❌ | missing |
+---
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Sketch lifecycle (`setup`, `loop`) | ✅ | Core runtime is present and used by samples. |
-| Timing (`millis`, `micros`, `delay`, `yield`) | ✅ | Implemented in Zephyr-backed core code. |
-| Digital GPIO (`pinMode`, `digitalRead`, `digitalWrite`) | ✅ | Implemented in core. |
-| Interrupts (`attachInterrupt`, `detachInterrupt`) | ✅ | Implemented in core. |
-| Analog input (`analogRead`) | ❌ | Not supported yet on this PSOC™ Edge port. |
-| Analog output (`analogWrite`) | ❌ | Not supported yet on this PSOC™ Edge port. |
-| UART Serial (`Serial.begin()`, `Serial.print()`) | ✅ | Zephyr UART-backed serial is implemented. |
-| USB Serial | ❌ | Current PSOC™ Edge board config is non-native USB for sketch upload/runtime serial. |
-| SPI | ❌ | Not supported yet on this PSOC™ Edge port. |
-| I2C (`Wire`, `Wire1`) | ✅ | Supported on this PSOC™ Edge port. |
-| Threads (`Thread`) | ❌ | Not supported yet on this PSOC™ Edge port. |
-| CAN library | ❌ | Explicitly skipped for this board. |
-| Ethernet library | ❌ | Explicitly skipped for this board. |
-| RTC library | ❌ | Explicitly skipped for this board. |
-| WiFi library | ❌ | Explicitly skipped for this board. |
+#### Core
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `setup()` | ✅ | Working |
+| `loop()` | ✅ | Working |
+| `init()` | ⚠️ | Not yet tested |
+| `initVariant()` | ⚠️ | Not yet tested |
+
+---
+
+#### Timing
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `millis()` | ✅ | Working |
+| `micros()` | ✅ | Working |
+| `delay()` | ✅ | Working |
+| `yield()` | ✅ | Working, ~1.5µs overhead confirmed |
+| `delayMicroseconds()` | ⚠️ | Not yet tested |
+| `pulseIn()` | ⚠️ | Not yet tested |
+| `pulseInLong()` | ⚠️ | Not yet tested |
+
+---
+
+#### Digital GPIO
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `pinMode()` | ✅ | Working |
+| `digitalRead()` | ✅ | Working |
+| `digitalWrite()` | ✅ | Working |
+| `digitalPinToInterrupt()` | ✅ | Confirmed in interrupt test |
+| `shiftIn()` | ⚠️ | Not yet tested |
+| `shiftOut()` | ⚠️ | Not yet tested |
+| `tone()` | ⚠️ | Not yet tested |
+| `noTone()` | ⚠️ | Not yet tested |
+
+---
+
+#### Interrupts
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `attachInterrupt()` | ✅ | Working, FALLING / RISING / CHANGE confirmed |
+| `detachInterrupt()` | ✅ | Working, stops interrupts cleanly |
+| `interrupts()` | ⚠️ | Not yet tested |
+| `noInterrupts()` | ⚠️ | Not yet tested |
+
+---
+
+#### Analog
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `analogRead()` | ❌ | Not supported yet on this PSoC™ Edge port |
+| `analogWrite()` | ❌ | Not supported yet on this PSoC™ Edge port |
+| `analogReference()` | ❌ | Not supported yet on this PSoC™ Edge port |
+| `analogReadResolution()` | ❌ | Not supported yet on this PSoC™ Edge port |
+| `analogWriteResolution()` | ❌ | Not supported yet on this PSoC™ Edge port |
+
+---
+
+#### Serial / UART
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `Serial.begin()` | ✅ | Working |
+| `Serial.end()` | ⚠️ | Not yet tested |
+| `Serial.print()` | ✅ | Working |
+| `Serial.println()` | ✅ | Working |
+| `Serial.write()` | ⚠️ | Not yet tested |
+| `Serial.read()` | ⚠️ | Not yet tested |
+| `Serial.readBytes()` | ⚠️ | Not yet tested |
+| `Serial.readString()` | ⚠️ | Not yet tested |
+| `Serial.readStringUntil()` | ⚠️ | Not yet tested |
+| `Serial.available()` | ⚠️ | Not yet tested |
+| `Serial.availableForWrite()` | ⚠️ | Not yet tested |
+| `Serial.peek()` | ⚠️ | Not yet tested |
+| `Serial.flush()` | ⚠️ | Not yet tested |
+| `Serial.printf()` | ⚠️ | Not yet tested |
+| `Serial.setTimeout()` | ⚠️ | Not yet tested |
+| `Serial1` / `Serial2` | ⚠️ | Not yet tested |
+| USB Serial | ❌ | Not supported, board uses non-native USB |
+
+---
+
+#### I2C (Wire)
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `Wire` / `Wire1` | ✅ | Supported on this PSoC™ Edge port |
+| `Wire.begin()` | ⚠️ | Not yet tested |
+| `Wire.begin(address)` | ⚠️ | Not yet tested - slave mode |
+| `Wire.end()` | ⚠️ | Not yet tested |
+| `Wire.requestFrom()` | ⚠️ | Not yet tested |
+| `Wire.beginTransmission()` | ⚠️ | Not yet tested |
+| `Wire.endTransmission()` | ⚠️ | Not yet tested |
+| `Wire.write()` | ⚠️ | Not yet tested |
+| `Wire.read()` | ⚠️ | Not yet tested |
+| `Wire.available()` | ⚠️ | Not yet tested |
+| `Wire.setClock()` | ⚠️ | Not yet tested |
+| `Wire.onReceive()` | ⚠️ | Not yet tested - slave mode |
+| `Wire.onRequest()` | ⚠️ | Not yet tested - slave mode |
+
+---
+
+#### SPI
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `SPI` | ❌ | Not supported yet on this PSoC™ Edge port |
+
+---
+
+#### Math
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `min()` | ⚠️ | Not yet tested |
+| `max()` | ⚠️ | Not yet tested |
+| `abs()` | ⚠️ | Not yet tested |
+| `constrain()` | ⚠️ | Not yet tested |
+| `map()` | ⚠️ | Not yet tested |
+| `pow()` | ⚠️ | Not yet tested |
+| `sqrt()` | ⚠️ | Not yet tested |
+| `sin()` | ⚠️ | Not yet tested |
+| `cos()` | ⚠️ | Not yet tested |
+| `tan()` | ⚠️ | Not yet tested |
+
+---
+
+#### Bits & Bytes
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `bit()` | ⚠️ | Not yet tested |
+| `bitRead()` | ⚠️ | Not yet tested |
+| `bitWrite()` | ⚠️ | Not yet tested |
+| `bitSet()` | ⚠️ | Not yet tested |
+| `bitClear()` | ⚠️ | Not yet tested |
+| `highByte()` | ⚠️ | Not yet tested |
+| `lowByte()` | ⚠️ | Not yet tested |
+| `word()` | ⚠️ | Not yet tested |
+
+---
+
+#### Random
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `random()` | ⚠️ | Not yet tested |
+| `randomSeed()` | ⚠️ | Not yet tested |
+
+---
+
+#### Characters
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `isAlpha()` | ⚠️ | Not yet tested |
+| `isAlphaNumeric()` | ⚠️ | Not yet tested |
+| `isAscii()` | ⚠️ | Not yet tested |
+| `isControl()` | ⚠️ | Not yet tested |
+| `isDigit()` | ⚠️ | Not yet tested |
+| `isGraph()` | ⚠️ | Not yet tested |
+| `isHexadecimalDigit()` | ⚠️ | Not yet tested |
+| `isLowerCase()` | ⚠️ | Not yet tested |
+| `isUpperCase()` | ⚠️ | Not yet tested |
+| `isPrintable()` | ⚠️ | Not yet tested |
+| `isPunct()` | ⚠️ | Not yet tested |
+| `isSpace()` | ⚠️ | Not yet tested |
+| `isWhitespace()` | ⚠️ | Not yet tested |
+
+---
+
+#### String
+
+| Function | Status | Notes |
+|----------|--------|-------|
+| `String()` | ⚠️ | Not yet tested |
+| `.length()` | ⚠️ | Not yet tested |
+| `.charAt()` | ⚠️ | Not yet tested |
+| `.indexOf()` | ⚠️ | Not yet tested |
+| `.substring()` | ⚠️ | Not yet tested |
+| `.toUpperCase()` | ⚠️ | Not yet tested |
+| `.toLowerCase()` | ⚠️ | Not yet tested |
+| `.toInt()` | ⚠️ | Not yet tested |
+| `.toFloat()` | ⚠️ | Not yet tested |
+| `.replace()` | ⚠️ | Not yet tested |
+| `.trim()` | ⚠️ | Not yet tested |
+
+---
+
+#### Libraries
+
+| Library | Status | Notes |
+|---------|--------|-------|
+| Threads | ❌ | Not supported yet on this PSoC™ Edge port |
+| CAN | ❌ | Explicitly skipped for this board |
+| Ethernet | ❌ | Explicitly skipped for this board |
+| RTC | ❌ | Explicitly skipped for this board |
+| WiFi | ❌ | Explicitly skipped for this board |
+
+---
+
+#### Reference Links
+
+| Resource | URL |
+|----------|-----|
+| Arduino API Reference | https://www.arduino.cc/reference/en/ |
+| ArduinoCore-API (source of truth) | https://github.com/arduino/ArduinoCore-API |
+| ArduinoCore-API `/api` folder | https://github.com/arduino/ArduinoCore-API/tree/master/api |
 
 ## Known Scope And Limits
 
