@@ -4,7 +4,7 @@
 > This project is a work in progress.
 > It does not yet cover the full Arduino API surface or all PSOC™ Edge features.
 >
-> [![Default branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=arduino&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml) (TODO correct repo link)
+> [![Default branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=main&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml)
 
 This repository contains the Zephyr-based Arduino core port for:
 
@@ -23,7 +23,7 @@ https://github.com/Infineon/ArduinoCore-zephyr/releases/latest/download/package_
 ```
 
 4. Open *'Boards Manager'* (left side menu).
-5. Search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a while.
+5. Search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a moment.
 
 Alternatively, to install the core using the command line, run the following command with the Arduino CLI:
 
@@ -40,22 +40,58 @@ To get started with your board:
 
 Once the bootloader is flashed, you can upload your first sketch.
 
+
 ## Current Arduino API Coverage
 
+### Pinout
+
+![Pinout](doc/temporaryPinout.PNG)
+TODO fix image
+
+### Macros
+
+For the exact macro definitions, refer to `variants/kit_pse84_ai_pse846gps2dbzc4a_m33/variant.h`.
+Here is a general explanation:
+
+- Every exposed GPIO pin from the pinout has a macro identical to the documentation name, e.g. `P17_3`, `P16_0`, `P15_3`, etc.
+- Digital pins have a macro in the format `Dx`, where `x` is the index of the arduino pin in the range [0, 47], e.g. `D0`, `D15`, `D47`, etc.
+- Analog pins have a macro in the format `Ax`, where `x` is the index of the arduino pin in the range [0, 15], e.g. `A0`, `A1`, `A15`, etc.
+- Onboard LED pin name macros are:
+  - `LED_BUILTIN`: `P10_7`
+  - `LED_BUILTIN_1`: `P10_7`
+  - `LED_BUILTIN_2`: `P10_5`
+  - `LED_BUILTIN_ACTIVE`: `HIGH`
+  - `LED_RED`: `P20_6`
+  - `LED_GREEN`: `P20_4`
+  - `LED_BLUE`: `P20_5`
+  - `BTN_BUILTIN`: `P7_0` (`SW1`)
+  - TODO possibly adjust/correct (especially onboard LEDX naming convention, or e.g. SW1)
+- I2C pins are defined as `SDA`/`SCL` and `SDA1`/`SCL1` for the internal (`Wire`), and external (`Wire1`) I2C bus respectively.
+- Expansion header pins include the macros as printed on the board: `SERIAL_INTx` where `x` is the index in the range [0, 3], e.g. `SERIAL_INT0`.
+
+### Working functions
+
 Current status for this port is summarized below.
+
+Legend:
+| Symbol | Definition |
+| --- | --- |
+| ✅ | working/tested |
+| ⚠️ | untested |
+| ❌ | missing |
 
 | Area | Status | Notes |
 | --- | --- | --- |
 | Sketch lifecycle (`setup`, `loop`) | ✅ | Core runtime is present and used by samples. |
-| Timing (`millis`, `micros`, `delay`, `yield`) | ✅ | Implemented in Zephyr-backed core code. |
+| Timing (`millis`, `micros`, `delay`, `yield`) | ⚠️ | Implemented in Zephyr-backed core code. |
 | Digital GPIO (`pinMode`, `digitalRead`, `digitalWrite`) | ✅ | Implemented in core. |
-| Interrupts (`attachInterrupt`, `detachInterrupt`) | ✅ | Implemented in core. |
+| Interrupts (`attachInterrupt`, `detachInterrupt`) | ⚠️ | Implemented in core. |
 | Analog input (`analogRead`) | ❌ | Not supported yet on this PSOC™ Edge port. |
 | Analog output (`analogWrite`) | ❌ | Not supported yet on this PSOC™ Edge port. |
 | UART Serial | ✅ | Zephyr UART-backed serial is implemented. |
 | USB Serial | ❌ | Current PSOC™ Edge board config is non-native USB for sketch upload/runtime serial. |
 | SPI | ❌ | Not supported yet on this PSOC™ Edge port. |
-| I2C (`Wire`) | ✅ | Supported on this PSOC™ Edge port. |
+| I2C (`Wire`, `Wire1`) | ✅ | Supported on this PSOC™ Edge port. |
 | Threads (`Thread`) | ❌ | Not supported yet on this PSOC™ Edge port. |
 | CAN library | ❌ | Explicitly skipped for this board. |
 | Ethernet library | ❌ | Explicitly skipped for this board. |
