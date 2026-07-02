@@ -83,12 +83,12 @@ Legend:
 | Area | Status | Notes |
 | --- | --- | --- |
 | Sketch lifecycle (`setup`, `loop`) | ✅ | Core runtime is present and used by samples. |
-| Timing (`millis`, `micros`, `delay`, `yield`) | ⚠️ | Implemented in Zephyr-backed core code. |
+| Timing (`millis`, `micros`, `delay`, `yield`) | ✅ | Implemented in Zephyr-backed core code. |
 | Digital GPIO (`pinMode`, `digitalRead`, `digitalWrite`) | ✅ | Implemented in core. |
-| Interrupts (`attachInterrupt`, `detachInterrupt`) | ⚠️ | Implemented in core. |
+| Interrupts (`attachInterrupt`, `detachInterrupt`) | ✅ | Implemented in core. |
 | Analog input (`analogRead`) | ❌ | Not supported yet on this PSOC™ Edge port. |
 | Analog output (`analogWrite`) | ❌ | Not supported yet on this PSOC™ Edge port. |
-| UART Serial | ✅ | Zephyr UART-backed serial is implemented. |
+| UART Serial (`Serial.begin()`, `Serial.print()`) | ✅ | Zephyr UART-backed serial is implemented. |
 | USB Serial | ❌ | Current PSOC™ Edge board config is non-native USB for sketch upload/runtime serial. |
 | SPI | ❌ | Not supported yet on this PSOC™ Edge port. |
 | I2C (`Wire`, `Wire1`) | ✅ | Supported on this PSOC™ Edge port. |
