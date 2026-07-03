@@ -1,0 +1,93 @@
+name: arduino-core
+append:
+  EXTRA_CONF_FILE: arduino-core.conf
+
+boards:
+  arduino_giga_r1/stm32h747xx/m7:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_giga_r1_stm32h747xx_m7/arduino_giga_r1_stm32h747xx_m7.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_giga_r1_stm32h747xx_m7/arduino_giga_r1_stm32h747xx_m7.overlay
+  arduino_mkrzero/samd21g18a:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_mkrzero/arduino_mkrzero.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_mkrzero/arduino_mkrzero.overlay
+  arduino_nano_33_ble/nrf52840:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nano_33_ble/arduino_nano_33_ble.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nano_33_ble/arduino_nano_33_ble.overlay
+  arduino_nano_33_ble/nrf52840/sense:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nano_33_ble_nrf52840_sense/arduino_nano_33_ble_nrf52840_sense.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nano_33_ble_nrf52840_sense/arduino_nano_33_ble_nrf52840_sense.overlay
+  arduino_nano_33_iot/samd21g18a:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nano_33_iot/arduino_nano_33_iot.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nano_33_iot/arduino_nano_33_iot.overlay
+  arduino_nano_connect/rp2040:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nano_connect_rp2040/arduino_nano_connect_rp2040.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nano_connect_rp2040/arduino_nano_connect_rp2040.overlay
+  arduino_nano_matter/mgm240sd22vna:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nano_matter_mgm240sd22vna/arduino_nano_matter_mgm240sd22vna.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nano_matter_mgm240sd22vna/arduino_nano_matter_mgm240sd22vna.overlay
+  arduino_nicla_sense_me/nrf52832:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nicla_sense_me_nrf52832/arduino_nicla_sense_me_nrf52832.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nicla_sense_me_nrf52832/arduino_nicla_sense_me_nrf52832.overlay
+  arduino_nicla_vision/stm32h747xx/m7:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_nicla_vision_stm32h747xx_m7/arduino_nicla_vision_stm32h747xx_m7.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_nicla_vision_stm32h747xx_m7/arduino_nicla_vision_stm32h747xx_m7.overlay
+  arduino_opta/stm32h747xx/m7:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_opta_stm32h747xx_m7/arduino_opta_stm32h747xx_m7.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_opta_stm32h747xx_m7/arduino_opta_stm32h747xx_m7.overlay
+  arduino_portenta_c33/r7fa6m5bh3cfc:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_portenta_c33_r7fa6m5bh3cfc/arduino_portenta_c33_r7fa6m5bh3cfc.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_portenta_c33_r7fa6m5bh3cfc/arduino_portenta_c33_r7fa6m5bh3cfc.overlay
+  arduino_portenta_h7/stm32h747xx/m7:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_portenta_h7_stm32h747xx_m7/arduino_portenta_h7_stm32h747xx_m7.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_portenta_h7_stm32h747xx_m7/arduino_portenta_h7_stm32h747xx_m7.overlay
+  arduino_uno_q/stm32u585xx:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_uno_q_stm32u585xx/arduino_uno_q_stm32u585xx.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_uno_q_stm32u585xx/arduino_uno_q_stm32u585xx.overlay
+  arduino_ventuno_q/stm32h5f5xx:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/arduino_ventuno_q_stm32h5f5xx/arduino_ventuno_q_stm32h5f5xx.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/arduino_ventuno_q_stm32h5f5xx/arduino_ventuno_q_stm32h5f5xx.overlay
+  beagleconnect_freedom/cc1352p7:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/beagleconnect_freedom/beagleconnect_freedom.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/beagleconnect_freedom/beagleconnect_freedom.overlay
+  cc3220sf_launchxl/cc3220sf:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/cc3220sf_launchxl/cc3220sf_launchxl.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/cc3220sf_launchxl/cc3220sf_launchxl.overlay
+  ek_ra8d1/r7fa8d1bhecbd:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/ek_ra8d1_r7fa8d1bhecbd/ek_ra8d1_r7fa8d1bhecbd.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/ek_ra8d1_r7fa8d1bhecbd/ek_ra8d1_r7fa8d1bhecbd.overlay
+  frdm_mcxn947/mcxn947/cpu0:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/frdm_mcxn947_mcxn947_cpu0/frdm_mcxn947_mcxn947_cpu0.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/frdm_mcxn947_mcxn947_cpu0/frdm_mcxn947_mcxn947_cpu0.overlay
+  frdm_rw612/rw612:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/frdm_rw612_rw612/frdm_rw612_rw612.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/frdm_rw612_rw612/frdm_rw612_rw612.overlay
+  nrf52840dk/nrf52840:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/nrf52840dk_nrf52840/nrf52840dk_nrf52840.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/nrf52840dk_nrf52840/nrf52840dk_nrf52840.overlay
+  nrf9160dk/nrf9160:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/nrf9160dk_nrf9160/nrf9160dk_nrf9160.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/nrf9160dk_nrf9160/nrf9160dk_nrf9160.overlay
+  rpi_pico/rp2040:
+    append:
+      EXTRA_CONF_FILE: ../../../variants/rpi_pico/rpi_pico.conf
+      EXTRA_DTC_OVERLAY_FILE: ../../../variants/rpi_pico/rpi_pico.overlay
