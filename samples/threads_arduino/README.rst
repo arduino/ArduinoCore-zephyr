@@ -41,6 +41,7 @@ For example, to build this sample for :ref:`arduino_nano_33_ble`:
 .. zephyr-app-commands::
    :zephyr-app: samples/basic/arduino-threads
    :board: arduino_nano_33_ble
+   :snippets: arduino-core
    :goals: build flash
    :compact:
 
