@@ -3,6 +3,8 @@ name: arduino-api
 build:
   cmake: .
   kconfig: Kconfig
+  settings:
+    snippet_root: zephyr
 samples:
   - samples
 blobs:
