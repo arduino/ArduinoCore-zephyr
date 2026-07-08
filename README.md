@@ -436,3 +436,11 @@ To add a new board that is already supported by mainline Zephyr with the target 
    * `build.zephyr_hals` to the (space-separated list of) HAL modules required by the board;
    * `build.variant` to the variant name identified above.
 * Implement touch support: if your board supports the "1200bps touch" method, implement `_on_1200_bps` in a file located inside the variant folder of your board.
+
+## Open Issues:
+
+- [ ] resolve zephyr related git patches with upstream contributions
+- [ ] old versions get uninstalled, because JSON index file only contains one (the latest) version. Recommendation: provide all major releases for end user in released JSON index file
+- [ ] reduce zephyr eabi size (first time board installation takes very long)
+- [ ] discuss primary in-house development method (e.g. side-branch prereleases)
+- [ ] add openocd .cfg file to the zephyr-sdk project's `target/` folder for the pse84, then update platform.txt and boards.txt
