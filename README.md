@@ -1,16 +1,19 @@
 # PSOC™ Arduino Core for Zephyr on Infineon PSOC™ Edge E84
+[![Default branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=main&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml)
 
 > [!IMPORTANT]
 > This project is a work in progress.
 > It does not yet cover the full Arduino API surface or all PSOC™ Edge features.
->
-> [![Default branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=main&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml)
 
 This repository contains the Zephyr-based Arduino core port for:
 
 - Infineon KIT-PSE84-AI (PSOC™ Edge E84)
 
-## ⚙️ Install In Arduino IDE
+## ⚙️ Install
+
+You can install the core through the Boards Manager in Arduino IDE, or via the Arduino CLI.
+
+### Arduino IDE
 
 Use Arduino IDE 2.x and install the platform through Boards Manager.
 
@@ -25,21 +28,40 @@ https://github.com/Infineon/ArduinoCore-zephyr/releases/latest/download/package_
 4. Open *'Boards Manager'* (left side menu).
 5. Search for *'PSOC Edge'* and install `Infineon PSOC Edge Boards`. This may take a moment.
 
-Alternatively, to install the core using the command line, run the following command with the Arduino CLI:
+### Arduino CLI
+
+Simply use the following command:
 
 ```bash
 arduino-cli core install infineon:zephyr_pse84 --additional-urls https://github.com/Infineon/ArduinoCore-zephyr/releases/latest/download/package_infineon_pse84_index.json
 ```
-(TODO untested)
 
 ## 🏗️ First Use
 
-To get started with your board:
-1. Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
-2. Run the `Tools > Burn Bootloader` option from the IDE/CLI.
+After installing the core, the loader has to be flashed and your first sketch can be uploaded. Steps are provided for both Arduino IDE and Arduino CLI.
 
-Once the bootloader is flashed, you can upload your first sketch.
+### Arduino IDE
 
+1. Select the correct board and port: `Tools > Board > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > Port`.
+2. Flash the loader: `Tools > Burn Bootloader`.
+3. Open or write a sketch and click *Upload*.
+
+### Arduino CLI
+
+The FQBN for the Infineon KIT-PSE84-AI (PSOC Edge E84) is `infineon:zephyr_pse84:kit_pse84_ai`.
+
+1. Flash the loader:
+
+```bash
+arduino-cli burn-bootloader -b infineon:zephyr_pse84:kit_pse84_ai
+```
+
+2. Compile and upload a sketch:
+
+```bash
+arduino-cli compile -b infineon:zephyr_pse84:kit_pse84_ai MySketch
+arduino-cli upload -b infineon:zephyr_pse84:kit_pse84_ai -p <port> MySketch
+```
 
 ## Arduino API Documentation for PSOC™ Edge
 
@@ -70,7 +92,10 @@ Here is a general explanation:
 
 ### PSE84 Arduino API Coverage Tracking
 
-Please refer to the [linked document](./api_support_tracking.md).
+> [!IMPORTANT]
+> Not all Arduino APIs are currently supported. Check the tracking document before relying on a specific API.
+
+Refer to the [API coverage tracking document](./api_support_tracking.md) for the implementation status and known limitations of each Arduino API.
 
 ## Known Scope And Limits
 
@@ -92,48 +117,6 @@ When reporting issues, please include:
 - Core version
 - Minimal sketch to reproduce
 - Full build/upload logs
-
-## Development Notes
-
-This core uses Zephyr plus a board-specific loader. Sketches are built as loadable artifacts and executed by the preflashed loader firmware.
-
-- Loader and boot integration: [loader](loader)
-- Core implementation: [cores/arduino](cores/arduino)
-- PSOC™ Edge E84 variant files: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
-
-Key implementation areas in this repository:
-
-- Board definition and upload tooling: [boards.txt](boards.txt)
-- Variant for KIT-PSE84-AI: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
-- Core implementation: [cores/arduino](cores/arduino)
-
-If you are extending support, start by validating small samples first (for example blinky, hello, threads) and then move to subsystem-specific libraries.
-
-### Development Workflows
-
-Pushing to the `main` branch of this repository automatically triggers a workflow that builds and publishes a new release. Three development paths are available — choose the one that fits your setup:
-
-#### Fork-based (no local toolchain required)
-
-Fork this repository and push changes to your fork's `main` branch. GitHub Actions will build and publish a release automatically. You can then add the released JSON index URL to your Arduino IDE to test.
-
-Best for: quick feature work or experimentation without installing any toolchain.
-
-#### Local setup — without Zephyr
-
-Clone the repository and use the [`sync-zephyr-artifacts`](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr) utility to download pre-built loader binaries. Allows you to work on core and library code without a full Zephyr environment.
-
-Best for: changes to [cores/arduino](cores/arduino) or [libraries](libraries) that do not require rebuilding the loader.
-
-→ See: [Shortcut: using the Core without installing Zephyr](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr)
-
-#### Local setup — full Zephyr
-
-Set up a complete Zephyr build environment to rebuild the loader from source. Faster iteration than the fork-based workflow once set up.
-
-Best for: loader changes, new board support, or Kconfig/DTS work.
-
-→ See: [Setup a Zephyr build environment](#️-setup-a-zephyr-build-environment)
 
 ## 🔧 Troubleshooting
 
@@ -188,6 +171,49 @@ See the [Using the Core in Arduino IDE/CLI](#using-the-core-in-arduino-idecli) s
 
 #### **Q: Wi-Fi is not working, or I get `Communication with WiFi module failed!` in the Serial Monitor**
 **A:** You are probably missing the Wi-Fi firmware, or the firmware is corrupted. Boards should come with the Wi-Fi firmware already flashed, but in case Wi-Fi is not working run the [`FlashFormat`](libraries/Storage/examples/FlashFormat/FlashFormat.ino) sketch to restore the firmware.
+
+
+## Development Notes
+
+This core uses Zephyr plus a board-specific loader. Sketches are built as loadable artifacts and executed by the preflashed loader firmware.
+
+- Loader and boot integration: [loader](loader)
+- Core implementation: [cores/arduino](cores/arduino)
+- PSOC™ Edge E84 variant files: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
+
+Key implementation areas in this repository:
+
+- Board definition and upload tooling: [boards.txt](boards.txt)
+- Variant for KIT-PSE84-AI: [variants/kit_pse84_ai_pse846gps2dbzc4a_m33](variants/kit_pse84_ai_pse846gps2dbzc4a_m33)
+- Core implementation: [cores/arduino](cores/arduino)
+
+If you are extending support, start by validating small samples first (for example blinky, hello, threads) and then move to subsystem-specific libraries.
+
+### Development Workflows
+
+Pushing to the `main` branch of this repository automatically triggers a workflow that builds and publishes a new release. Three development paths are available — choose the one that fits your setup:
+
+#### Fork-based (no local toolchain required)
+
+Fork this repository and push changes to your fork's `main` branch. GitHub Actions will build and publish a release automatically. You can then add the released JSON index URL to your Arduino IDE to test.
+
+Best for: quick feature work or experimentation without installing any toolchain.
+
+#### Local setup — without Zephyr
+
+Clone the repository and use the [`sync-zephyr-artifacts`](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr) utility to download pre-built loader binaries. Allows you to work on core and library code without a full Zephyr environment.
+
+Best for: changes to [cores/arduino](cores/arduino) or [libraries](libraries) that do not require rebuilding the loader.
+
+→ See: [Shortcut: using the Core without installing Zephyr](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr)
+
+#### Local setup — full Zephyr
+
+Set up a complete Zephyr build environment to rebuild the loader from source. Faster iteration than the fork-based workflow once set up.
+
+Best for: loader changes, new board support, or Kconfig/DTS work.
+
+→ See: [Setup a Zephyr build environment](#️-setup-a-zephyr-build-environment)
 
 ## 🧢 Under the hood
 
@@ -436,11 +462,3 @@ To add a new board that is already supported by mainline Zephyr with the target 
    * `build.zephyr_hals` to the (space-separated list of) HAL modules required by the board;
    * `build.variant` to the variant name identified above.
 * Implement touch support: if your board supports the "1200bps touch" method, implement `_on_1200_bps` in a file located inside the variant folder of your board.
-
-## Open Issues:
-
-- [ ] resolve zephyr related git patches with upstream contributions
-- [ ] old versions get uninstalled, because JSON index file only contains one (the latest) version. Recommendation: provide all major releases for end user in released JSON index file
-- [ ] reduce zephyr eabi size (first time board installation takes very long)
-- [ ] discuss primary in-house development method (e.g. side-branch prereleases)
-- [ ] add openocd .cfg file to the zephyr-sdk project's `target/` folder for the pse84, then update platform.txt and boards.txt
