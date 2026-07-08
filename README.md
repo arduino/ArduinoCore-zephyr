@@ -41,7 +41,7 @@ To get started with your board:
 Once the bootloader is flashed, you can upload your first sketch.
 
 
-## Current Arduino API Coverage
+## Arduino API Documentation for PSOC™ Edge
 
 ### Pinout
 
@@ -68,7 +68,7 @@ Here is a general explanation:
 - I2C pins are defined as `SDA`/`SCL` and `SDA1`/`SCL1` for the internal (`Wire`), and external (`Wire1`) I2C bus respectively.
 - Expansion header pins include the macros as printed on the board: `SERIAL_INTx` where `x` is the index in the range [0, 3], e.g. `SERIAL_INT0`.
 
-### PSE84 Arduino API Support Tracking
+### PSE84 Arduino API Coverage Tracking
 
 Please refer to the [linked document](./api_support_tracking.md).
 
