@@ -35,8 +35,8 @@ arduino-cli core install infineon:zephyr_pse84 --additional-urls https://github.
 ## 🏗️ First Use
 
 To get started with your board:
-6. Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
-7. Run the `Tools > Burn Bootloader` option from the IDE/CLI.
+1. Select the correct platform and port (e.g. `Tools > Board: ... > Infineon PSOC Edge Boards > Infineon KIT-PSE84-AI (PSOC Edge E84)` and `Tools > COM`).
+2. Run the `Tools > Burn Bootloader` option from the IDE/CLI.
 
 Once the bootloader is flashed, you can upload your first sketch.
 
@@ -109,6 +109,32 @@ Key implementation areas in this repository:
 
 If you are extending support, start by validating small samples first (for example blinky, hello, threads) and then move to subsystem-specific libraries.
 
+### Development Workflows
+
+Pushing to the `main` branch of this repository automatically triggers a workflow that builds and publishes a new release. Three development paths are available — choose the one that fits your setup:
+
+#### Fork-based (no local toolchain required)
+
+Fork this repository and push changes to your fork's `main` branch. GitHub Actions will build and publish a release automatically. You can then add the released JSON index URL to your Arduino IDE to test.
+
+Best for: quick feature work or experimentation without installing any toolchain.
+
+#### Local setup — without Zephyr
+
+Clone the repository and use the [`sync-zephyr-artifacts`](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr) utility to download pre-built loader binaries. Allows you to work on core and library code without a full Zephyr environment.
+
+Best for: changes to [cores/arduino](cores/arduino) or [libraries](libraries) that do not require rebuilding the loader.
+
+→ See: [Shortcut: using the Core without installing Zephyr](#-shortcut-using-the-core-in-arduino-idecli-without-installing-zephyr)
+
+#### Local setup — full Zephyr
+
+Set up a complete Zephyr build environment to rebuild the loader from source. Faster iteration than the fork-based workflow once set up.
+
+Best for: loader changes, new board support, or Kconfig/DTS work.
+
+→ See: [Setup a Zephyr build environment](#️-setup-a-zephyr-build-environment)
+
 ## 🔧 Troubleshooting
 
 ### Common Issues
@@ -145,7 +171,7 @@ If upload succeeds but execution fails with an `Undefined symbol` error, the ske
 ---
 
 #### **Q: I get an OS crash, like `<err> os: ***** USAGE FAULT *****`**
-**A:** This is usually due to a buffer overflow or coding error in the user's own code. However, since the project is still in beta 🧪, a [good bug report](#-bug-reporting) could help identify any issues in our code.
+**A:** This is usually due to a buffer overflow or coding error in the user's own code. However, since the project is still in beta 🧪, a [good bug report](/../../issues) could help identify any issues in our code.
 
 ---
 
