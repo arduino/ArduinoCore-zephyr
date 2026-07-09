@@ -234,11 +234,13 @@ tools.dfu-util.path={runtime.tools.dfu-util.path}
 tools.dfu-util.cmd=dfu-util
 tools.dfu-util.upload.params.verbose=-d
 tools.dfu-util.upload.params.quiet=
-tools.dfu-util.upload.pattern="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{build.path}/{build.project_name}.{upload.extension}" -a{upload.interface} {upload.dfuse}
+###tools.dfu-util.upload.pattern="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{build.path}/{build.project_name}.{upload.extension}" -a{upload.interface} {upload.dfuse}
+tools.dfu-util.upload.pattern="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{build.path}/{build.project_name}.{upload.extension}" -a{upload.interface}
 
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
-tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{runtime.platform.path}/firmwares/{bootloader.file}" -a{bootloader.interface} {bootloader.dfuse}
+###tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{runtime.platform.path}/firmwares/{bootloader.file}" -a{bootloader.interface} {bootloader.dfuse}
+tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{runtime.platform.path}/firmwares/{bootloader.file}" -a{bootloader.interface}
 
 tools.dfu-util.erase.params.verbose=
 tools.dfu-util.erase.params.quiet=

@@ -7,6 +7,13 @@
 #include <zephyr/dt-bindings/adc/adc.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
 
+&zephyr_udc0 {
+	board_cdc_acm_uart: board_cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+};
+
 &adc0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -76,6 +83,31 @@
 	};
 };
 
+&flash1 {
+	/delete-node/ partitions;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		bootloader: dfu_boot: partition@0 {
+			label = "dfu_boot";
+			reg = <0x0 DT_SIZE_K(256)>;
+		};
+
+		slot0_partition: loader: partition@40000 {
+			label = "loader";
+			reg = <0x40000 DT_SIZE_K(512)>;
+		};
+
+		slot1_partition: user_sketch: partition@c0000 {
+			label = "user_sketch";
+			reg = <0xc0000 DT_SIZE_K(256)>;
+		};
+	};
+};
+
 / {
 	aliases {
 		pwm-led0 = &pwm_led0;
@@ -84,6 +116,16 @@
 		red-pwm-led = &pwm_led0;
 		green-pwm-led = &pwm_led1;
 		blue-pwm-led = &pwm_led2;
+	};
+
+	log_uarts: log_uarts {
+		compatible = "zephyr,log-uart";
+		uarts = <&sercom1 &board_cdc_acm_uart>;
+	};
+
+	chosen {
+		zephyr,log-uart = &log_uarts;
+		zephyr,console = &sercom1;
 	};
 
 	zephyr,user {
@@ -116,7 +158,8 @@
 
 		builtin-led-gpios = <&portb 16 0>; /* LED_BUILTIN = PB16 (yellow DL2) */
 
-		serials = <&sercom1>, <&sercom0>, <&sercom6>;
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&sercom1>, <&sercom6>;
 
 		/* CAN -> CAN0 (TX=PB08, RX=PB09). */
 		cans = <&can0>;

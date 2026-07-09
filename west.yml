@@ -19,11 +19,13 @@ manifest:
       url-base: https://github.com/pillo79
     - name: pennam
       url-base: https://github.com/pennam
+    - name: dani
+      url-base: https://github.com/dani-clo
 
   projects:
     - name: zephyr
-      remote: pennam
-      revision: zephyr-arduino-v4.4.1-pennam
+      remote: dani
+      revision: arduino-nano-chandler
       import:
         name-allowlist:
           - cmsis

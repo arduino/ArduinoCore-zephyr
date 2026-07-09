@@ -22,10 +22,6 @@
 #include <mbedtls/debug.h>
 #endif
 
-#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
-extern uint32_t SystemCoreClock;
-#endif
-
 /*
  * Provide errno access for LLEXT modules.
  *
@@ -481,7 +477,8 @@ EXPORT_SYMBOL(arm_irq_is_enabled);
 EXPORT_SYMBOL(arm_irq_priority_set);
 #endif
 
-#if defined(__arm__) && !defined(CONFIG_SOC_FAMILY_RPI_PICO)
+#if defined(__arm__) && !defined(CONFIG_SOC_FAMILY_RPI_PICO) &&                                      \
+	!defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
 EXPORT_SYMBOL(SystemCoreClock);
 #endif
 

@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&flash1 {
+	/delete-node/ partitions;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		bootloader: dfu_boot: partition@0 {
+			label = "dfu_boot";
+			reg = <0x0 DT_SIZE_K(256)>;
+		};
+
+		slot0_partition: loader: partition@40000 {
+			label = "loader";
+			reg = <0x40000 DT_SIZE_K(512)>;
+		};
+
+		slot1_partition: user_sketch: partition@c0000 {
+			label = "user_sketch";
+			reg = <0xc0000 DT_SIZE_K(256)>;
+		};
+	};
+};
+
+/ {
+	chosen {
+		zephyr,code-partition = &dfu_boot;
+	};
+};
