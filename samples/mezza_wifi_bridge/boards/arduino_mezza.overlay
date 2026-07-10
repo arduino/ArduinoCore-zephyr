@@ -1,0 +1,36 @@
+/ {
+	uart-bridge0 {
+		compatible = "zephyr,uart-bridge";
+		peers = <&board_cdc_acm_uart &uart9>;
+	};
+};
+
+/*
+    For module programming, following guide at
+    https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_MCU_Hardware_Setup (5.2)
+*/
+
+&gpioi {
+	wifi_boot_gpio: wifi-boot-gpio {
+        gpio-hog;
+		gpios = <11 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+		output-low;
+	};
+
+    wifi_chip_en_gpio: wifi-chip-en-gpio {
+        gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+		output-low;
+	};
+};
+
+&uart9 {
+	current-speed = <115200>;
+	fifo-enable;
+};
+
+&st67w611m1 {
+    status = "disabled";
+};
