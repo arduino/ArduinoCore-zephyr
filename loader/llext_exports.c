@@ -392,8 +392,11 @@ EXPORT_AEABI_SYM(__aeabi_ul2d);
 /* float <-> double / integer conversions */
 EXPORT_AEABI_SYM(__aeabi_d2f);
 EXPORT_AEABI_SYM(__aeabi_f2d);
+EXPORT_AEABI_SYM(__aeabi_ui2f);
 EXPORT_AEABI_SYM(__aeabi_l2f);
 EXPORT_AEABI_SYM(__aeabi_ul2f);
+/* float arithmetic */
+EXPORT_AEABI_SYM(__aeabi_fdiv);
 /* integer division */
 EXPORT_AEABI_SYM(__aeabi_idiv);
 EXPORT_AEABI_SYM(__aeabi_uidiv);

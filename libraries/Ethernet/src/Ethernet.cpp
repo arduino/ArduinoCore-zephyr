@@ -8,13 +8,11 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/net/net_if.h>
 #include <zephyrClockInit.hpp>
 #include <zephyrPinctrl.h>
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
-#define ETH_PHY_NODE DT_INST(0, ethernet_phy)
-static const struct device *eth_phy_dev = DEVICE_DT_GET(ETH_PHY_NODE);
-
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(mdio), okay)
 #if DT_HAS_CHOSEN(arduino_eth_clock)
 #define CLOCK_NODE DT_CHOSEN(arduino_eth_clock)
 static const struct pwm_dt_spec CLOCK_PWM = PWM_DT_SPEC_GET(CLOCK_NODE);
@@ -96,6 +94,11 @@ EthernetHardwareStatus EthernetClass::hardwareStatus() {
 		return EthernetNoHardware;
 	}
 
+	const struct device *eth_dev = net_if_get_device(netif);
+	if (eth_dev == nullptr) {
+		return EthernetNoHardware;
+	}
+
 	if (!net_if_is_up(netif)) {
 		/* since we don't perform hardware setup only once in begin() but here, avoid doing it again
 		 * every time we call this function if network is already up */
@@ -104,7 +107,7 @@ EthernetHardwareStatus EthernetClass::hardwareStatus() {
 			return EthernetNoHardware;
 		}
 
-		ret = zephyr::arduino::init_dev_apply_pinctrl(eth_phy_dev);
+		ret = zephyr::arduino::init_dev_apply_pinctrl(eth_dev);
 		if (ret < 0) {
 			return EthernetNoHardware;
 		}

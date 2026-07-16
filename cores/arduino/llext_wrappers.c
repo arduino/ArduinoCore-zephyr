@@ -208,8 +208,11 @@ VN(__aeabi_ul2d)
 /* float <-> double / integer conversions */
 VN(__aeabi_d2f)
 VN(__aeabi_f2d)
+VN(__aeabi_ui2f)
 VN(__aeabi_l2f)
 VN(__aeabi_ul2f)
+/* float arithmetic */
+VN(__aeabi_fdiv)
 /* integer division */
 VN(__aeabi_idiv)
 VN(__aeabi_uidiv)

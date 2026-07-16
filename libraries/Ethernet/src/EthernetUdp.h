@@ -7,6 +7,6 @@
 #pragma once
 #include <ZephyrUDP.h>
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(mdio), okay)
 using EthernetUDP = ZephyrUDP;
 #endif
