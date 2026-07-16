@@ -44,5 +44,7 @@ west sdk install --version 1.0.1 -t arm-zephyr-eabi
 log_msg "endgroup"
 
 log_msg "group" "Fetching blobs for: $NEEDED_HALS"
-west blobs fetch $NEEDED_HALS
+for m in $NEEDED_HALS; do
+	west blobs -a fetch "$m" || echo "WARNING: blob fetch failed for $m, continuing anyway"
+done
 log_msg "endgroup"
