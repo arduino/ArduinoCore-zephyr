@@ -72,6 +72,11 @@
       "packager": "arduino",
       "name": "scripting-tools",
       "version": "0.0.7"
+    },
+    {
+      "packager": "arduino",
+      "name": "rp2040tools",
+      "version": "1.1.0-rc1"
     }
   ]
 }
