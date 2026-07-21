@@ -14,7 +14,75 @@
 	};
 };
 
+&pinctrl {
+	empty_default: empty_default {
+		group1 {
+			pinmux = <>;
+		};
+	};
+
+	adc0_arduino: adc0_arduino {
+		group1 {
+			pinmux = <PB12B_ADC_VINP11>,
+				 <PA5B_ADC_VINP1>,
+				 <PA6B_ADC_VINP2>,
+				 <PA7B_ADC_VINP3>,
+				 <PA11B_ADC_VINP7>,
+				 <PA12B_ADC_VINP8>,
+				 <PA9B_ADC_VINP5>,
+				 <PA10B_ADC_VINP6>;
+		};
+	};
+
+	tcc1_arduino: tcc1_arduino {
+		group1 {
+			pinmux = <PC19F_TCC1_WO4>,
+				 <PC20F_TCC1_WO5>,
+				 <PC15F_TCC1_WO0>,
+				 <PC16F_TCC1_WO1>,
+				 <PC17F_TCC1_WO2>;
+		};
+	};
+
+	tcc4_arduino: tcc4_arduino {
+		group1 {
+			pinmux = <PA21F_TCC4_WO1>,
+				 <PA20F_TCC4_WO0>;
+		};
+	};
+
+	tcc3_arduino_wo0: tcc3_arduino_wo0 {
+		group1 {
+			pinmux = <PB11G_TCC3_WO6>;
+		};
+	};
+
+	tcc2_arduino_wo2: tcc2_arduino_wo2 {
+		group1 {
+			pinmux = <PD11F_TCC2_WO2>;
+		};
+	};
+
+	tcc5_arduino_wo1: tcc5_arduino_wo1 {
+		group1 {
+			pinmux = <PA23F_TCC5_WO1>;
+		};
+	};
+
+	tcc6_arduino_wo1: tcc6_arduino_wo1 {
+		group1 {
+			pinmux = <PB24F_TCC6_WO1>;
+		};
+	};
+};
+
 &adc0 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&adc0_arduino>;
+	pinctrl-names = "default", "sleep", "arduino";
+
 	#address-cells = <1>;
 	#size-cells = <0>;
 
@@ -83,6 +151,78 @@
 	};
 };
 
+&sercom6 {
+	zephyr,deferred-init;
+};
+
+&sercom4 {
+	zephyr,deferred-init;
+};
+
+&sercom3 {
+	zephyr,deferred-init;
+};
+
+&sercom2 {
+	zephyr,deferred-init;
+};
+
+&sercom5 {
+	zephyr,deferred-init;
+};
+
+&can0 {
+	zephyr,deferred-init;
+};
+
+&tcc1 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc1_arduino>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&tcc2 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc2_arduino_wo2>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&tcc3 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc3_arduino_wo0>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&tcc4 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc4_arduino>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&tcc5 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc5_arduino_wo1>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&tcc6 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc6_arduino_wo1>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
 &flash1 {
 	/delete-node/ partitions;
 
@@ -109,15 +249,6 @@
 };
 
 / {
-	aliases {
-		pwm-led0 = &pwm_led0;
-		pwm-led1 = &pwm_led1;
-		pwm-led2 = &pwm_led2;
-		red-pwm-led = &pwm_led0;
-		green-pwm-led = &pwm_led1;
-		blue-pwm-led = &pwm_led2;
-	};
-
 	log_uarts: log_uarts {
 		compatible = "zephyr,log-uart";
 		uarts = <&sercom1 &board_cdc_acm_uart>;
@@ -134,8 +265,8 @@
 					    <&portd 8 0>,   /* D1  (UART1 TX) */
 					    <&portc 19 0>,  /* D2  */
 					    <&portc 20 0>,  /* D3  */
-					    <&porta 20 0>,  /* D4  */
-					    <&porta 21 0>,  /* D5  */
+					    <&porta 21 0>,  /* D4  */
+					    <&porta 20 0>,  /* D5  */
 					    <&portb 11 0>,  /* D6  */
 					    <&portd 11 0>,  /* D7  */
 					    <&porta 23 0>,  /* D8  */
@@ -154,14 +285,19 @@
 					    <&porta 10 0>,  /* D21 / A7 */
 					    <&portb 14 0>,  /* D22 */
 					    <&portb 15 0>,  /* D23 */
-					    <&portb 16 0>;  /* D24 / LED_BUILTIN */
+					    <&portb 16 0>,  /* D24 / LED_BUILTIN */
+					    <&portc 15 0>,  /* D25 / LEDR */
+					    <&portc 16 0>,  /* D26 / LEDG */
+					    <&portc 17 0>;  /* D27 / LEDB */
 
-		builtin-led-gpios = <&portb 16 0>; /* LED_BUILTIN = PB16 (yellow DL2) */
+		builtin-led-gpios = <&portb 16 0>,
+					    <&portc 15 0>,
+					    <&portc 16 0>,
+					    <&portc 17 0>;
 
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
 		serials = <&sercom1>, <&sercom6>;
 
-		/* CAN -> CAN0 (TX=PB08, RX=PB09). */
 		cans = <&can0>;
 
 		i2cs = <&sercom4>, <&sercom3>;
@@ -169,8 +305,11 @@
 
 		pwm-pin-gpios = <&portc 19 0>,
 				<&portc 20 0>,
-				<&porta 20 0>,
+				<&portc 15 0>,
+				<&portc 16 0>,
+				<&portc 17 0>,
 				<&porta 21 0>,
+				<&porta 20 0>,
 				<&portb 11 0>,
 				<&portd 11 0>,
 				<&porta 23 0>,
@@ -187,8 +326,11 @@
 
 		pwms = <&tcc1 4 PWM_HZ(500) 0>,
 		       <&tcc1 5 PWM_HZ(500) 0>,
-		       <&tcc4 0 PWM_HZ(500) 0>,
+		       <&tcc1 0 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,
 		       <&tcc4 1 PWM_HZ(500) 0>,
+		       <&tcc4 0 PWM_HZ(500) 0>,
 		       <&tcc3 0 PWM_HZ(500) 0>,	
 		       <&tcc2 2 PWM_HZ(500) 0>,
 		       <&tcc5 1 PWM_HZ(500) 0>,
