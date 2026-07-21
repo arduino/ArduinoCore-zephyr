@@ -23,20 +23,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/drivers/uart.h>
 
 #include <zephyr/devicetree/fixed-partitions.h>
-
-#define HEADER_LEN 16
-
-struct sketch_header_v1 {
-	uint8_t ver;    // @ 0x07
-	uint32_t len;   // @ 0x08
-	uint16_t magic; // @ 0x0c
-	uint8_t flags;  // @ 0x0e
-} __attribute__((packed));
-
-#define SKETCH_FLAG_DEBUG        0x01
-#define SKETCH_FLAG_LINKED       0x02
-#define SKETCH_FLAG_IMMEDIATE    0x04
-#define SKETCH_FLAG_WAIT_FOR_APP 0x08
+#include "../cores/arduino/zephyr_sketch_header.h"
 
 #define SKETCH_RAM_BUFFER_LEN 131072
 
@@ -151,7 +138,7 @@ static int loader(const struct shell *sh) {
 
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 
-	char header[HEADER_LEN];
+	char header[SKETCH_HEADER_LEN];
 	rc = flash_area_read(fa, 0, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
@@ -160,7 +147,7 @@ static int loader(const struct shell *sh) {
 
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
-	if (sketch_hdr->ver != 0x1 || sketch_hdr->magic != 0x2341) {
+	if (sketch_header_v1_verify(sketch_hdr) != 0) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
@@ -303,7 +290,7 @@ static int loader(const struct shell *sh) {
 
 		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
-		entry_point_t entry_point = (entry_point_t)(base_addr + HEADER_LEN + 1);
+		entry_point_t entry_point = (entry_point_t)(base_addr + SKETCH_HEADER_LEN + 1);
 		entry_point(&llext_heap, llext_heap.heap.init_bytes);
 		// should never reach here
 		for (;;) {
