@@ -5,7 +5,6 @@
  */
 
 #include <zephyr/dt-bindings/pwm/stm32_pwm.h>
-
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
@@ -21,6 +20,12 @@
 			label = "user_sketch";
 			reg = <0x00100000 0x00300000>;
 		};
+		
+		slot1_partition: partition@400000 {
+			label = "image-1";
+			reg = <0x00400000 DT_SIZE_K(1504)>;
+		};
+
 	};
 };
 
@@ -78,7 +83,7 @@
 		i2cs = <&i2c2>, <&i2c1>, <&i2c4>;
 		spis = <&spi4>, <&spi1>;
 
-		pwms = <&pwm14 3 PWM_HZ(12000000) PWM_POLARITY_NORMAL>;
+		pwms = <&pwm15 1 PWM_HZ(50) PWM_POLARITY_NORMAL>;
 
 		cans = <&fdcan2>, <&fdcan1>;
 	};
