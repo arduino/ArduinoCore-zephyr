@@ -9,6 +9,7 @@
 LOG_MODULE_REGISTER(sketch);
 
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/llext/llext.h>
 #include <zephyr/llext/buf_loader.h>
