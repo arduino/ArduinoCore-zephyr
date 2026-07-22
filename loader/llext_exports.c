@@ -66,6 +66,7 @@ EXPORT_LIBC_SYM(memmove);
 EXPORT_LIBC_SYM(strrchr);
 EXPORT_LIBC_SYM(strstr);
 EXPORT_LIBC_SYM(strncmp);
+EXPORT_LIBC_SYM(strnlen);
 EXPORT_LIBC_SYM(strncpy);
 EXPORT_LIBC_SYM(strcasecmp);
 EXPORT_LIBC_SYM(strcmp);
@@ -194,6 +195,7 @@ FORCE_EXPORT_SYM(net_if_get_first_ethernet);
 #if defined(CONFIG_NET_L2_ETHERNET)
 FORCE_EXPORT_SYM(_net_l2_ETHERNET);
 FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_ETHERNET_SET_MAC_ADDRESS);
+FORCE_EXPORT_SYM(net_eth_get_phy);
 #endif
 
 #if defined(CONFIG_NET_DHCPV4)

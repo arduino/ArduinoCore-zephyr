@@ -13,3 +13,4 @@
 
 skip_for_this_board libraries/Ethernet
 skip_for_this_board libraries/CAN
+skip_for_this_board libraries/Camera
