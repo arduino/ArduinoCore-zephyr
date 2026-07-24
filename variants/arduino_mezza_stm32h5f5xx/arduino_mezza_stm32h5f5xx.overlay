@@ -5,6 +5,9 @@
  */
 
 #include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
+/*
+
 /delete-node/ &boot_partition;
 /delete-node/ &slot0_partition;
 /delete-node/ &slot1_partition;
@@ -28,6 +31,8 @@
 
 	};
 };
+
+*/
 
 / {
 	zephyr,user {
