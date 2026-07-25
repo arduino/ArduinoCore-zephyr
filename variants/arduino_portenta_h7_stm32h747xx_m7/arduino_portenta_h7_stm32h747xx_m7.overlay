@@ -421,7 +421,56 @@ qspi_flash: &mx25l12833f {};
 				    <&gpiok 5 0>,		/* LEDR */
 				    <&gpiok 6 0>,		/* LEDG */
 				    <&gpiok 7 0>,		/* LEDB */
-				    <&gpioi 12 0>;		/* SE05X_EN */
+				    <&gpioi 12 0>,		/* SE05X_EN */
+
+				    <&gpioa 0 GPIO_ACTIVE_LOW>,		/* UART0_TX, J1-34 */
+				    <&gpioa 11 GPIO_ACTIVE_LOW>,	/* USB0 D-, J1-28 (native USB / USB-A on carriers) */
+				    <&gpioa 12 GPIO_ACTIVE_LOW>,	/* USB0 D+, J1-26 (native USB / USB-A on carriers) */
+
+				    <&gpiob 2 GPIO_ACTIVE_LOW>,		/* PDM_D0, J1-68 */
+				    <&gpiob 8 GPIO_ACTIVE_LOW>,		/* CAN1_RX, J1-51 */
+				    <&gpiob 9 GPIO_ACTIVE_LOW>,		/* I2S_WS, J1-58 */
+
+				    <&gpioc 13 GPIO_ACTIVE_LOW>,	/* GPIO0, J2-46 */
+				    <&gpioc 15 GPIO_ACTIVE_LOW>,	/* GPIO1, J2-48 */
+
+				    <&gpiod 3 GPIO_ACTIVE_LOW>,		/* I2S_CK, J1-56 */
+				    <&gpiod 4 GPIO_ACTIVE_LOW>,		/* GPIO2, J2-50 */
+				    <&gpiod 5 GPIO_ACTIVE_LOW>,		/* GPIO3, J2-52 */
+
+				    <&gpioe 2 GPIO_ACTIVE_LOW>,		/* PDM_CK, J1-66 */
+				    <&gpioe 3 GPIO_ACTIVE_LOW>,		/* GPIO4, J2-54 */
+
+				    <&gpiog 3 GPIO_ACTIVE_LOW>,		/* GPIO5, J2-56 */
+				    <&gpiog 9 GPIO_ACTIVE_LOW>,		/* UART2_RX, J2-28 */
+				    <&gpiog 10 GPIO_ACTIVE_LOW>,	/* GPIO6, J2-58 */
+				    <&gpiog 14 GPIO_ACTIVE_LOW>,	/* UART2_TX, J2-26 */
+
+				    <&gpioh 6 GPIO_ACTIVE_LOW>,		/* PWM9, J2-68 */
+				    <&gpioh 9 GPIO_ACTIVE_LOW>,		/* CAM_D0, J2-16 */
+				    <&gpioh 10 GPIO_ACTIVE_LOW>,	/* CAM_D1, J2-14 */
+				    <&gpioh 11 GPIO_ACTIVE_LOW>,	/* CAM_D2 (J2-12) / I2C2_SCL (J2-47), shared */
+				    <&gpioh 12 GPIO_ACTIVE_LOW>,	/* CAM_D3 (J2-10) / I2C2_SDA (J2-45), shared */
+				    <&gpioh 13 GPIO_ACTIVE_LOW>,	/* CAN1_TX, J1-49 */
+				    <&gpioh 14 GPIO_ACTIVE_LOW>,	/* CAM_D4, J2-8 */
+
+				    <&gpioi 2 GPIO_ACTIVE_LOW>,		/* I2S_SDI, J1-60 */
+				    <&gpioi 3 GPIO_ACTIVE_LOW>,		/* I2S_SDO, J1-62 */
+				    <&gpioi 4 GPIO_ACTIVE_LOW>,		/* CAM_D5, J2-6 */
+				    <&gpioi 5 GPIO_ACTIVE_LOW>,		/* CAM_VSYNC (J2-18) / SAI_CK (J2-49), shared */
+				    <&gpioi 6 GPIO_ACTIVE_LOW>,		/* CAM_D6 (J2-4) / SAI_D0 (J2-53), shared */
+				    <&gpioi 7 GPIO_ACTIVE_LOW>,		/* CAM_D7 (J2-2) / SAI_FS (J2-51), shared */
+				    <&gpioi 8 GPIO_ACTIVE_LOW>,		/* BT_SEL boot-mode select, J2-3 */
+				    <&gpioi 9 GPIO_ACTIVE_LOW>,		/* UART0_RX, J1-36 */
+				    <&gpioi 10 GPIO_ACTIVE_LOW>,	/* UART0_RTS, J1-38 */
+				    <&gpioi 13 GPIO_ACTIVE_LOW>,	/* UART0_CTS, J1-40 */
+				    <&gpioi 14 GPIO_ACTIVE_LOW>,	/* UART1_RTS, J1-37 */
+				    <&gpioi 15 GPIO_ACTIVE_LOW>,	/* UART1_CTS, J1-39 */
+
+				    <&gpioj 7 GPIO_ACTIVE_LOW>,		/* PWM7, J2-64 */
+				    <&gpioj 8 GPIO_ACTIVE_LOW>,		/* UART3_TX, J2-25 */
+				    <&gpioj 9 GPIO_ACTIVE_LOW>,		/* UART3_RX, J2-27 */
+				    <&gpioj 10 GPIO_ACTIVE_LOW>;	/* PWM8, J2-66 */
 
 		builtin-led-gpios = <&gpiok 6 0>,
 				    <&gpiok 5 0>,
