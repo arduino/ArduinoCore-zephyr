@@ -26,7 +26,25 @@
 
 / {
 	zephyr,user {
-		digital-pin-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
+		digital-pin-gpios =
+			<&gpio4 3  GPIO_ACTIVE_HIGH>, /* D0  = P4_3  (LPUART2 RX) */
+			<&gpio4 2  GPIO_ACTIVE_HIGH>, /* D1  = P4_2  (LPUART2 TX) */
+			<&gpio0 29 GPIO_ACTIVE_HIGH>, /* D2  = P0_29 */
+			<&gpio1 23 GPIO_ACTIVE_HIGH>, /* D3  = P1_23 */
+			<&gpio0 30 GPIO_ACTIVE_HIGH>, /* D4  = P0_30 */
+			<&gpio1 21 GPIO_ACTIVE_HIGH>, /* D5  = P1_21 */
+			<&gpio1 2  GPIO_ACTIVE_HIGH>, /* D6  = P1_2  (shared with LED_BLUE) */
+			<&gpio0 31 GPIO_ACTIVE_HIGH>, /* D7  = P0_31 */
+			<&gpio0 28 GPIO_ACTIVE_HIGH>, /* D8  = P0_28 */
+			<&gpio0 10 GPIO_ACTIVE_HIGH>, /* D9  = P0_10 (shared with LED_RED, LED_BUILTIN) */
+			<&gpio0 27 GPIO_ACTIVE_HIGH>, /* D10 = P0_27 (shared with LED_GREEN; SPI CS) */
+			<&gpio0 24 GPIO_ACTIVE_HIGH>, /* D11 = P0_24 (SPI MOSI) */
+			<&gpio0 26 GPIO_ACTIVE_HIGH>, /* D12 = P0_26 (SPI MISO) */
+			<&gpio0 25 GPIO_ACTIVE_HIGH>, /* D13 = P0_25 (SPI SCK) */
+			<&gpio4 0  GPIO_ACTIVE_HIGH>, /* D14 = P4_0  (I2C SDA) */
+			<&gpio4 1  GPIO_ACTIVE_HIGH>, /* D15 = P4_1  (I2C SCL) */
+			<&gpio0 23 GPIO_ACTIVE_HIGH>, /* D16 = P0_23 (SW2, shared with A5) */
+			<&gpio0 6  GPIO_ACTIVE_HIGH>; /* D17 = P0_6  (SW3) */
 		builtin-led-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
 		serials = <&flexcomm4_lpuart4>; /* 'Serial1' onwards */
