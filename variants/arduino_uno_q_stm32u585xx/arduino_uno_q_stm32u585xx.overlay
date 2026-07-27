@@ -183,6 +183,18 @@
 	status = "okay";
 };
 
+&adc4 {
+	/* needed by vbat */
+	st,adc-clock-source = "ASYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+};
+
+&die_temp {
+	status = "okay";
+	zephyr,deferred-init;
+};
+
 /* Currently only the pins marked with ~ on the pin headers are enabled */
 &timers8 {
 	status = "okay";

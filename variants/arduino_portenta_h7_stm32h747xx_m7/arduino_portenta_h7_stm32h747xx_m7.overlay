@@ -290,6 +290,12 @@
 	};
 };
 
+&die_temp {
+	status = "okay";
+	zephyr,deferred-init;
+};
+
+
 / {
 	chosen {
 		zephyr,camera = &dcmi;
@@ -316,6 +322,13 @@
 		#gpio-cells = <0x2>;
 		status = "okay";
 	};
+
+	aliases {
+		die-temp0 = &die_temp;
+		//volt-sensor0 = &vref1;
+		//volt-sensor1 = &vbat4;
+	};
+
 };
 
 &flash0 {
