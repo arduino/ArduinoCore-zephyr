@@ -288,7 +288,9 @@
 					    <&portb 16 0>,  /* D24 / LED_BUILTIN */
 					    <&portc 15 0>,  /* D25 / LEDR */
 					    <&portc 16 0>,  /* D26 / LEDG */
-					    <&portc 17 0>;  /* D27 / LEDB */
+					    <&portc 17 0>,  /* D27 / LEDB */
+					    <&portd 5 0>,   /* D28 */
+					    <&portd 12 0>;  /* D29 */
 
 		builtin-led-gpios = <&portb 16 0>,
 					    <&portc 15 0>,
@@ -296,7 +298,7 @@
 					    <&portc 17 0>;
 
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
-		serials = <&sercom1>, <&sercom6>;
+		serials = <&sercom1>, <&sercom6>, <&sercom0>;
 
 		cans = <&can0>;
 
