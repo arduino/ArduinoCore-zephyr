@@ -211,7 +211,7 @@
 	};
 
     /* used to overcome problems with _C analog pins */
-    gpioz: gpio@deadbeef {
+    gpio_invalid: gpio@deadbeef {
         compatible = "vnd,gpio";
         gpio-controller;
         reg = <0xdeadbeef 0x1000>;
