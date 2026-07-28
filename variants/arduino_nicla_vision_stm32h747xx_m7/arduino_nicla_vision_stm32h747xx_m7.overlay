@@ -37,6 +37,11 @@
     zephyr,deferred-init;
 };
 
+&pwmclock {
+    status = "okay";
+    zephyr,deferred-init;
+};
+
 &dcmi {
     zephyr,deferred-init;
 };
