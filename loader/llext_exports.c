@@ -253,6 +253,7 @@ FORCE_EXPORT_SYM(video_buffer_aligned_alloc);
 FORCE_EXPORT_SYM(video_buffer_alloc);
 FORCE_EXPORT_SYM(video_buffer_release);
 FORCE_EXPORT_SYM(video_set_ctrl);
+FORCE_EXPORT_SYM(video_enqueue);
 #endif
 #if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
 FORCE_EXPORT_SYM(video_register_user_buffer_ops);
