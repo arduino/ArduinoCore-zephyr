@@ -505,6 +505,32 @@ jobs:
           # sets ALL_TESTS and ALL_LIBRARIES env vars in GITHUB_ENV
           extra/ci_apply_tests.sh ${{ matrix.artifact }} ${{ matrix.variant }}
 
+      - name: Pre-install core toolchain
+        run: |
+          # compile-sketches installs tool dependencies from the released
+          # Board Manager platform, which may still pin an older toolchain than
+          # the core under test requires (overlaying the local source-path core
+          # does not install its tool dependencies). Pre-install the matching
+          # arm-zephyr-eabi toolchain into the Arduino CLI packages directory so
+          # the freshly built core can resolve {runtime.tools.arm-zephyr-eabi-*}.
+          set -euo pipefail
+          INDEX_URL="https://downloads.arduino.cc/packages/package_zephyr_index.json"
+          TOOL_VERSION=$(jq -r '.toolsDependencies[] | select(.name=="arm-zephyr-eabi") | .version' extra/artifacts/_common.json)
+          TOOL_URL=$(curl -sL "$INDEX_URL" | jq -r --arg v "$TOOL_VERSION" '
+            .packages[] | select(.name=="zephyr") | .tools[]
+            | select(.name=="arm-zephyr-eabi" and .version==$v)
+            | .systems[] | select(.host=="x86_64-linux-gnu") | .url')
+          if [ -z "$TOOL_URL" ] || [ "$TOOL_URL" == "null" ]; then
+            echo "::error::arm-zephyr-eabi $TOOL_VERSION not found in $INDEX_URL"
+            exit 1
+          fi
+          DEST="$HOME/.arduino15/packages/zephyr/tools/arm-zephyr-eabi/$TOOL_VERSION"
+          echo "Installing arm-zephyr-eabi $TOOL_VERSION from $TOOL_URL"
+          mkdir -p "$DEST"
+          curl -sL "$TOOL_URL" -o /tmp/arm-zephyr-eabi.tar.xz
+          tar -xf /tmp/arm-zephyr-eabi.tar.xz -C "$DEST" --strip-components=1
+          rm -f /tmp/arm-zephyr-eabi.tar.xz
+
       - name: Compile tests for ${{ matrix.board }}
         uses: pillo79/compile-sketches@next
         with:
