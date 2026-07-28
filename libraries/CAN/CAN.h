@@ -101,6 +101,8 @@ public:
 
 	int write(CanMsg const &msg) override;
 	int writeFD(CanFDMsg const &msg);
+	int write(CanMsg const &msg, bool blocking);
+	int writeFD(CanFDMsg const &msg, bool blocking);
 	size_t available() override;
 	CanMsg read() override;
 	CanFDMsg readFD();
@@ -170,7 +172,7 @@ private:
 				bool bitrate_switch);
 
 	/* Template implementations for write/writeFD */
-	template <typename MsgType> int _write_impl(MsgType const &msg);
+	template <typename MsgType> int _write_impl(MsgType const &msg, bool blocking);
 
 	/* Template implementations for read/readFD */
 	template <typename MsgType> bool _read_impl(MsgType &msg);

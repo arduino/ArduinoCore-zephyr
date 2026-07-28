@@ -8,6 +8,14 @@
 #include <string.h>
 #include <zephyr/sys/util_macro.h>
 
+namespace {
+void can_tx_noop_cb(const struct device *dev, int error, void *user_data) {
+	ARG_UNUSED(dev);
+	ARG_UNUSED(error);
+	ARG_UNUSED(user_data);
+}
+} // namespace
+
 /* -------------------------------------------------------------------------- */
 /*  Arduino CAN implementation                                                */
 /* -------------------------------------------------------------------------- */
@@ -146,7 +154,7 @@ void arduino::ZephyrCAN::end() {
 /* Template implementations                                                   */
 /* -------------------------------------------------------------------------- */
 
-template <typename MsgType> int arduino::ZephyrCAN::_write_impl(MsgType const &msg) {
+template <typename MsgType> int arduino::ZephyrCAN::_write_impl(MsgType const &msg, bool blocking) {
 	struct can_frame frame;
 
 	memset(&frame, 0, sizeof(frame));
@@ -162,7 +170,13 @@ template <typename MsgType> int arduino::ZephyrCAN::_write_impl(MsgType const &m
 	frame.dlc = can_bytes_to_dlc(msg.data_length);
 	memcpy(frame.data, msg.data, msg.data_length);
 
-	int ret = can_send(_dev, &frame, K_MSEC(100), NULL, NULL);
+	if (blocking) {
+		/* Blocking submit: wait for a TX mailbox to become available. */
+		int ret = can_send(_dev, &frame, K_MSEC(100), NULL, NULL);
+		return (ret == 0) ? 1 : -1;
+	}
+	/* Non-blocking submit: do not wait for a TX mailbox to become available, return immediately. */
+	int ret = can_send(_dev, &frame, K_NO_WAIT, can_tx_noop_cb, nullptr);
 	return (ret == 0) ? 1 : -1;
 }
 
@@ -189,7 +203,7 @@ template <typename MsgType> bool arduino::ZephyrCAN::_read_impl(MsgType &msg) {
 }
 
 int arduino::ZephyrCAN::write(CanMsg const &msg) {
-	return _write_impl(msg);
+	return _write_impl(msg, false);
 }
 
 int arduino::ZephyrCAN::writeFD(CanFDMsg const &msg) {
@@ -197,7 +211,19 @@ int arduino::ZephyrCAN::writeFD(CanFDMsg const &msg) {
 		/* FD mode not enabled */
 		return -1;
 	}
-	return _write_impl(msg);
+	return _write_impl(msg, false);
+}
+
+int arduino::ZephyrCAN::write(CanMsg const &msg, bool blocking) {
+	return _write_impl(msg, blocking);
+}
+
+int arduino::ZephyrCAN::writeFD(CanFDMsg const &msg, bool blocking) {
+	if (_tx_frame_flags == 0U) {
+		/* FD mode not enabled */
+		return -1;
+	}
+	return _write_impl(msg, blocking);
 }
 
 size_t arduino::ZephyrCAN::available() {
@@ -251,8 +277,8 @@ int arduino::ZephyrCAN::addReceiveFilter(uint32_t id, uint32_t mask, bool extend
 }
 
 /* Explicit template instantiation */
-template int arduino::ZephyrCAN::_write_impl<arduino::CanMsg>(arduino::CanMsg const &);
-template int arduino::ZephyrCAN::_write_impl<arduino::CanFDMsg>(arduino::CanFDMsg const &);
+template int arduino::ZephyrCAN::_write_impl<arduino::CanMsg>(arduino::CanMsg const &, bool);
+template int arduino::ZephyrCAN::_write_impl<arduino::CanFDMsg>(arduino::CanFDMsg const &, bool);
 template bool arduino::ZephyrCAN::_read_impl<arduino::CanMsg>(arduino::CanMsg &);
 template bool arduino::ZephyrCAN::_read_impl<arduino::CanFDMsg>(arduino::CanFDMsg &);
 
