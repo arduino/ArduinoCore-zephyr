@@ -8,9 +8,22 @@ if [ "$(uname)" = "Darwin" ]; then
     if [ -n "$LINKSERVER_DIR" ]; then
         LINKSERVER="/Applications/$LINKSERVER_DIR/LinkServer"
     fi
+elif [ "$(uname)" = "Linux" ]; then
+    if [ -x /usr/local/LinkServer/LinkServer ]; then
+        LINKSERVER=/usr/local/LinkServer/LinkServer
+    else
+        LINKSERVER_DIR=$(ls -d /usr/local/LinkServer_* 2>/dev/null | sort -V | tail -1)
+        if [ -n "$LINKSERVER_DIR" ]; then
+            LINKSERVER="$LINKSERVER_DIR/LinkServer"
+        fi
+    fi
 fi
 
-if [ -z "$LINKSERVER" ] || [ ! -f "$LINKSERVER" ]; then
+if [ -z "$LINKSERVER" ] || [ ! -x "$LINKSERVER" ]; then
+    LINKSERVER=$(command -v LinkServer 2>/dev/null)
+fi
+
+if [ -z "$LINKSERVER" ] || [ ! -x "$LINKSERVER" ]; then
     echo "ERROR: LinkServer not found."
     exit 1
 fi
