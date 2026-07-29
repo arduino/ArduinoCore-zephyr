@@ -328,6 +328,24 @@ tools.pyocd.bootloader.pattern="{cmd}" load --target {bootloader.target} "{uploa
 
 
 #
+# MCXN947 AUTO WRAPPER (LinkServer if installed, otherwise pyocd)
+#
+# Used only by frdm_mcxn947. NXP LinkServer is not redistributable via the
+# Arduino tool index, so it must be installed separately by the user; if
+# found, it is used in place of pyocd, which otherwise remains the default.
+
+tools.mcxn947_auto.upload.params.verbose=
+tools.mcxn947_auto.upload.params.quiet=
+tools.mcxn947_auto.upload.pattern="{runtime.platform.path}/tools/upload_pyocd_or_linkserver.sh" "{upload.artifacts.sketch}" "{upload.target}" "{upload.address}"
+tools.mcxn947_auto.upload.pattern.windows="{runtime.platform.path}/tools/upload_pyocd_or_linkserver.bat" "{upload.artifacts.sketch}" "{upload.target}" "{upload.address}"
+
+tools.mcxn947_auto.bootloader.params.verbose=
+tools.mcxn947_auto.bootloader.params.quiet=
+tools.mcxn947_auto.bootloader.pattern="{runtime.platform.path}/tools/upload_pyocd_or_linkserver.sh" "{upload.artifacts.loader}" "{bootloader.target}" ""
+tools.mcxn947_auto.bootloader.pattern.windows="{runtime.platform.path}/tools/upload_pyocd_or_linkserver.bat" "{upload.artifacts.loader}" "{bootloader.target}" ""
+
+
+#
 # JLinkExe WRAPPER
 #
 
