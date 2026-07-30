@@ -9,32 +9,42 @@ Usage:
     gui.py [file_or_dir ...]
 
 Loads snapshot files (or every *.kconfig.json in a directory) as columns in
-a variant-vs-symbol matrix, with simple filters. Never touches CMake/
-kconfiglib itself: it only reads files cli.py already generated.
+a variant-vs-symbol matrix, with simple filters and a "why" panel showing
+the kind/location for the selected cell. Never touches CMake/kconfiglib
+itself: it only reads files cli.py already generated.
 """
 
 import argparse
+import html
+import math
+import os
+import re
 import signal
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex,
+    QPoint,
+    QRect,
     QSortFilterProxyModel,
     Qt,
 )
-from PySide6.QtGui import QColor, QFontDatabase
+from PySide6.QtGui import QColor, QFontDatabase, QTextDocument
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QCheckBox,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
     QSizePolicy,
     QTableView,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -52,6 +62,52 @@ NUMERIC_TYPES = ("int", "hex")
 BOOL_TYPES = ("bool", "tristate")
 
 CONFIG_PREFIX = "CONFIG_"
+
+
+def _find_workspace_root():
+    """Parent directory of the ArduinoCore-zephyr checkout containing this
+    script — e.g. /home/x/Work/zephyr, which also holds the zephyr and
+    modules checkouts as siblings. This script's own path relative to
+    that checkout is fixed
+    (<workspace>/ArduinoCore-zephyr/extra/kconfig-explorer/gui.py), so
+    just count parents rather than searching the path for a name."""
+
+    return str(Path(__file__).resolve().parents[3])
+
+
+WORKSPACE_ROOT = _find_workspace_root()
+
+
+def strip_workspace_root(file_path):
+    """Locations inside WORKSPACE_ROOT (ArduinoCore-zephyr, zephyr,
+    modules, ...) get shown relative to it; anything else (the toolchain,
+    a temp build dir, ...) stays a full path starting with "/". Also
+    collapses "foo/../bar" segments (e.g. loader/Kconfig sourcing things
+    as "../variants/...") since those are just noise for a human reader."""
+
+    file_path = os.path.normpath(file_path)
+    if WORKSPACE_ROOT and (
+        file_path == WORKSPACE_ROOT or file_path.startswith(WORKSPACE_ROOT + os.sep)
+    ):
+        return file_path[len(WORKSPACE_ROOT):].lstrip(os.sep)
+    return file_path
+
+
+_VARIANT_CONF_RE = re.compile(r"(?:^|/)variants/([^/]+)/\1\.conf$")
+_PRJ_CONF_RE = re.compile(r"(?:^|/)loader/prj\.conf$")
+
+
+def simplify_known_path(path):
+    """A board's own variants/<X>/<X>.conf and the loader's prj.conf are single
+    well-known files - the variant/board name (for the conf) or "prj.conf"
+    itself already identifies them, so the long enclosing path is just noise."""
+
+    match = _VARIANT_CONF_RE.search(path)
+    if match:
+        return f"{match.group(1)}.conf"
+    if _PRJ_CONF_RE.search(path):
+        return "prj.conf"
+    return path
 
 
 def display_name(name):
@@ -374,6 +430,184 @@ class FilterProxyModel(QSortFilterProxyModel):
         return False
 
 
+def format_why(name, variant, sym):
+    """Returns HTML for the details panel: bold name (and bold variant,
+    but not the " @ " between them), then the fields as a two-column
+    table (label column shrinks to content, value column stretches)."""
+
+    shown_name = f"<tt>{html.escape(display_name(name))}</tt>"
+
+    if variant is None:
+        return f"<b>{shown_name}</b><br><br>(select a variant column to see details)"
+
+    header = f"<b>{shown_name}</b> @ <b>{html.escape(variant)}</b>"
+    if sym and sym["visibility"] != "y":
+        header += " (hidden)"
+
+    if sym is None:
+        return f"{header}"
+
+    if sym["value"] is None:
+        shown_value = "(not set)" 
+    else:
+        shown_value = sym["value"]
+        if sym["type"] == "string":
+            # Show string values in quotes
+            shown_value = f'"{shown_value}"'
+
+    value_html = html.escape(str(shown_value))
+    if sym["type"] != "string" and sym["value"] is not None:
+        # Use fixed-width font for anything but a string value.
+        value_html = f"<tt>{value_html}</tt>"
+
+    fields = [
+        ("Type", html.escape(str(sym["type"]))),
+        ("Value", value_html),
+        ("Kind", html.escape(str(sym["kind"]))),
+    ]
+
+    loc = sym.get("location")
+    if loc is None:
+        fields.append(("Location", "(none)"))
+    elif loc["kind"] == "fileline":
+        shown_file = simplify_known_path(strip_workspace_root(loc["file"]))
+        fields.append(("Location", html.escape(f"{shown_file}:{loc['line']}")))
+    elif loc["kind"] == "exprs":
+        fields.append((
+            "Active expressions",
+            "<br>".join(html.escape(expr) for expr in loc["value"]),
+        ))
+
+    rows = "".join(
+        '<tr><td style="white-space:nowrap; vertical-align:top; '
+        f'padding-right:8px;">{html.escape(label)}:</td>'
+        f'<td style="width:100%; vertical-align:top;">{value}</td></tr>'
+        for label, value in fields
+    )
+    table = f'<table style="width:100%; border-collapse:collapse;">{rows}</table>'
+
+    return f"{header}<br>{table}"
+
+
+class FloatingDetailsPanel(QTextEdit):
+    """A "stable tooltip" for symbol details: unlike a real QToolTip, it
+    stays open and its text can be selected/copied. Sized to fit its own
+    content and repositioned next to whatever cell is currently selected,
+    instead of living in a fixed docked pane.
+
+    Implemented as a plain CHILD widget of the main window (raised above
+    its siblings), not a separate top-level window: a real top-level
+    window's move() is silently ignored under Wayland (clients can't
+    position top-level surfaces there — only the compositor decides,
+    which is why it kept appearing centered on the parent regardless of
+    where the selection was), and showing/hiding one repeatedly stole
+    keyboard focus from the table even with Qt.WA_ShowWithoutActivating.
+    A child widget has none of that: it's positioned within its parent's
+    own coordinate space like any other widget, and setFocusPolicy(NoFocus)
+    guarantees it can never take keyboard focus away from the table."""
+
+    MIN_WIDTH = 220
+    MIN_HEIGHT = 36
+    GAP = 4
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setReadOnly(True)
+        self.setFocusPolicy(Qt.NoFocus)
+        self.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self.setFrameShape(QFrame.Box)
+        self.setLineWrapMode(QTextEdit.WidgetWidth)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # Never let a scrollbar appear at all: if it did, it would eat into
+        # the viewport width, wrapping text more than _fit_to_content()
+        # accounted for — self-sizing is supposed to make scrolling
+        # unnecessary in the first place.
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setStyleSheet("QTextEdit { background-color: lightyellow; }")
+        self.hide()
+
+    def show_near(self, avoid_rect, html_text):
+        """avoid_rect: the selected cell's rect, in this widget's parent's
+        coordinate space — the panel is placed clear of it, not on top.
+        html_text: format_why()'s HTML output, used directly (it already
+        has its own bold/table formatting)."""
+
+        self.setHtml(html_text)
+        self._fit_to_content(html_text)
+        self.move(self._placement(avoid_rect))
+        self.show()
+        self.raise_()
+
+    def _placement(self, avoid_rect):
+        bounds = self.parentWidget().rect()
+
+        x = min(avoid_rect.left(), bounds.right() - self.width())
+        x = max(bounds.left(), x)
+
+        y = avoid_rect.bottom() + self.GAP
+        if y + self.height() > bounds.bottom():
+            above = avoid_rect.top() - self.GAP - self.height()
+            y = above if above >= bounds.top() else max(bounds.top(), bounds.bottom() - self.height())
+
+        return QPoint(x, y)
+
+    def _fit_to_content(self, html_text):
+        # Measured on a throwaway QTextDocument, not self.document(): this
+        # widget's own document is kept in sync with the *live* viewport
+        # width (setLineWrapMode(WidgetWidth)), so measuring against it
+        # mixes in whatever size the widget happened to have from the
+        # previous selection — the same text could come out narrower or
+        # wider (and wrap differently) depending on history. A standalone
+        # document has no ties to this widget's current/previous size.
+        margins = self.contentsMargins()
+        measure_doc = QTextDocument()
+        measure_doc.setDefaultFont(self.font())
+        measure_doc.setHtml(html_text)
+
+        # NOTE: idealWidth()/size() already bake in the document's own
+        # documentMargin() (verified: idealWidth() of a plain single line
+        # equals its font-metrics text width + 2*documentMargin()) — adding
+        # it again here double-counts it. That inflated both the padding
+        # subtracted back out of the chosen width (so long paths wrapped
+        # more than needed, despite the box having room) and the padding
+        # added to the height (extra blank space at the bottom).
+        pad_x = 2 * self.frameWidth() + margins.left() + margins.right() + 2
+        pad_y = 2 * self.frameWidth() + margins.top() + margins.bottom() + 2
+
+        # Unconstrained (-1 = no wrap at all) so idealWidth() reflects the
+        # text's true natural width. Constraining it to a fixed max first
+        # (as this used to) means that if the content is wider than that,
+        # the document is already wrapped by the time idealWidth() is
+        # read, so it no longer reflects the actual longest line — the
+        # computed width came out far too small, and long paths kept
+        # wrapping even though the box had plenty of room left to grow.
+        # No fixed cap here: only bounded by the parent window's own
+        # width, so wrapping only ever happens if the line genuinely
+        # can't fit in the window at all.
+        max_width = max(self.MIN_WIDTH, self.parentWidget().width() - 2 * self.GAP)
+
+        # ceil(), not int(): idealWidth() is fractional (e.g. 266.62), and
+        # truncating it below its true value (266) then handing the text
+        # back exactly that width forces the last word to wrap after all
+        # — same line count, but now taller, purely from rounding down a
+        # fraction of a pixel. Two texts with identical structure could
+        # end up different heights just because one's ideal width happened
+        # to truncate closer to the edge than the other's.
+        measure_doc.setTextWidth(-1)
+        width = min(max_width, max(self.MIN_WIDTH, math.ceil(measure_doc.idealWidth()) + pad_x))
+
+        # Same reasoning as width: bounded by the parent window's own
+        # height, not a fixed constant.
+        max_height = max(self.MIN_HEIGHT, self.parentWidget().height() - 2 * self.GAP)
+
+        measure_doc.setTextWidth(width - pad_x)
+        height = min(
+            max_height, max(self.MIN_HEIGHT, math.ceil(measure_doc.size().height()) + pad_y)
+        )
+
+        self.resize(width, height)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, snapshots):
         super().__init__()
@@ -414,6 +648,11 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().sectionResized.connect(
             self._on_column_resized
         )
+
+        # Floating "stable tooltip" instead of a docked pane: follows the
+        # current selection and auto-sizes to its content, but (unlike a
+        # real QToolTip) stays open and its text can be selected/copied.
+        self.why_panel = FloatingDetailsPanel(self)
 
         self._build_filter_bar()
 
@@ -497,9 +736,29 @@ class MainWindow(QMainWindow):
 
     def _on_current_changed(self, current, _previous):
         if not current.isValid():
+            self.why_panel.hide()
             return
         source_index = self.proxy.mapToSource(current)
         self.table_model.set_current_row(source_index.row())
+        name, variant, sym = self.table_model.symbol_entry(
+            source_index.row(), source_index.column()
+        )
+
+        cell_rect = self.table.visualRect(current)
+        cell_rect_in_window = QRect(
+            self.table.viewport().mapTo(self, cell_rect.topLeft()), cell_rect.size()
+        )
+        self.why_panel.show_near(cell_rect_in_window, format_why(name, variant, sym))
+
+    def keyPressEvent(self, event):
+        # why_panel can never have keyboard focus itself (NoFocus), so
+        # Escape is handled here: unhandled key events bubble up from the
+        # focused child (the table) to the top-level window in Qt.
+        if event.key() == Qt.Key_Escape and self.why_panel.isVisible():
+            self.why_panel.hide()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _autosize_columns(self):
         """Every non-collapsed variant column gets one uniform width: just
