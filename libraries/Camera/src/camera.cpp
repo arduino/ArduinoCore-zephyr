@@ -43,6 +43,7 @@ static const struct pwm_dt_spec CLOCK_PWM = PWM_DT_SPEC_GET(CLOCK_NODE);
 #define CAMERA_SENSOR_NODE   DT_NODE_REMOTE_DEVICE(CAMERA_ENDPOINT_NODE)
 
 #ifdef CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS
+extern "C" int video_import_buffer(uint8_t *mem, size_t sz, uint16_t *idx);
 extern "C" int smh_region_video_init(void);
 
 struct mem_block {
@@ -60,7 +61,7 @@ struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
 
 	ARG_UNUSED(timeout);
 
-	if (size > CONFIG_VIDEO_BUFFER_POOL_SZ_MAX) {
+	if (size > CONFIG_VIDEO_BUFFER_POOL_HEAP_SIZE) {
 		return NULL;
 	}
 
@@ -81,19 +82,32 @@ struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
 		return NULL;
 	}
 
+	uint16_t idx = 0;
+	int ret = video_import_buffer((uint8_t *)block->data, size, &idx);
+	if (ret != 0) {
+		shared_multi_heap_free(block->data);
+		block->data = NULL;
+		return NULL;
+	}
+
 	vbuf->buffer = (uint8_t *)block->data;
+	vbuf->index = idx;
+	vbuf->type = VIDEO_BUF_TYPE_OUTPUT;
+	vbuf->memory = VIDEO_MEMORY_EXTERNAL;
 	vbuf->size = size;
 	vbuf->bytesused = 0;
+	vbuf->timestamp = 0;
+	vbuf->line_offset = 0;
 
 	return vbuf;
 }
 
-void user_video_buffer_release(struct video_buffer *vbuf) {
+int user_video_buffer_release(struct video_buffer *vbuf) {
 	struct mem_block *block = NULL;
 	int i;
 
 	if (vbuf == NULL) {
-		return;
+		return -EINVAL;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(user_video_block); i++) {
@@ -111,6 +125,8 @@ void user_video_buffer_release(struct video_buffer *vbuf) {
 	vbuf->buffer = NULL;
 	vbuf->size = 0;
 	vbuf->bytesused = 0;
+
+	return 0;
 }
 #endif
 
@@ -178,8 +194,11 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	}
 
 	// Get capabilities
-	struct video_caps caps;
-	if (video_get_caps(this->vdev, &caps)) {
+	struct video_caps caps = {
+		.type = VIDEO_BUF_TYPE_OUTPUT,
+	};
+	int ret = video_get_caps(this->vdev, &caps);
+	if (ret != 0) {
 		return false;
 	}
 
@@ -197,6 +216,7 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 
 	// Set format.
 	static struct video_format fmt = {
+		.type = VIDEO_BUF_TYPE_OUTPUT,
 		.pixelformat = pixformat,
 		.width = width,
 		.height = height,
@@ -215,7 +235,6 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 	};
 
 	if (video_register_user_buffer_ops(&user_buffer_ops) != 0) {
-		Serial.println("Failed to register user video buffer ops");
 		return false;
 	}
 #endif
@@ -228,12 +247,17 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 			Serial.println("Failed to allocate video buffers number: " + String(i));
 			return false;
 		}
-		video_enqueue(this->vdev, this->vbuf[i]);
+		this->vbuf[i]->type = VIDEO_BUF_TYPE_OUTPUT;
+		ret = video_enqueue(this->vdev, this->vbuf[i]);
+		if (ret != 0) {
+			return false;
+		}
 	}
 
 	// Start video capture
-	if (video_stream_start(this->vdev, VIDEO_BUF_TYPE_OUTPUT)) {
-		Serial.println("Failed to start capture");
+	ret = video_stream_start(this->vdev, VIDEO_BUF_TYPE_OUTPUT);
+	if (ret != 0) {
+		Serial.println("Failed to start capture: " + String(ret));
 		return false;
 	}
 
@@ -245,7 +269,8 @@ bool Camera::grabFrame(FrameBuffer &fb, uint32_t timeout) {
 		return false;
 	}
 
-	if (video_dequeue(this->vdev, &fb.vbuf, K_MSEC(timeout))) {
+	int ret = video_dequeue(this->vdev, &fb.vbuf, K_MSEC(timeout));
+	if (ret != 0) {
 		return false;
 	}
 
@@ -271,6 +296,8 @@ bool Camera::releaseFrame(FrameBuffer &fb) {
 	if (this->vdev == NULL) {
 		return false;
 	}
+
+	fb.vbuf->type = VIDEO_BUF_TYPE_OUTPUT;
 
 	if (video_enqueue(this->vdev, fb.vbuf)) {
 		return false;
