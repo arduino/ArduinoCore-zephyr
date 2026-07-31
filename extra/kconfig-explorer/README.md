@@ -63,3 +63,20 @@ Filter bar: symbol name search, "Only user-set" (kind == assign, on by
 default), "Hide logs" (hides `_LOG_LEVEL_` symbols, on by default), a
 Diff dropdown (any / same / differing across loaded variants), and
 type/kind filters.
+
+### Diff mode
+
+```sh
+./extra/kconfig-explorer/gui.py --diff /tmp/kconfig-state-before /tmp/kconfig-state-after
+```
+
+`--diff` compares the *same* board across several output directories
+(e.g. two `cli.py generate --out` runs, before/after a `.conf` change, or
+snapshots generated with different `--flavor` values) instead of
+different boards side by side. Every argument must be a directory (a
+file argument is an error); each directory is expected to hold a
+matching set of `<board>.kconfig.json` filenames. A left-aligned tab
+strip above the table gets one tab per unique filename, with one column
+per directory, labeled `"<board> [<dir>]"`. If a directory is missing a
+given file, its column shows up empty (every symbol "not present")
+instead of the tab being skipped.

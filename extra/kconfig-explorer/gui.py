@@ -7,11 +7,16 @@
 
 Usage:
     gui.py [file_or_dir ...]
+    gui.py --diff <dir> <dir> [<dir> ...]
 
 Loads snapshot files (or every *.kconfig.json in a directory) as columns in
 a variant-vs-symbol matrix, with simple filters and a "why" panel showing
 the kind/location for the selected cell. Never touches CMake/kconfiglib
 itself: it only reads files cli.py already generated.
+
+--diff instead expects several directories with matching *.kconfig.json
+filenames (e.g. two 'cli.py generate --out' runs to compare), and opens
+one tab per unique filename, one column per directory.
 """
 
 import argparse
@@ -43,6 +48,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QSizePolicy,
+    QTabBar,
     QTableView,
     QTextEdit,
     QVBoxLayout,
@@ -609,11 +615,12 @@ class FloatingDetailsPanel(QTextEdit):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, snapshots):
+    def __init__(self, tabs):
         super().__init__()
         self.setWindowTitle("Kconfig Explorer")
 
-        self.table_model = KconfigTableModel(snapshots)
+        self.tabs = tabs
+        self.table_model = KconfigTableModel(tabs[0][1])
         self.proxy = FilterProxyModel()
         self.proxy.setSourceModel(self.table_model)
 
@@ -656,11 +663,21 @@ class MainWindow(QMainWindow):
 
         self._build_filter_bar()
 
+        self.tab_bar = QTabBar()
+        # Left-aligned, minimal size instead of the default of stretching
+        # tabs to fill the whole window width.
+        self.tab_bar.setExpanding(False)
+        for title, _snapshots in tabs:
+            self.tab_bar.addTab(title)
+
         central = QWidget()
         layout = QVBoxLayout(central)
         layout.addWidget(self.filter_widget, 0)
+        layout.addWidget(self.tab_bar, 0, Qt.AlignLeft)
         layout.addWidget(self.table, 1)
         self.setCentralWidget(central)
+
+        self.tab_bar.currentChanged.connect(self._on_tab_changed)
 
         self._autosize_columns()
         self._autosize_row_header()
@@ -749,6 +766,15 @@ class MainWindow(QMainWindow):
             self.table.viewport().mapTo(self, cell_rect.topLeft()), cell_rect.size()
         )
         self.why_panel.show_near(cell_rect_in_window, format_why(name, variant, sym))
+
+    def _on_tab_changed(self, index):
+        _title, snapshots = self.tabs[index]
+        self.table_model.set_snapshots(snapshots)
+        self.collapsed_columns = set()
+        self.table_model.set_collapsed_columns(self.collapsed_columns)
+        self.why_panel.hide()
+        self._autosize_columns()
+        self._autosize_row_header()
 
     def keyPressEvent(self, event):
         # why_panel can never have keyboard focus itself (NoFocus), so
@@ -858,7 +884,55 @@ def parse_args(argv):
         metavar="FILE_OR_DIR",
         help="snapshot file(s), or folder(s) containing *.kconfig.json files",
     )
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="compare directories: PATHS must all be directories containing "
+        "the same *.kconfig.json filenames; opens one tab per unique "
+        "filename, with one column per directory",
+    )
+    args = parser.parse_args(argv)
+
+    if args.diff:
+        for p in args.paths:
+            if not Path(p).is_dir():
+                parser.error(f"--diff requires directories, got a file: {p}")
+
+    return args
+
+
+def build_diff_tabs(dirs):
+    """One tab per unique *.kconfig.json filename found across 'dirs',
+    with one column per directory (labeled "<board> [<dir>]", since every
+    column in a tab comes from the same board — the directory is what
+    tells them apart). A directory missing a given filename gets an empty
+    placeholder column labeled "(missing) [<dir>]"."""
+
+    dir_paths = [Path(d) for d in dirs]
+    filenames = sorted(
+        {p.name for d in dir_paths for p in d.glob("*.kconfig.json")}
+    )
+
+    tabs = []
+    for filename in filenames:
+        snapshots = {}
+        for d in dir_paths:
+            file_path = d / filename
+            if file_path.exists():
+                snap = km.load_snapshot(file_path)
+                board = snap["board"]
+            else:
+                snap = {
+                    "board": None,
+                    "variant": None,
+                    "target": None,
+                    "symbols": {},
+                }
+                board = "(missing)"
+            snapshots[f"{board} [{d.name}]"] = snap
+        title = filename.removesuffix(".kconfig.json")
+        tabs.append((title, snapshots))
+    return tabs
 
 
 def main():
@@ -875,11 +949,17 @@ def main():
     # the process terminate immediately on SIGINT, like any other CLI tool.
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    snapshots = {}
-    for path in args.paths:
-        snapshots.update(km.load_snapshots(path))
+    if args.diff:
+        tabs = build_diff_tabs(args.paths)
+    else:
+        snapshots = {}
+        for path in args.paths:
+            snapshots.update(km.load_snapshots(path))
+        tabs = [("Snapshots", snapshots)]
 
-    window = MainWindow(snapshots)
+    window = MainWindow(tabs)
+    if args.diff: # automatically show only differing symbols when comparing directories
+        window.diff_combo.setCurrentText("differing")
     window.resize(1200, 700)
     window.show()
     window.table.setFocus()
