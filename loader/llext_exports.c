@@ -62,6 +62,11 @@ EXPORT_LIBC_SYM(memchr);
 EXPORT_LIBC_SYM(strdup);
 EXPORT_LIBC_SYM(memmem);
 
+// XSI strerror_r: hoisted into the firmware so std::error_code/system_error in
+// network/TLS sketches import it instead of bundling _strerror_r per sketch.
+extern int __xpg_strerror_r(int, char *, size_t);
+EXPORT_LIBC_SYM(__xpg_strerror_r);
+
 // stdlib.h
 EXPORT_LIBC_SYM(malloc);
 EXPORT_LIBC_SYM(realloc);

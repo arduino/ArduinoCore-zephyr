@@ -118,6 +118,10 @@ W3(void *, memchr, const void *, int, size_t)
 W1(char *, strdup, const char *)
 W4(void *, memmem, const void *, size_t, const void *, size_t);
 
+/* XSI strerror_r (picolibc symbol). Keeps libstdc++'s std::error_code
+ * message() path from bundling _strerror_r and its message table per sketch. */
+W3(int, __xpg_strerror_r, int, char *, size_t)
+
 /* stdlib.h - conversion */
 W2(double, strtod, const char *, char **)
 W3(long, strtol, const char *, char **, int)
