@@ -1,4 +1,8 @@
 #!/bin/sh
+
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
 ELF="$1"
 ADDR="$2"
 

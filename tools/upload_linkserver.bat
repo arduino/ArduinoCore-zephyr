@@ -1,4 +1,7 @@
 @echo off
+REM Copyright (c) Arduino s.r.l. and/or its affiliated companies
+REM SPDX-License-Identifier: Apache-2.0
+
 setlocal enabledelayedexpansion
 
 set "ELF=%~1"
