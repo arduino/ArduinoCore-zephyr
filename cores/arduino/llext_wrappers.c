@@ -248,6 +248,66 @@ W1(int, puts, const char *)
 W1(int, putchar, int)
 W4(int, vsnprintf, char *, size_t, const char *, va_list)
 
+/*
+ * Variadic stdio functions cannot be expressed with the tail-call wrapper
+ * macros above. Provide explicit trampolines that capture the argument list
+ * and forward to the corresponding v* form, which is bound at load time.
+ * Defining these strong symbols in the core makes them win over the archive
+ * members during the sketch link, keeping picolibc's sscanf/vfscanf/vfprintf
+ * and the __atod_engine/__atof_engine float helpers out of the sketch llext.
+ */
+extern int __real_vprintf(const char *, va_list);
+
+int printf(const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int ret = __real_vprintf(fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+extern int __real_vsprintf(char *, const char *, va_list);
+
+int sprintf(char *str, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int ret = __real_vsprintf(str, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+int snprintf(char *str, size_t size, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int ret = __real_vsnprintf(str, size, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+extern int __real_vsscanf(const char *, const char *, va_list);
+
+int sscanf(const char *str, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int ret = __real_vsscanf(str, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+/* Direct va_list variants: same forwarding, exposed under their own names so a
+ * sketch calling them directly does not pull picolibc's vfprintf/vfscanf. */
+int vprintf(const char *fmt, va_list ap) {
+	return __real_vprintf(fmt, ap);
+}
+
+int vsprintf(char *str, const char *fmt, va_list ap) {
+	return __real_vsprintf(str, fmt, ap);
+}
+
+int vsscanf(const char *str, const char *fmt, va_list ap) {
+	return __real_vsscanf(str, fmt, ap);
+}
+
 /* stdlib.h - atexit */
 typedef void (*__atexit_fn)(void);
 W1(int, atexit, __atexit_fn)

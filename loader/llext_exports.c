@@ -337,11 +337,16 @@ EXPORT_SYMBOL(sys_clock_settime);
 EXPORT_SYMBOL(mktime);
 EXPORT_SYMBOL(gmtime);
 
-EXPORT_SYMBOL(printf);
-EXPORT_SYMBOL(sprintf);
-EXPORT_SYMBOL(snprintf);
+/*
+ * Export the v* forms under __real_ names. The sketch core (llext_wrappers.c)
+ * defines strong printf/sprintf/snprintf/sscanf trampolines that forward here,
+ * which keeps picolibc's vfscanf/vfprintf and the __atod_engine/__atof_engine
+ * float helpers out of the sketch llext. vsnprintf is already exported above.
+ */
+EXPORT_LIBC_SYM(vprintf);
+EXPORT_LIBC_SYM(vsprintf);
+EXPORT_LIBC_SYM(vsscanf);
 EXPORT_SYMBOL(cbvprintf);
-EXPORT_SYMBOL(sscanf);
 FORCE_EXPORT_SYM(__assert_no_args);
 EXPORT_SYMBOL(stdin);
 EXPORT_SYMBOL(stdout);
