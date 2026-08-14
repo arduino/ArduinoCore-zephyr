@@ -11,7 +11,15 @@
 #include <zephyr/usb/bos.h>
 
 #include <zephyr/logging/log.h>
+
+#if __has_include(<zephyr/app_version.h>)
 #include <zephyr/app_version.h>
+#endif
+
+#ifndef APP_VERSION_EXTENDED_STRING
+#define APP_VERSION_EXTENDED_STRING "arduino"
+#endif
+
 #if __has_include(<variant.h>)
 #include <variant.h>
 #endif
