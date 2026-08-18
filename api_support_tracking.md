@@ -32,7 +32,7 @@
 | `shiftOut()` | Digital GPIO | ⚠️ |
 | **Time** |  |  |
 | `delay()` | Timing | ✅ |
-| `delayMicroseconds()` | Timing | ⚠️ |
+| `delayMicroseconds()` | Timing | ✅ |
 | `millis()` | Timing | ✅ |
 | `micros()` | Timing | ✅ |
 | **Math** |  |  |
@@ -63,23 +63,23 @@
 | `isUpperCase()` | Characters | ⚠️ |
 | `isWhitespace()` | Characters | ⚠️ |
 | **Random Numbers** |  |  |
-| `random()` | Random | ⚠️ |
-| `randomSeed()` | Random | ⚠️ |
+| `random()` | Random | ✅ |
+| `randomSeed()` | Random | ✅ |
 | **Bits and Bytes** |  |  |
-| `bit()` | Bits & Bytes | ⚠️ |
-| `bitClear()` | Bits & Bytes | ⚠️ |
-| `bitRead()` | Bits & Bytes | ⚠️ |
-| `bitSet()` | Bits & Bytes | ⚠️ |
-| `bitWrite()` | Bits & Bytes | ⚠️ |
-| `highByte()` | Bits & Bytes | ⚠️ |
-| `lowByte()` | Bits & Bytes | ⚠️ |
+| `bit()` | Bits & Bytes | ✅ |
+| `bitClear()` | Bits & Bytes | ✅ |
+| `bitRead()` | Bits & Bytes | ✅ |
+| `bitSet()` | Bits & Bytes | ✅ |
+| `bitWrite()` | Bits & Bytes | ✅ |
+| `highByte()` | Bits & Bytes | ✅ |
+| `lowByte()` | Bits & Bytes | ✅ |
 | **External Interrupts** |  |  |
 | `attachInterrupt()` | Interrupts | ✅ |
 | `detachInterrupt()` | Interrupts | ✅ |
 | `digitalPinToInterrupt()` | Interrupts | ✅ |
 | **Interrupts** |  |  |
-| `interrupts()` | Interrupts | ⚠️ |
-| `noInterrupts()` | Interrupts | ⚠️ |
+| `interrupts()` | Interrupts | ✅ |
+| `noInterrupts()` | Interrupts | ✅ |
 | **Stream** |  |  |
 | `available()` | Serial / UART | ⚠️ |
 | `read()` | Serial / UART | ⚠️ |
@@ -98,7 +98,7 @@
 | `if(Serial)` | Serial / UART | ⚠️ |
 | `Serial1` / `Serial2` | Serial / UART | ⚠️ |
 | USB Serial | Serial / UART | ⚠️ |
-| `Serial.available()` | Serial / UART | ⚠️ |
+| `Serial.available()` | Serial / UART | ✅ |
 | `Serial.availableForWrite()` | Serial / UART | ⚠️ |
 | `Serial.begin()` | Serial / UART | ✅ |
 | `Serial.end()` | Serial / UART | ⚠️ |
@@ -110,13 +110,13 @@
 | `Serial.peek()` | Serial / UART | ⚠️ |
 | `Serial.print()` | Serial / UART | ✅ |
 | `Serial.println()` | Serial / UART | ✅ |
-| `Serial.read()` | Serial / UART | ⚠️ |
+| `Serial.read()` | Serial / UART | ✅ |
 | `Serial.readBytes()` | Serial / UART | ⚠️ |
 | `Serial.readBytesUntil()` | Serial / UART | ⚠️ |
 | `Serial.readString()` | Serial / UART | ⚠️ |
 | `Serial.readStringUntil()` | Serial / UART | ⚠️ |
 | `Serial.setTimeout()` | Serial / UART | ⚠️ |
-| `Serial.write()` | Serial / UART | ⚠️ |
+| `Serial.write()` | Serial / UART | ✅ |
 | `Serial.serialEvent()` | Serial / UART | ⚠️ |
 | **SPI** |  |  |
 | `SPI` | SPI | ❌ |
