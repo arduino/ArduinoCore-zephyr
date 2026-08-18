@@ -114,7 +114,6 @@ jobs:
           (cd && tar cphf - .cmake work zephyr-sdk-* | zstd > build-env.tar.zstd)
 
       - name: Get ci-builds package index link
-        if: ${{ github.repository == 'arduino/ArduinoCore-zephyr' }}
         run: |
           # for pull requests and pushes to the official Arduino repo, use the latest ci-built core as a reference
           CI_BUILDS_URL="https://arduino.github.io/core-ci-builds/package_arduino_zephyr_${CORE_BRANCH}_ci_index.json"
