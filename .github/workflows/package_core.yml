@@ -220,7 +220,7 @@ jobs:
           ls reports/* >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-          # Preprare an archive of the built binaries (and build dir on failure)
+          # Preparare an archive of the built binaries (and build dir on failure)
           [ "${{ job.status }}" == "failure" ] && FULL_BUILD_DIR="build/${{ matrix.variant }}/"
           sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
           tar chf - \
