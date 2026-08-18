@@ -54,8 +54,10 @@ for hal in $NEEDED_HALS; do
 done
 
 log_msg "group" "Bootstrapping Python environment for Zephyr"
-python3 -m venv venv
+PYTHON_VENV_PATH=${PYTHON_VENV_PATH:-"./venv"}
+python3 -m venv ${PYTHON_VENV_PATH}
 source venv/bin/activate
+[[ -z "${DISABLE_VENV:-}" ]] && { source ${PYTHON_VENV_PATH}/bin/activate; }
 pip3 install west protobuf grpcio-tools
 log_msg "endgroup"
 
