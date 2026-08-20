@@ -11,8 +11,7 @@
 #include <zephyrClockInit.hpp>
 #include <zephyrPinctrl.h>
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
-
+#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy) || DT_HAS_COMPAT_STATUS_OKAY(arduino_eth_phy)
 static inline int init_eth_clock() {
 	if (!DT_HAS_CHOSEN(arduino_eth_clock)) {
 		return 0;
