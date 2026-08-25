@@ -163,5 +163,9 @@
 
 /delete-node/ &sram2;
 
+&eth_phy {
+    compatible = "ethernet-phy", "arduino,eth-phy";
+};
+
 /* Include common flash filesystem configuration */
 #include "../common/arduino_flash_fs.dtsi"
