@@ -36,8 +36,6 @@ public:
 		return write(&data, 1);
 	}
 
-	using Print::write;
-
 	void flush() override;
 
 protected:
