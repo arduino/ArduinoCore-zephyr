@@ -1,0 +1,168 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * dfu_boot runs from BFM (Boot Flash Memory) at 0x08000000, the SoC's true
+ * hardware reset address; PFM (flash1) holds only what it chainloads.
+ *
+ * Two constraints make this look odd, both deliberate:
+ *
+ * - flash0 gets `reg` narrowed but NO `compatible`. The SoC dtsi declares it
+ *   spanning 66560K (BFM + unimplemented gap + PFM) -- also the source of the
+ *   "65 MB ROMSTART_REGION" in build output -- and the board dtsi deletes its
+ *   `compatible` because flash_mchp_nvmctrl_g3.c is a singleton keyed on
+ *   DT_INST(0, soc_nv_flash): giving BFM that compatible would make it
+ *   instance 0 and aim the one flash driver at BFM, breaking the PFM writes
+ *   dfu_boot exists to perform. Linking needs only `reg`.
+ *
+ *   Narrow it HERE and not in the SoC dtsi. That wide span is deliberate
+ *   upstream design, not a defect: Microchip's own pic32ck_{gc01,sg01}_cult
+ *   boards put partitions under flash0 at child offset 0x4000000, using its
+ *   `ranges` to reach PFM so MCUboot can span BFM+PFM through one flash
+ *   device. Narrowing it at SoC level would move their slot0/slot1/storage
+ *   outside flash0's reg. This board deviates from that model (separate
+ *   flash1 for PFM), so the narrowing has to be app-local.
+ * - No `partitions` under flash0 either: flash_map_default.c emits a device
+ *   reference per fixed-partitions parent, so a partition on a
+ *   compatible-less node fails to link. Hence USE_DT_CODE_PARTITION=n and
+ *   load offset 0 place the image (see prj.conf).
+ */
+&flash0 {
+	reg = <0x08000000 DT_SIZE_K(128)>;
+};
+
+/*
+ * Mirrors the PFM layout in
+ * variants/arduino_nano_chandler_pic32ck1025gc01144-common.overlay; keep the
+ * two in sync. dfu_boot itself still runs from BFM and is unaffected by any of
+ * this - what changes is only what its DFU alt-settings point at.
+ *
+ * The boot chain is now dfu_boot (BFM) -> MCUboot (0x0C000000) -> the combined
+ * loader+sketch image in slot0. dfu_boot chainloads whatever `slot0_partition`
+ * names, so pointing that label at the mcuboot region is what makes MCUboot the
+ * second stage - there is no separate jump-address setting.
+ *
+ * Resulting alt-settings (order matters - see dfu_images.c):
+ *
+ *   alt 0  image_0    480K  the loader, as a signed MCUboot image
+ *   alt 1  user_sketch 176K ordinary `arduino-cli upload` target
+ *   alt 2  BFM spare   64K  dfu_boot updating itself (bfm_flash.c, not a partition)
+ *   alt 3  staging    480K  a full loader+sketch bundle, for MCUboot to swap in
+ *
+ * alt 3 is what makes the A/B path testable without a probe and without the
+ * network: push a bundle into the secondary slot over USB, mark it pending,
+ * reset, and MCUboot does the swap.
+ *
+ * 🔴 alt 0 must stay the LOADER, not mcuboot. boards.txt's upload recipe writes
+ * firmwares/zephyr-<variant>.bin to alt 0 whenever the board's loader version
+ * differs from the platform's, so pointing alt 0 anywhere else makes an ordinary
+ * `arduino-cli upload` push a 250 KB loader into whatever partition is there.
+ * Aiming it at the 64 KB mcuboot region failed at exactly 63488 bytes.
+ *
+ * That is why the chainload target is boot_partition and NOT slot0_partition:
+ * those two were the same node until MCUboot became the second stage, and
+ * dfu_boot must now jump to mcuboot while alt 0 still addresses the loader.
+ * mcuboot itself has no alt - like dfu_boot before it, it is flashed once over
+ * SWD (extra/flash_pfm_pyocd.py) and is not expected to change in the field.
+ */
+&flash1 {
+	/delete-node/ partitions;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: mcuboot: partition@0 {
+			label = "mcuboot";
+			reg = <0x0 DT_SIZE_K(64)>;
+		};
+
+		slot0_partition: image_0: partition@10000 {
+			label = "image-0";
+			reg = <0x10000 DT_SIZE_K(480)>;
+		};
+
+		/*
+		 * A window into the middle of MCUboot's primary slot, not a
+		 * region of its own - the sketch ships inside the combined
+		 * image. Page-aligned so it stays independently erasable.
+		 */
+		slot1_partition: user_sketch: partition@58000 {
+			label = "user_sketch";
+			reg = <0x58000 DT_SIZE_K(176)>;
+		};
+
+		staging_partition: image_1: partition@88000 {
+			label = "image-1";
+			reg = <0x88000 DT_SIZE_K(480)>;
+		};
+	};
+};
+
+/ {
+	chosen {
+		/* Link/run from BFM -- see &flash0 above. */
+		zephyr,flash = &flash0;
+		/*
+		 * Must be a PFM partition and must be set explicitly: it no longer
+		 * places the image, but subsys/dfu/boot/mcuboot.c (via IMG_MANAGER)
+		 * needs ACTIVE_SLOT_FLASH_AREA_ID to compile, and flash0 can carry
+		 * no partitions. Left unset it would default to the board dtsi's
+		 * &slot0_partition -- which is now the mcuboot region -- so any
+		 * img_manager boot_* write would land on the second-stage bootloader.
+		 *
+		 * This used to aim at the dead first 256 KB, which no longer exists:
+		 * the A/B layout allocates all 1024 KB. The staging slot is now the
+		 * least harmful target - a stray write there corrupts a downloadable
+		 * OTA image, whereas every other region is either running code or the
+		 * user's sketch.
+		 */
+		zephyr,code-partition = &staging_partition;
+	};
+};
+
+/*
+ * Debug console: sercom6 (user header J4, TX=PA00 / RX=PA01).
+ *
+ * This restates the variants' own `zephyr,console`, which is why CMakeLists.txt
+ * lists the variant overlay *before* this file -- see there. Both variants
+ * already put the console here, so this is a no-op on them; it is spelled out
+ * so the sample keeps a usable console on any board whose variant does not.
+ *
+ * sercom6 is the port to use because it behaves identically on both
+ * assemblies: sercom1 (J3) is hard-wired to the ESP8266 AT UART on the Monica
+ * carrier, and USB CDC (board_cdc_acm_uart) is absent for exactly the part of
+ * boot that needs to be observable here -- this sample boots with CDC ACM not
+ * initialized and then reconfigures the USB device into DFU descriptors.
+ */
+
+/*
+ * Safety net for a variant that defers sercom6 (the Arduino core opens deferred
+ * peripherals on demand as `Serial` objects). A deferred device is skipped by
+ * SYS_INIT, so the console driver would attach to an uninitialised UART and
+ * print nothing. The chandler variants do not defer it; deleting an absent
+ * property is harmless.
+ */
+&sercom6 {
+	/delete-property/ zephyr,deferred-init;
+};
+
+/*
+ * Retarget the `zephyr,log-uart` multi-backend node too, or LOG_* output keeps
+ * going to the variant's port while printk() alone moves.
+ */
+&log_uarts {
+	uarts = <&sercom6>;
+};
+
+/ {
+	chosen {
+		zephyr,console = &sercom6;
+		/* Retargeted too, so a shell can never fall back to the old port. */
+		zephyr,shell-uart = &sercom6;
+	};
+};
