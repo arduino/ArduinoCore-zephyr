@@ -8,20 +8,46 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/uart/cdc_acm.h>
 #include <zephyr/usb/usb_device.h>
+#include <zephyr/sys/reboot.h>
 #include <SerialUSB.h>
+
+// extern "C" so the same symbol is shared by the (C) loader and (C++) core;
+// variants provide a strong override in variant.c, which loader/CMakeLists.txt
+// compiles into the loader as well as into the sketch.
+extern "C" void __attribute__((weak)) _on_1200_bps() {
+	sys_reboot(SYS_REBOOT_COLD);
+}
 
 #if ZARD_BOARD_HAS_SERIALUSB
 const struct device *const usb_dev = DEVICE_DT_GET(ZARD_SERIALUSB_PHANDLE);
 
-void __attribute__((weak)) _on_1200_bps() {
-	NVIC_SystemReset();
+
+/*
+ * Enter the bootloader off the USB callback context: both the 1200-bps touch and
+ * the DFU run-time DETACH arrive in a control-transfer context, where acting
+ * inline races the in-flight transfer.
+ *
+ * Deliberately does not disable USB - usbd_disable() blocks forever against the
+ * bus reset dfu-util issues right after DETACH, deadlocking the system workqueue
+ * that also runs Zephyr's runtime_detach_work. _on_1200_bps() drops the pull-up
+ * and resets the SoC anyway.
+ */
+static void on_1200_touch_handler(struct k_work *work) {
+	ARG_UNUSED(work);
+	_on_1200_bps();
+}
+static K_WORK_DELAYABLE_DEFINE(on_1200_touch_work, on_1200_touch_handler);
+
+// The work item is statically initialised once (above); re-initialising a
+// pending item would corrupt the work queue.
+static void schedule_bootloader_reset() {
+	k_work_schedule(&on_1200_touch_work, K_MSEC(100));
 }
 
 void arduino::SerialUSB_::baudChangeHandler(const struct device *dev, uint32_t rate) {
 	(void)dev; // unused
 	if (rate == 1200) {
-		usb_disable();
-		_on_1200_bps();
+		schedule_bootloader_reset();
 	}
 }
 
@@ -47,6 +73,13 @@ void arduino::SerialUSB_::usbd_next_cb(struct usbd_context *const ctx, const str
 		uart_line_ctrl_get(SerialUSB.uart, UART_LINE_CTRL_BAUD_RATE, &baudrate);
 		SerialUSB.baudChangeHandler(nullptr, baudrate);
 	}
+
+#if defined(CONFIG_USBD_DFU)
+	if (msg->type == USBD_MSG_DFU_APP_DETACH) {
+		// Host requested DFU detach (e.g. `dfu-util -e`): reboot into bootloader.
+		schedule_bootloader_reset();
+	}
+#endif
 }
 
 int arduino::SerialUSB_::enable_usb_device_next(void) {

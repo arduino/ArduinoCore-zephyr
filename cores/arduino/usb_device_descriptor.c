@@ -18,7 +18,19 @@
 
 #ifdef CONFIG_USB_DEVICE_STACK_NEXT
 
-/* By default, do not register the USB DFU class DFU mode instance. */
+/*
+ * Two distinct USB DFU roles are in play here, and usually only the run-time
+ * one is wanted:
+ *
+ * - The DFU *run-time* interface (CONFIG_USBD_DFU, nothing to register here)
+ *   only advertises DFU capability, so a host can send DETACH - `dfu-util -e` -
+ *   and ask the device to go to its bootloader. USB.cpp and loader/main.c turn
+ *   that into a deferred reboot.
+ * - The DFU *mode* instance "dfu_dfu" is the one that actually accepts a
+ *   download and needs a flash backend behind it. It is blocklisted here:
+ *   serving sketch uploads is the bootloader's job, and a loader able to write
+ *   its own slots is a foot-gun.
+ */
 static const char *const blocklist[] = {
 	"dfu_dfu",
 #if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)
