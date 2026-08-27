@@ -55,7 +55,27 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		# Merge into an existing -DEXTRA_CONF_FILE coming from boards.txt
+		# instead of adding a second one: CMake would keep only the last.
+		debug_conf_merged=0
+		for i in "${!args[@]}"; do
+			case "${args[$i]}" in
+				-DEXTRA_CONF_FILE=*)
+					args[$i]="${args[$i]};../extra/debug.conf"
+					debug_conf_merged=1
+					;;
+			esac
+		done
+		if [ $debug_conf_merged -eq 0 ]; then
+			# '--' separates west arguments from CMake ones; boards.txt
+			# may have supplied it already.
+			has_sep=0
+			for a in "${args[@]}"; do
+				[ x"$a" == x"--" ] && has_sep=1
+			done
+			[ $has_sep -eq 0 ] && args+=(--)
+			args+=(-DEXTRA_CONF_FILE=../extra/debug.conf)
+		fi
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -89,6 +109,21 @@ else
 	echo "Build variant: $variant"
 fi
 
+# Warn when several boards.txt entries share this variant directory (e.g. a
+# board and the same board with a carrier shield): the llext-edk, the symbol
+# scripts and firmwares/zephyr-$variant.* are shared, so this build overwrites
+# whatever the sibling board left there. Sketches compiled for the sibling
+# afterwards would link against these headers.
+sharing_boards=$(extra/get_board_details.sh |
+	jq -r --arg v "$variant" '[.[] | select(.variant == $v) | .board] | join(", ")')
+if [ "$(wc -w <<< "${sharing_boards//,/ }")" -gt 1 ]; then
+	echo
+	echo "WARNING: variant '$variant' is shared by: $sharing_boards"
+	echo "         This build now owns variants/$variant/{llext-edk,syms-*.ld,tls-syms.S}"
+	echo "         and firmwares/zephyr-$variant.*. Rebuild before compiling a sketch"
+	echo "         for any of the other boards."
+fi
+
 # Build the loader
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
@@ -112,6 +147,15 @@ for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
     if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
         cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
+    fi
+done
+
+# On MCUboot boards the signed image is the bootable one, so publish it as
+# zephyr-$variant.* and keep the unsigned one as .raw.* for direct flashing.
+for ext in bin hex; do
+    if [ -f ${BUILD_DIR}/zephyr/zephyr.signed.$ext ]; then
+        mv firmwares/zephyr-$variant.$ext firmwares/zephyr-$variant.raw.$ext
+        cp ${BUILD_DIR}/zephyr/zephyr.signed.$ext firmwares/zephyr-$variant.$ext
     fi
 done
 cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts

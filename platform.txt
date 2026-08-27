@@ -96,6 +96,15 @@ build.zsk_args.startup-mode-wait=
 build.zsk_args.startup-mode-app=-wait_for_app
 build.zsk_args.startup-mode-immediate=-immediate
 
+# ota_args are used to produce the .ota update files alongside the sketch.
+# Empty here so the hook below is a harmless no-op on every board that has not
+# opted in; a board enables OTA by setting build.ota.magic and build.ota.offset
+# in boards.txt. Boards that additionally boot through MCUboot set
+# build.ota.mcuboot_args so the bundle becomes a real MCUboot image.
+build.ota.magic=
+build.ota.offset=
+build.ota.mcuboot_args=
+
 # These can be overridden in platform.local.txt
 compiler.c.extra_flags=
 compiler.c.elf.extra_flags=
@@ -163,6 +172,22 @@ recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 ## Mangle the file
 recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.elf"
 recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
+
+## Build the .ota update files. Runs for every board but exits immediately
+## unless build.ota.magic is set, so the recipe can stay uniform. Must come
+## after .1, which is what produces the mangled -zsk.bin this consumes.
+## Multi-image boards (nano_chandler) clear build.ota.magic; the sh guard
+## makes this a no-op when it is empty — zephyr-sketch-tool rejects an empty
+## -ota-magic flag.
+upload.artifacts.bundle={build.path}/{build.project_name}.bundle.bin
+upload.artifacts.delta={build.path}/{build.project_name}.delta.bin
+recipe.hooks.objcopy.postobjcopy.3.pattern=sh -c 'test -n "{build.ota.magic}" && "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset "{build.ota.offset}" -ota-magic "{build.ota.magic}" {build.ota.mcuboot_args} || true'
+recipe.hooks.objcopy.postobjcopy.3.pattern.windows=cmd /c if not "{build.ota.magic}"=="" "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset "{build.ota.offset}" -ota-magic "{build.ota.magic}" {build.ota.mcuboot_args}
+
+## Slice the sketch-only delta out of the bundle at build time, so upload does
+## not need zephyr-sketch-tool. Only runs when postobjcopy.3 produced a bundle.
+recipe.hooks.objcopy.postobjcopy.4.pattern=sh -c 'test -f "{upload.artifacts.bundle}" && "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -sketch-package "{upload.artifacts.delta}" -sketch-package-offset {build.ota.offset} "{upload.artifacts.bundle}" || true'
+recipe.hooks.objcopy.postobjcopy.4.pattern.windows=cmd /c if exist "{upload.artifacts.bundle}" "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -sketch-package "{upload.artifacts.delta}" -sketch-package-offset {build.ota.offset} "{upload.artifacts.bundle}"
 
 ## Compute size
 recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"
@@ -283,6 +308,85 @@ tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
 
 
 #
+# MCUMGR / SMP  (MCUboot serial recovery)
+#
+
+# For boards whose bootloader is MCUboot and whose upload protocol is therefore
+# mcumgr/SMP rather than USB DFU.
+#
+# One artifact carries loader AND sketch, so this cannot use
+# {tools.patterns.flash-loader-and-sketch} - there is no separate loader command
+# to run. It does reuse that pattern's CONDITION, though, to pick which artifact
+# to send:
+#
+#   loader on the board differs  -> the whole 317868-byte bundle, into the
+#                                   primary slot, one pass, no swap
+#   loader on the board matches  -> a 27068-byte sketch-only delta, into the
+#                                   secondary slot, installed by the bootloader
+#                                   on the next boot
+#
+# The delta is only meaningful against the loader it was sliced from, which is
+# exactly what {flash-loader-condition} establishes: the loader publishes
+# APP_VERSION_EXTENDED_STRING as its USB iConfiguration string
+# (cores/arduino/usb_device_descriptor.c), and arduino-cli reports it as
+# {upload.port.properties.configuration}.
+#
+# Verified 2026-08-20 that this reads the port as it was BEFORE the 1200-bps
+# touch - the substituted pid is the loader's 0x008E, not the bootloader's
+# 0x018E - so the string really is the running loader's and not MCUboot's own.
+# {version} comes from the per-board `<board>.version=` that extra/build.sh
+# writes into boards.local.txt, so a development tree compares against the
+# loader it just built rather than against the 9.9.9 placeholder.
+#
+# The bootloader re-checks this itself before touching anything (the staging
+# package carries a CRC of the loader region it assumes), so a stale delta is
+# refused rather than installed - this condition is what stops that being the
+# normal case.
+#
+# Multi-image MCUboot: loader and sketch are separate images, uploaded
+# independently. Stock `mcumgr` / smpmgr speaks the same SMP protocol.
+#
+# Slot numbering (DIRECT_IMAGE_UPLOAD with UPDATEABLE_IMAGE_NUMBER=2):
+# flash_area_id_from_direct_image() maps the SMP `image` field as:
+#   0 or 1 → slot0_partition (image 0 primary, loader)
+#   2      → slot1_partition (image 0 secondary, 4K dummy)
+#   3      → slot2_partition (image 1 primary, sketch)
+#
+# The sketch is always uploaded as raw zsk data to slot 3. When the loader
+# also changed, the pre-built loader binary is uploaded to slot 0 first.
+
+# upload.artifacts.sketch and upload.artifacts.loader are defined above (line
+# ~219-220) and reused here. The loader resolves to
+# firmwares/zephyr-{build.variant}.bin via {bootloader.file} in boards.txt.
+
+# Line buffer count for smpmgr's serial framing. smpmgr derives the chunk size
+# from line-buffers × line-length (128), and the decoded frame must stay within
+# CONFIG_BOOT_SERIAL_MAX_RECEIVE_SIZE (1024). With 8 buffers the frame is ~651
+# decoded bytes, comfortably under 1024.
+upload.smp_line_buffers=8
+
+# smpmgr (Python SMP client) for mcumgr/SMP uploads.
+smpmgr.cmd={runtime.platform.path}/venv/bin/smpmgr
+
+tools.zephyr-smp.upload.params.verbose=
+tools.zephyr-smp.upload.params.quiet=
+
+# Loader: upload to slot 0 (image 0 primary).
+zephyr-smp.loader.upload="{smpmgr.cmd}" --port "{serial.port}" --line-buffers {upload.smp_line_buffers} image upload "{upload.artifacts.loader}" --slot 0
+# Sketch: upload to slot 3 (→ slot2_partition, image 1 primary) as raw binary.
+zephyr-smp.sketch.upload="{smpmgr.cmd}" --port "{serial.port}" --line-buffers {upload.smp_line_buffers} image upload "{upload.artifacts.sketch}" --slot 3 --format any
+# Reset after upload.
+zephyr-smp.reset="{smpmgr.cmd}" --port "{serial.port}" os reset
+
+# If the loader changed: upload loader + sketch + reset.
+# If the loader matches: upload sketch + reset.
+zephyr-smp.upload.1=if {flash-loader-condition} {zephyr-smp.loader.upload}
+zephyr-smp.upload.2=run {zephyr-smp.sketch.upload}
+zephyr-smp.upload.3=run {zephyr-smp.reset}
+tools.zephyr-smp.upload.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" {zephyr-smp.upload.1} :: {zephyr-smp.upload.2} :: {zephyr-smp.upload.3}
+
+
+#
 # PICOTOOL
 #
 
@@ -340,17 +444,34 @@ tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.ad
 # PYOCD WRAPPER
 #
 
+# Per-board pyOCD session options, overridable in boards.txt
+pyocd.extra_flags=
+
 # TODO: at the moment, install pyocd manually (with provided script)
 #tools.pyocd.path={runtime.tools.pyocd.path}
 tools.pyocd.path=
 tools.pyocd.cmd=pyocd
-tools.pyocd.upload.params.verbose=
-tools.pyocd.upload.params.quiet=
-tools.pyocd.upload.pattern="{cmd}" load --target {upload.target} {upload.artifacts.sketch}@{upload.address}
+tools.pyocd.upload.params.verbose=-v
+tools.pyocd.upload.params.quiet=-q
+tools.pyocd.upload.pattern="{cmd}" load {upload.verbose} --target {upload.target} {pyocd.extra_flags} "{upload.artifacts.sketch}@{upload.address}"
 
-tools.pyocd.bootloader.params.verbose=
-tools.pyocd.bootloader.params.quiet=
-tools.pyocd.bootloader.pattern="{cmd}" load --target {bootloader.target} "{upload.artifacts.loader}"
+# "Upload using programmer": same as upload, but reached via programmers.txt.
+tools.pyocd.program.params.verbose=-v
+tools.pyocd.program.params.quiet=-q
+tools.pyocd.program.pattern="{cmd}" load {program.verbose} --target {upload.target} {pyocd.extra_flags} "{upload.artifacts.sketch}@{upload.address}"
+
+tools.pyocd.bootloader.params.verbose=-v
+tools.pyocd.bootloader.params.quiet=-q
+# bootloader.file is an ELF for most boards that use this recipe, so it carries
+# its own load addresses and needs no suffix. A board shipping a raw binary
+# instead - because what has to land in the slot is the MCUboot-headered image,
+# not the ELF - sets bootloader.load_at to "@{bootloader.address}".
+bootloader.load_at=
+tools.pyocd.bootloader.pattern="{cmd}" load {bootloader.verbose} --target {bootloader.target} {pyocd.extra_flags} "{upload.artifacts.loader}{bootloader.load_at}"
+
+tools.pyocd.erase.params.verbose=-v
+tools.pyocd.erase.params.quiet=-q
+tools.pyocd.erase.pattern=
 
 
 #
