@@ -70,6 +70,8 @@ west config manifest.project-filter -- "$HAL_FILTER"
 west update $WEST_MODULES_CACHE "$@"
 west zephyr-export
 pip3 install -r ../zephyr/scripts/requirements-base.txt
+# imgtool imports 'cryptography' unconditionally, even with no signing key.
+[ -f ../bootloader/mcuboot/scripts/requirements.txt ] && pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt
 log_msg "endgroup"
 
 TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do
@@ -90,5 +92,7 @@ done
 
 NEEDED_HALS="arduino-api $NEEDED_HALS"
 log_msg "group" "Fetching blobs for: $NEEDED_HALS"
-west blobs $WEST_BLOBS_CACHE fetch $NEEDED_HALS
+for m in $NEEDED_HALS; do
+	west blobs $WEST_BLOBS_CACHE -a fetch "$m" || echo "WARNING: blob fetch failed for $m, continuing anyway"
+done
 log_msg "endgroup"

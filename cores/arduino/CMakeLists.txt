@@ -10,6 +10,8 @@ zephyr_sources(zephyrPinctrl.cpp)
 zephyr_sources(USB.cpp)
 zephyr_sources(itoa.cpp)
 
+zephyr_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT usb_device_descriptor.c)
+
 zephyr_sources(wiring_analog.cpp)
 zephyr_sources(wiring_digital.cpp)
 zephyr_sources(wiring_pulse.cpp)

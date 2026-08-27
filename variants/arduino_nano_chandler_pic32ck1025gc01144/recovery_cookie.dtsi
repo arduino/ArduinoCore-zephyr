@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) 2026 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* MCUboot double-reset cookie: shared between loader/sketch and MCUboot.
+ * sram0 shrunk by this node's size; region survives warm resets. */
+&sram0 {
+	reg = <0x20000000 (DT_SIZE_K(256) - 32)>;
+};
+
+/ {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		recovery_cookie: memory@2003ffe0 {
+			compatible = "zephyr,memory-region";
+			reg = <0x2003ffe0 32>;
+			zephyr,memory-region = "RECOVERY_COOKIE";
+		};
+	};
+};

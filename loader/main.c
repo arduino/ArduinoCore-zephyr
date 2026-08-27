@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/logging/log_ctrl.h>
 
 #include <stdlib.h>
+#include <string.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/uart/cdc_acm.h>
@@ -38,10 +39,16 @@ const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
 
 #include <zephyr/usb/usbd.h>
+#include <zephyr/sys/reboot.h>
 struct usbd_context *usbd_init_device(usbd_msg_cb_t msg_cb);
 static struct usbd_context *_usbd = NULL;
 
 int usbd_config_set(struct usbd_context *uds_ctx, uint8_t new_cfg);
+
+/* Weak default: variants override in variant.c for board-specific reset logic. */
+__attribute__((weak)) void _on_1200_bps(void) {
+	sys_reboot(SYS_REBOOT_COLD);
+}
 
 int loader_usb_disable() {
 	int err = usbd_disable(_usbd);
@@ -53,10 +60,32 @@ int loader_usb_disable() {
 	return err;
 }
 
+/* Deferred: 1200-bps arrives in a USB callback; _on_1200_bps() handles the
+ * disconnect and reset, so no usbd_disable() (it can deadlock on a bus reset). */
+static void bootloader_reset_work_handler(struct k_work *work) {
+	ARG_UNUSED(work);
+	_on_1200_bps();
+}
+static K_WORK_DELAYABLE_DEFINE(bootloader_reset_work, bootloader_reset_work_handler);
+
+/* The work item is statically initialised above; re-initialising a pending item
+ * would corrupt the work queue. */
+static void schedule_bootloader_reset(void) {
+	k_work_schedule(&bootloader_reset_work, K_MSEC(100));
+}
+
 static void loader_usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) {
 	if (usbd_can_detect_vbus(ctx)) {
 		if (msg->type == USBD_MSG_VBUS_READY) {
 			usbd_enable(ctx);
+		}
+	}
+
+	if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
+		uint32_t baudrate;
+		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+		if (baudrate == 1200) {
+			schedule_bootloader_reset();
 		}
 	}
 }
@@ -126,24 +155,31 @@ struct backup_store {
 extern volatile __stm32_backup_sram_section struct backup_store backup;
 
 static int loader(const struct shell *sh) {
+	#if defined(CONFIG_FLASH_MAP)
 	const struct flash_area *fa;
+	#endif
 	int rc;
+	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 
+	#if defined(CONFIG_FLASH_MAP)
 	/* Test that attempting to open a disabled flash area fails */
 	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
 	}
-
-	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
+	#endif
 
 	char header[SKETCH_HEADER_LEN];
+	#if defined(CONFIG_FLASH_MAP)
 	rc = flash_area_read(fa, 0, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
 	}
+	#else
+	memcpy(header, (const void *)base_addr, sizeof(header));
+	#endif
 
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
@@ -306,11 +342,15 @@ static int loader(const struct shell *sh) {
 		return -ENOMEM;
 	}
 
+	#if defined(CONFIG_FLASH_MAP)
 	rc = flash_area_read(fa, 0, sketch_buf, sketch_buf_len);
 	if (rc) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		return rc;
 	}
+	#else
+	memcpy(sketch_buf, (const void *)base_addr, sketch_buf_len);
+	#endif
 #else
 	// Assuming the sketch is stored in the same flash device as the loader
 	uint8_t *sketch_buf = (uint8_t *)base_addr;
