@@ -7,6 +7,4 @@
 #pragma once
 #include <ZephyrUDP.h>
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
 using EthernetUDP = ZephyrUDP;
-#endif

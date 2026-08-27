@@ -101,6 +101,8 @@ public:
 
 	int write(CanMsg const &msg) override;
 	int writeFD(CanFDMsg const &msg);
+	int write(CanMsg const &msg, bool blocking);
+	int writeFD(CanFDMsg const &msg, bool blocking);
 	size_t available() override;
 	CanMsg read() override;
 	CanFDMsg readFD();
