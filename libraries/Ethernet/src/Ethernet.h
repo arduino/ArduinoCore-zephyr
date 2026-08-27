@@ -11,7 +11,6 @@
 #include <zephyr/net/ethernet.h>
 #include "ZephyrClient.h"
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
 using EthernetClient = ZephyrClient;
 
 enum EthernetLinkStatus {
@@ -68,4 +67,3 @@ public:
 
 extern EthernetClass Ethernet;
 
-#endif
