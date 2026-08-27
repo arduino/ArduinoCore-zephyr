@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) 2026 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Nano Chandler "Monica" carrier - devicetree delta.
+ *
+ * Monica is not a Zephyr board variant: it is the plain arduino_nano_chandler
+ * board plus the "nano_chandler_monica" shield. Zephyr applies overlays in the
+ * order
+ *
+ *     board .dts -> shield overlays -> DTC_OVERLAY_FILE -> EXTRA_DTC_OVERLAY_FILE
+ *
+ * so the shield cannot override this variant's overlay (that one *is*
+ * DTC_OVERLAY_FILE). Everything the carrier has to take back from the bare
+ * module therefore lives here, and this file is passed as
+ * EXTRA_DTC_OVERLAY_FILE from nano_chandler_monica.build.zephyr_args in
+ * boards.txt. The purely additive part - the esp8266 node itself - stays in
+ * the shield.
+ */
+
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/*
+ * UART1 (sercom1) is hard-wired on this carrier to the ESP8266 WiFi module's
+ * AT-command UART (via 0R bridge resistors) - it can no longer double as a
+ * user UART like it does on the bare Nano Chandler module. The ESP-AT driver
+ * binds at boot, so the bare module's deferred init must go.
+ */
+&sercom1 {
+	/delete-property/ zephyr,deferred-init;
+};
+
+/*
+ * PD11 (D7) is dedicated to the ESP8266 reset line on this carrier (see the
+ * shield's esp8266 node) and must never be muxed away from plain GPIO to the
+ * TCC2 PWM function: drop the "arduino" pinctrl state the bare module defines.
+ */
+&tcc2 {
+	/delete-property/ pinctrl-2;
+	pinctrl-names = "default", "sleep";
+};
+
+/*
+ * sercom6 is the only console here: unlike the bare module, log output is not
+ * mirrored on USB CDC, and the shell lives on the same UART.
+ */
+&log_uarts {
+	uarts = <&sercom6>;
+};
+
+/ {
+	chosen {
+		zephyr,console = &sercom6;
+		zephyr,shell-uart = &sercom6;
+	};
+
+	zephyr,user {
+		/*
+		 * sercom1 intentionally excluded: dedicated to the ESP8266 AT UART,
+		 * not exposed as a generic Arduino Serial object. Serial1 = sercom6
+		 * (user header, also the debug console), Serial2 = sercom0 (RS485).
+		 */
+		serials = <&sercom6>, <&sercom0>;
+
+		/* D7 (&portd 11) intentionally excluded: dedicated ESP8266 reset line. */
+		pwm-pin-gpios = <&portc 19 0>,
+				<&portc 20 0>,
+				<&portc 15 0>,
+				<&portc 16 0>,
+				<&portc 17 0>,
+				<&porta 21 0>,
+				<&porta 20 0>,
+				<&portb 11 0>,
+				<&porta 23 0>,
+				<&portb 24 0>;
+
+		pwms = <&tcc1 4 PWM_HZ(500) 0>,
+		       <&tcc1 5 PWM_HZ(500) 0>,
+		       <&tcc1 0 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc4 1 PWM_HZ(500) 0>,
+		       <&tcc4 0 PWM_HZ(500) 0>,
+		       <&tcc3 0 PWM_HZ(500) 0>,
+		       <&tcc5 1 PWM_HZ(500) 0>,
+		       <&tcc6 1 PWM_HZ(500) 0>;
+	};
+};

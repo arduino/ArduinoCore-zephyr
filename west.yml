@@ -17,11 +17,15 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: gibix
+      url-base: https://github.com/gibix
+    - name: dani-clo
+      url-base: https://github.com/dani-clo
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.4.1+
+      remote: dani-clo
+      revision: nano-chandler-tmp
       import:
         name-allowlist:
           - cmsis
@@ -32,10 +36,10 @@ manifest:
           - tf-psa-crypto
           - segger
           - thrift
-          - mcuboot
           - nanopb
           - lvgl
           - fatfs
+          - zcbor
         path-allowlist:
           - modules/hal/*
 
@@ -53,3 +57,14 @@ manifest:
       # API changes broke the build. Update this SHA once a newer commit is
       # verified against the Zephyr revision above.
       revision: cf24edd66ab173d20f734e3f3350b1a1c053a904
+    - name: mcuboot
+      remote: gibix
+      revision: 935b7db028c6e17a6fabe6ef0dda3e2dbc4a0bdd
+      path: bootloader/mcuboot
+
+    - name: hal_microchip
+      revision: master
+      url: https://github.com/Zephyr4Microchip/microchip-hal
+      path: modules/hal/microchip
+      groups:
+        - hal

@@ -727,3 +727,174 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+nano_chandler.name=Arduino Nano Chandler
+nano_chandler.build.core=arduino
+nano_chandler.build.crossprefix=arm-zephyr-eabi-
+nano_chandler.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nano_chandler.menu.link_mode.dynamic=Dynamic
+nano_chandler.menu.link_mode.static=Static
+nano_chandler.menu.link_mode.static.build.link_mode=static
+nano_chandler.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+nano_chandler.build.zephyr_target=arduino_nano_chandler
+nano_chandler.build.zephyr_args=
+nano_chandler.build.zephyr_hals=hal_microchip
+nano_chandler.build.zephyr_toolchain=arm-zephyr-eabi
+nano_chandler.build.artifact=zephyr_main
+nano_chandler.build.variant=arduino_nano_chandler_pic32ck1025gc01144
+nano_chandler.build.extra_flags=
+nano_chandler.build.board=NANO_CHANDLER
+
+# Multi-image MCUboot: loader and sketch are SEPARATE images uploaded
+# independently to slot0 and slot2. No combined bundle is produced.
+#
+# Multi-image MCUboot: no combined bundle, so build.ota.magic is unset and
+# postobjcopy.3/.4 (bundle/delta generation) are effectively no-ops.
+# build.ota.offset is kept for reference (sketch partition at 0x48000).
+nano_chandler.build.ota.magic=
+nano_chandler.build.ota.offset=0x48000
+nano_chandler.build.ota.mcuboot_args=
+
+nano_chandler.vid.0=0x2341
+nano_chandler.pid.0=0x007e
+nano_chandler.upload_port.0.vid=0x2341
+nano_chandler.upload_port.0.pid=0x007e
+nano_chandler.upload.target=pic32ck1025sg01144
+# The GC01144 has no CMSIS-Pack; the pin/die-compatible SG part is the stand-in.
+# pack.debug_sequences.enable=false is required to connect at all (pyOCD's
+# J-Link backend can't issue the raw DAP_SWJ_Sequence the pack's DebugPortSetup
+# needs); connect_mode=halt because under-reset makes flash erase time out; and
+# reset_type=sw_sysresetreq because disabling debug sequences also disables this
+# chip's pack-defined ResetSystem.
+nano_chandler.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+
+# Uploads speak mcumgr/SMP to MCUboot's serial recovery mode over USB CDC-ACM.
+#
+# The sequence, all of it automatic: arduino-cli opens the port at 1200 baud,
+# the running loader sees the rate change and arms the shared cookie before
+# resetting (variants/.../variant.c:_on_1200_bps), MCUboot comes up, finds the
+# cookie and stays in recovery, and the board re-enumerates with the PID below.
+# wait_for_upload_port makes arduino-cli wait for that second port and hand it
+# to the recipe. A physical double-tap of reset does the same thing by hand.
+#
+# One image is written, not two: the artifact carries loader AND sketch, so
+# there is no "flash the loader only if its version differs" step any more.
+nano_chandler.upload.tool=zephyr-smp
+nano_chandler.upload.tool.default=zephyr-smp
+nano_chandler.upload.protocol=
+nano_chandler.upload.transport=
+nano_chandler.upload.vid=0x2341
+# MCUboot in recovery, i.e. CONFIG_CDC_ACM_SERIAL_PID in
+# variants/.../mcuboot.conf. 0x007e above is the running loader.
+nano_chandler.upload.pid=0x018e
+# This board's bootloader has CONFIG_BOOT_LINE_BUFS=16, but smpmgr's frame
+# sizing from line-buffers × line-length can exceed CONFIG_BOOT_SERIAL_MAX_-
+# RECEIVE_SIZE (1024) if we tell it 16. The platform default (8) keeps the
+# decoded frame under 1024 and the throughput difference is negligible (flash-
+# programming-bound, not turnaround-bound), so no override here.
+nano_chandler.upload.use_1200bps_touch=true
+nano_chandler.upload.wait_for_upload_port=true
+nano_chandler.upload.native_usb=true
+
+# burn-bootloader writes the LOADER into slot0 over SWD - the way back for a
+# board whose PFM is empty or corrupt and which therefore cannot be reached over
+# USB at all. It does not install MCUboot: that lives in BFM, whose write-protect
+# bits re-arm at every reset and which the borrowed flash algorithm cannot
+# program, so it stays tools/chandler_flasher/chandler_flasher.py's job.
+#
+# `pyocd load` does write PFM correctly - verified byte-for-byte 2026-08-18,
+# against an earlier claim in this tree that it hangs. What it does need is the
+# user script in pyocd.extra_flags above, which normalises SWAP.PFSWAP before
+# the first flash access; without it, on a board whose BFM slot has been
+# promoted, the image lands in the other panel and the read-back agrees with it.
+nano_chandler.bootloader.tool=pyocd
+nano_chandler.bootloader.tool.default=pyocd
+nano_chandler.bootloader.file=zephyr-{build.variant}.bin
+nano_chandler.bootloader.target={upload.target}
+nano_chandler.bootloader.address=0x0C000000
+# The artifact is the MCUboot-headered image, a raw binary, so pyocd needs the
+# address (see bootloader.load_at in platform.txt).
+nano_chandler.bootloader.load_at=@{bootloader.address}
+
+##############################################################################################################
+
+nano_chandler_monica.name=Arduino Nano Chandler Monica
+nano_chandler_monica.build.core=arduino
+nano_chandler_monica.build.crossprefix=arm-zephyr-eabi-
+nano_chandler_monica.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nano_chandler_monica.menu.link_mode.dynamic=Dynamic
+nano_chandler_monica.menu.link_mode.static=Static
+nano_chandler_monica.menu.link_mode.static.build.link_mode=static
+nano_chandler_monica.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+nano_chandler_monica.build.zephyr_target=arduino_nano_chandler
+# Monica has no Zephyr board variant of its own: it is the bare Nano Chandler
+# board plus the "nano_chandler_monica" shield (which adds the ESP8266 node),
+# plus a Kconfig/devicetree delta applied on top of the shared variant files.
+# EXTRA_DTC_OVERLAY_FILE is applied after DTC_OVERLAY_FILE - and after the
+# shield - so it is the only place the carrier can override the bare module.
+# Paths are relative to the 'loader' application directory, like debug.conf.
+nano_chandler_monica.build.zephyr_args=--shield nano_chandler_monica -- -DEXTRA_CONF_FILE=../variants/arduino_nano_chandler_pic32ck1025gc01144/monica.conf -DEXTRA_DTC_OVERLAY_FILE=../variants/arduino_nano_chandler_pic32ck1025gc01144/monica.overlay
+nano_chandler_monica.build.zephyr_hals=hal_microchip
+nano_chandler_monica.build.zephyr_toolchain=arm-zephyr-eabi
+nano_chandler_monica.build.artifact=zephyr_main
+# Shared with the bare 'nano_chandler' board: the two differ only by shield.
+# Whichever board is built last owns the shared artifacts under this directory
+# (llext-edk/, syms-*.ld, tls-syms.S) and firmwares/zephyr-<variant>.*.
+nano_chandler_monica.build.variant=arduino_nano_chandler_pic32ck1025gc01144
+nano_chandler_monica.build.extra_flags=
+nano_chandler_monica.build.board=NANO_CHANDLER_MONICA
+
+# OTA: same layout as the bare module (they share the variant and its partition
+# table), only the magic differs - it follows the carrier's own USB PID.
+# Monica's loader is ~281K of the 288K available before the sketch offset,
+# because it carries the WiFi stack too; if it grows past that, the sketch build
+# fails with "loader exceeds offset".
+nano_chandler_monica.build.ota.magic=
+nano_chandler_monica.build.ota.offset=0x48000
+nano_chandler_monica.build.ota.mcuboot_args=
+
+nano_chandler_monica.vid.0=0x2341
+nano_chandler_monica.pid.0=0x008e
+nano_chandler_monica.upload_port.0.vid=0x2341
+nano_chandler_monica.upload_port.0.pid=0x008e
+nano_chandler_monica.upload.target=pic32ck1025sg01144
+nano_chandler_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+
+# Same upload path as the bare module - see the comment on nano_chandler above.
+# The two boards share the variant, the partition table and one BFM image, so
+# they also share the recovery VID/PID.
+nano_chandler_monica.upload.tool=zephyr-smp
+nano_chandler_monica.upload.tool.default=zephyr-smp
+nano_chandler_monica.upload.protocol=
+nano_chandler_monica.upload.transport=
+nano_chandler_monica.upload.vid=0x2341
+nano_chandler_monica.upload.pid=0x018e
+# Same as nano_chandler above: CONFIG_BOOT_LINE_BUFS=16 but platform default
+# of 8 is used to stay within CONFIG_BOOT_SERIAL_MAX_RECEIVE_SIZE (1024).
+nano_chandler_monica.upload.use_1200bps_touch=true
+nano_chandler_monica.upload.wait_for_upload_port=true
+nano_chandler_monica.upload.native_usb=true
+
+# burn-bootloader writes the LOADER into slot0 over SWD - the way back for a
+# board whose PFM is empty or corrupt and which therefore cannot be reached over
+# USB at all. It does not install MCUboot: that lives in BFM, whose write-protect
+# bits re-arm at every reset and which the borrowed flash algorithm cannot
+# program, so it stays tools/chandler_flasher/chandler_flasher.py's job.
+#
+# `pyocd load` does write PFM correctly - verified byte-for-byte 2026-08-18,
+# against an earlier claim in this tree that it hangs. What it does need is the
+# user script in pyocd.extra_flags above, which normalises SWAP.PFSWAP before
+# the first flash access; without it, on a board whose BFM slot has been
+# promoted, the image lands in the other panel and the read-back agrees with it.
+nano_chandler_monica.bootloader.tool=pyocd
+nano_chandler_monica.bootloader.tool.default=pyocd
+nano_chandler_monica.bootloader.file=zephyr-{build.variant}.bin
+nano_chandler_monica.bootloader.target={upload.target}
+nano_chandler_monica.bootloader.address=0x0C000000
+# The artifact is the MCUboot-headered image, a raw binary, so pyocd needs the
+# address (see bootloader.load_at in platform.txt).
+nano_chandler_monica.bootloader.load_at=@{bootloader.address}
+

@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2026 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Cross-image handoff word for entering MCUboot serial recovery.
+ *
+ * MCUboot enters serial recovery mode only when its double-reset cookie is
+ * found set at PRE_KERNEL_1. For a running loader/sketch to arm that cookie
+ * (on a 1200-bps touch) both images must agree on where it lives.
+ *
+ * This file is the one place where that agreement can be expressed once:
+ * both the loader/sketch and MCUboot see the identical node. The Monica
+ * carrier shares this variant and therefore also pays the 32 bytes.
+ *
+ * sram0 is shrunk by exactly this node's size so neither image's linker
+ * allocates into it; the region is outside .bss and .data and therefore
+ * survives a warm reset, which is the whole point.
+ */
+&sram0 {
+	reg = <0x20000000 (DT_SIZE_K(256) - 32)>;
+};
+
+/ {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		recovery_cookie: memory@2003ffe0 {
+			compatible = "zephyr,memory-region";
+			reg = <0x2003ffe0 32>;
+			zephyr,memory-region = "RECOVERY_COOKIE";
+		};
+	};
+};

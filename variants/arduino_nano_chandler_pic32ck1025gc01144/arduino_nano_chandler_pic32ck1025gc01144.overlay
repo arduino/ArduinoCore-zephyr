@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2026 Arduino SA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include "arduino_nano_chandler_pic32ck1025gc01144-common.overlay"
+
+#include "recovery_cookie.dtsi"
+
+&pinctrl {
+	tcc2_arduino_wo2: tcc2_arduino_wo2 {
+		group1 {
+			pinmux = <PD11F_TCC2_WO2>;
+		};
+	};
+};
+
+&tcc2 {
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&tcc2_arduino_wo2>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&sercom1 {
+	zephyr,deferred-init;
+};
+
+/ {
+	log_uarts: log_uarts {
+		compatible = "zephyr,log-uart";
+		uarts = <&sercom6 &board_cdc_acm_uart>;
+	};
+
+	chosen {
+		zephyr,log-uart = &log_uarts;
+		zephyr,console = &sercom6;
+	};
+
+	zephyr,user {
+		serials = <&sercom1>, <&sercom6>, <&sercom0>;
+
+		pwm-pin-gpios = <&portc 19 0>,
+				<&portc 20 0>,
+				<&portc 15 0>,
+				<&portc 16 0>,
+				<&portc 17 0>,
+				<&porta 21 0>,
+				<&porta 20 0>,
+				<&portb 11 0>,
+				<&portd 11 0>,
+				<&porta 23 0>,
+				<&portb 24 0>;
+
+		pwms = <&tcc1 4 PWM_HZ(500) 0>,
+		       <&tcc1 5 PWM_HZ(500) 0>,
+		       <&tcc1 0 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc4 1 PWM_HZ(500) 0>,
+		       <&tcc4 0 PWM_HZ(500) 0>,
+		       <&tcc3 0 PWM_HZ(500) 0>,
+		       <&tcc2 2 PWM_HZ(500) 0>,
+		       <&tcc5 1 PWM_HZ(500) 0>,
+		       <&tcc6 1 PWM_HZ(500) 0>;
+	};
+};
