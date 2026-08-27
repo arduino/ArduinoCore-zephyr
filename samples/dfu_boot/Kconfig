@@ -1,0 +1,99 @@
+# Copyright (c) 2023 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+menu "USB DFU sample options"
+
+config APP_USB_DFU_USE_FLASH_BACKEND
+	select FLASH
+	select FLASH_MAP
+	select STREAM_FLASH
+	select IMG_MANAGER
+	select IMG_ERASE_PROGRESSIVELY
+	bool "Option to clear the flash area before mounting"
+	help
+	  Use this to force an existing file system to be created.
+
+if APP_USB_DFU_USE_FLASH_BACKEND
+
+config USBD_DFU_FLASH
+	default y
+
+config USBD_DFU_FLASH_SLOT0
+	default y
+
+config USBD_DFU_FLASH_SLOT1
+	default y
+
+endif
+
+config APP_BFM_FLASH
+	bool
+	help
+	  Build src/bfm_flash.c, the on-chip writer for the Boot Flash Memory at
+	  0x08000000. No prompt: it is selected by whatever needs it, and there
+	  is nothing to gain from turning it on alone.
+
+config APP_BFM_SELFTEST
+	bool "Self-test the on-chip BFM writer at boot"
+	select APP_BFM_FLASH
+	select PRINTK
+	select CONSOLE
+	select UART_CONSOLE
+	help
+	  Program two scratch BFM pages from the running image at boot and
+	  report on sercom6 (header J4, TX=PA00/RX=PA01) at 115200, proving that
+	  BFM can be written with no SWD probe attached.
+
+	  Both write-protect registers are exercised: one page in Lower Boot
+	  (LBWP) and one in Upper Boot (UBWP). Neither page is part of this
+	  image, so a failure destroys nothing -- but read the pages back from
+	  the host before believing the console, because a silently dropped
+	  write is exactly what this is testing for.
+
+	  Development aid. Leave it off in anything you flash to a user's board.
+
+config APP_BFM_DFU_ALT
+	bool "Expose the spare BFM slot as a DFU alternate setting"
+	default y
+	select APP_BFM_FLASH
+	help
+	  Add alternate setting 2, "bfm_spare", so this bootloader can be
+	  updated over USB with no SWD probe:
+
+	      dfu-util -a 2 -D dfu_boot.bin
+
+	  The image is written to the Dual-Boot slot that is NOT running, at
+	  0x08010000, then verified and promoted by raising its sequence number
+	  so the Boot ROM maps it to 0x08000000 at the next reset. A failure at
+	  any point before that promotion leaves the board booting exactly what
+	  it booted before.
+
+	  The image must fit the 64 KB slot, and it must be linked for
+	  0x08000000 -- which is where it will run once promoted, not where it
+	  is written.
+
+config APP_BFM_AB_TEST
+	bool "Promote the spare BFM slot at boot (destructive, dev only)"
+	select APP_BFM_FLASH
+	help
+	  At boot, if the spare BFM slot at 0x08010000 holds a valid-looking
+	  image, raise its Dual-Boot sequence number so the Boot ROM maps it to
+	  0x08000000 on the next reset. This is the real promotion path, run
+	  unconditionally -- it exists to prove the swap on hardware.
+
+	  Flash this build into the ACTIVE slot and a plain build into the
+	  spare. After one reset the plain build runs and nothing promotes
+	  again. Putting this build in BOTH slots makes the board ping-pong
+	  between them forever.
+
+	  It rewrites a CFM User CFG page, which also carries WDT and ECC
+	  configuration. Never enable it in anything you ship.
+
+endmenu
+
+# Source common USB sample options used to initialize new experimental USB
+# device stack. The scope of these options is limited to USB samples in project
+# tree, you cannot use them in your own application.
+source "samples/subsys/usb/common/Kconfig.sample_usbd"
+
+source "Kconfig.zephyr"
