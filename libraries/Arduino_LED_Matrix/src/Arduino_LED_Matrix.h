@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#pragma once
+
 #include <Arduino.h>
 #include <cmsis_core.h>
 
