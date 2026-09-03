@@ -56,7 +56,7 @@ done
 log_msg "group" "Bootstrapping Python environment for Zephyr"
 python3 -m venv venv
 source venv/bin/activate
-pip3 install west protobuf grpcio-tools
+pip3 install west protobuf grpcio-tools jsonschema
 log_msg "endgroup"
 
 if ! [ -d ../.west ] ; then
