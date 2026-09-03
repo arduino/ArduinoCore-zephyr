@@ -11,16 +11,12 @@
 
 using namespace zephyr::arduino;
 
-#define PWM_DT_SPEC(n, p, i) PWM_DT_SPEC_GET_BY_IDX(n, i),
-#define PWM_PINS(n, p, i)                                                                          \
-	DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), p, i)),         \
-							   DT_PHA_BY_IDX(DT_PATH(zephyr_user), p, i, pin)),
-
-#define ADC_DT_SPEC(n, p, i) ADC_DT_SPEC_GET_BY_IDX(n, i),
-#define ADC_PINS(n, p, i)                                                                          \
-	DIGITAL_PIN_GPIOS_FIND_PIN(DT_REG_ADDR(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), p, i)),         \
-							   DT_PHA_BY_IDX(DT_PATH(zephyr_user), p, i, pin)),
 #define ADC_CH_CFG(n, p, i) arduino_adc[i].channel_cfg,
+#define ADC_CONN_CHANNEL_CFG(n, p, i)                                                              \
+	COND_CODE_1(DT_NODE_HAS_STATUS_OKAY(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i)),                  \
+	            (ADC_CHANNEL_CFG_DT(ADC_CHANNEL_DT_NODE(DT_MAP_ENTRY_PARENT_BY_IDX(n, p, i),   \
+					DT_MAP_ENTRY_PARENT_SPECIFIER_BY_IDX(n, p, i, 0))),),      \
+		    ())
 
 #define DAC_NODE       DT_PHANDLE(DT_PATH(zephyr_user), dac)
 #define DAC_RESOLUTION DT_PROP(DT_PATH(zephyr_user), dac_resolution)
@@ -36,13 +32,6 @@ namespace {
 
 #ifdef CONFIG_PWM
 
-const struct pwm_dt_spec arduino_pwm[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwms, PWM_DT_SPEC)};
-
-/* pwm-pins node provides a mapping digital pin numbers to pwm channels */
-const pin_size_t arduino_pwm_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), pwm_pin_gpios, PWM_PINS)};
-
 size_t pwm_pin_index(pin_size_t pinNumber) {
 	for (size_t i = 0; i < ARRAY_SIZE(arduino_pwm_pins); i++) {
 		if (arduino_pwm_pins[i] == pinNumber) {
@@ -56,15 +45,13 @@ size_t pwm_pin_index(pin_size_t pinNumber) {
 
 #ifdef CONFIG_ADC
 
-const struct adc_dt_spec arduino_adc[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_DT_SPEC)};
-
-/* io-channel-pins node provides a mapping digital pin numbers to adc channels */
-const pin_size_t arduino_analog_pins[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), adc_pin_gpios, ADC_PINS)};
-
 struct adc_channel_cfg channel_cfg[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_CH_CFG)};
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, ADC_CH_CFG)
+#elif defined(ZARD_ADC_CONNECTOR)
+	DT_FOREACH_MAP_ENTRY(DT_NODELABEL(ZARD_ADC_CONNECTOR), io_channel_map, ADC_CONN_CHANNEL_CFG)
+#endif
+};
 
 size_t analog_pin_index(pin_size_t pinNumber) {
 	for (size_t i = 0; i < ARRAY_SIZE(arduino_analog_pins); i++) {
