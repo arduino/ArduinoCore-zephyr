@@ -259,6 +259,11 @@ FORCE_EXPORT_SYM(video_buffer_release);
 FORCE_EXPORT_SYM(video_import_buffer);
 FORCE_EXPORT_SYM(video_set_ctrl);
 FORCE_EXPORT_SYM(video_enqueue);
+FORCE_EXPORT_SYM(video_dequeue);
+FORCE_EXPORT_SYM(video_set_format);
+FORCE_EXPORT_SYM(video_get_caps);
+FORCE_EXPORT_SYM(video_stream_start);
+FORCE_EXPORT_SYM(video_stream_stop);
 #endif
 #if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
 FORCE_EXPORT_SYM(video_register_user_buffer_ops);
