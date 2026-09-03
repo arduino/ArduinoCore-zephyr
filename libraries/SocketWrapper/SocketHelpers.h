@@ -28,6 +28,7 @@
 class NetworkInterface {
 protected:
 	struct net_if *netif = nullptr;
+	struct in_addr local_ip;
 	int dhcp();
 	void enable_dhcpv4_server(struct net_if *netif, const char *_netmask = "255.255.255.0");
 
