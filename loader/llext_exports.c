@@ -170,7 +170,6 @@ FORCE_EXPORT_SYM(net_if_ipv4_maddr_add);
 FORCE_EXPORT_SYM(net_if_ipv4_maddr_join);
 FORCE_EXPORT_SYM(net_if_ipv4_set_gw);
 FORCE_EXPORT_SYM(net_if_ipv4_addr_add);
-FORCE_EXPORT_SYM(net_if_ipv4_set_netmask);
 FORCE_EXPORT_SYM(net_if_ipv4_set_netmask_by_addr);
 #endif
 FORCE_EXPORT_SYM(net_if_lookup_by_dev);
