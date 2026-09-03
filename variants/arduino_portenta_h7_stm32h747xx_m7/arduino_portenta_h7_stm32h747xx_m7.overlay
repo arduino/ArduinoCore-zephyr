@@ -381,6 +381,8 @@ qspi_flash: &mx25l12833f {};
 	disk-name = "SD";
 	bus-width = <4>;
 	clk-div = <1>;
+	interrupts = <124 0>;
+	interrupt-names = "event";
 };
 
 &fstab {
