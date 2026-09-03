@@ -18,6 +18,7 @@ This application can be built and executed on QEMU as follows:
    :zephyr-app: samples/hello_world
    :host-os: unix
    :board: qemu_x86
+   :snippets: arduino-core
    :goals: run
    :compact:
 
