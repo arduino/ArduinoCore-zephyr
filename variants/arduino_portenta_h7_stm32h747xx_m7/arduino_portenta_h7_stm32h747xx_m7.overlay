@@ -334,17 +334,20 @@
 		#size-cells = <1>;
 
 		boot_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
 			label = "mcuboot";
 			reg = <0x00000000 0x00040000>;
 			read-only;
 		};
 
 		slot0_partition: partition@40000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00040000 0x000A0000>;
 		};
 
 		user_sketch: partition@e0000 {
+			compatible = "zephyr,mapped-partition";
 			label = "user_sketch";
 			reg = <0x000E0000 0x00120000>;
 		};
