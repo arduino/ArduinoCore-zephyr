@@ -19,6 +19,7 @@
 		#size-cells = <1>;
 
 		user_sketch: partition@F0000 {
+			compatible = "zephyr,mapped-partition";
 			reg = <0xF0000 DT_SIZE_K(56)>;
 		};
 	};
