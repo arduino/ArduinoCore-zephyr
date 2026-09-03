@@ -71,6 +71,18 @@
 	};
 };
 
+&dmamux1 {
+	status = "okay";
+};
+
+&dma1 {
+	status = "okay";
+};
+
+&sdhc {
+	status = "okay";
+};
+
 &flash0 {
 	reg = <0x8000000 DT_SIZE_K(2048)>;     /* assign all Flash to the M7 */
 	status = "okay";
