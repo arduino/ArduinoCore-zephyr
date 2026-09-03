@@ -18,10 +18,16 @@ inline __attribute__((always_inline)) void delay(unsigned long ms) {
 }
 
 inline __attribute__((always_inline)) void delayMicroseconds(unsigned int us) {
+#if CONFIG_ARDUINO_DELAY_US_COMPENSATION < 2
 	if (us == 0) {
 		return;
 	}
-	k_busy_wait(us - 1);
+#else
+	if (us < CONFIG_ARDUINO_DELAY_US_COMPENSATION) {
+		return;
+	}
+#endif
+	k_busy_wait(us - CONFIG_ARDUINO_DELAY_US_COMPENSATION);
 }
 
 #endif /* __INLINES_H__ */
