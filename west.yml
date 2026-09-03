@@ -21,7 +21,7 @@ manifest:
   projects:
     - name: zephyr
       remote: arduino
-      revision: zephyr-arduino-v4.4.1+
+      revision: zephyr-arduino-v4.4.99
       import:
         name-allowlist:
           - cmsis
@@ -47,9 +47,4 @@ manifest:
     - name: cannectivity
       path: modules/lib/cannectivity
       url: https://github.com/CANnectivity/cannectivity.git
-      # Pinned to a known-good commit to avoid breakage from upstream `main`.
-      # This is the latest cannectivity commit as of the last successful CI
-      # build (run 29030899790, 2026-07-09), before the July USB device_next
-      # API changes broke the build. Update this SHA once a newer commit is
-      # verified against the Zephyr revision above.
-      revision: cf24edd66ab173d20f734e3f3350b1a1c053a904
+      revision: main
