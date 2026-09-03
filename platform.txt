@@ -142,12 +142,12 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compil
 
 ## Combine gc-sections, archives, and objects - Multi-pass linking
 recipe.c.combine.1.pattern={build.check_command-{build.link_mode}}
-recipe.c.combine.2.pattern={build.link_command} {build.link_args.build-{build.link_mode}} "-Wl,-Map,{build.path}/{build.project_name}_temp.map" -o "{build.path}/{build.project_name}_temp.elf"
+recipe.c.combine.2.pattern={build.link_command} "-T{build.ldscript.path}/sections-check.ld" {build.link_args.build-{build.link_mode}} "-Wl,-Map,{build.path}/{build.project_name}_temp.map" -o "{build.path}/{build.project_name}_temp.elf"
 recipe.c.combine.3.pattern="{runtime.tools.gen-rodata-ld.path}/gen-rodata-ld" "{build.path}/{build.project_name}_temp.elf" "{build.path}/rodata_split.ld" "{build.link_mode}"
 recipe.c.combine.4.pattern={build.link_command} "-T{build.path}/rodata_split.ld" {build.link_args.build-{build.link_mode}} {build.link_args.build-common}
 
 ## Combine gc-sections, archives, and objects - Single-pass linking (older IDEs)
-recipe.c.combine.pattern={build.link_command} {build.link_args.build-{build.link_mode}} -T{build.ldscript.path}/build-rodata.ld {build.link_args.build-common}
+recipe.c.combine.pattern={build.link_command} "-T{build.ldscript.path}/sections-check.ld" {build.link_args.build-{build.link_mode}} -T{build.ldscript.path}/build-rodata.ld {build.link_args.build-common}
 
 recipe.hooks.linking.postlink.1.pattern="{compiler.path}{build.crossprefix}strip" --strip-debug "{build.path}/{build.project_name}_debug.elf" -o "{build.path}/{build.project_name}.elf"
 
