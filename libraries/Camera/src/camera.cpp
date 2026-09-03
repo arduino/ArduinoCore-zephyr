@@ -26,7 +26,6 @@
 #include <zephyr/multi_heap/shared_multi_heap.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/video.h>
-#include <zephyr/drivers/video-controls.h>
 #include <zephyrClockInit.hpp>
 #include <zephyrPinctrl.h>
 
