@@ -26,14 +26,17 @@ target board. To add board support:
 1. This project is structured in a way so as to isolate the variants from the core API. Thus, whenever a new board
 needs to be added it needs to be done in the `variants/` folder.
 Add a folder inside of the variants folder that matches the name of your board.
-2. Add an overlay file that matches the name of the board.
-3. Add a `variant.h` file.
+2. Add a `.conf` (Kconfig fragment) and `.overlay` file that match the variant name.
+3. Add the variant's `.conf` and `.overlay` files to the board target in
+   [`zephyr/snippets/arduino-core/snippet.yml`](../zephyr/snippets/arduino-core/snippet.yml).
+4. Add a `variant.h` file.
 
 An example of this structure is shown below.
 
 ```tree
 variants/
 ├── arduino_nano_33_ble
+│   ├── arduino_nano_33_ble.conf
 │   ├── arduino_nano_33_ble.overlay
 │   ├── variant.h
 ```

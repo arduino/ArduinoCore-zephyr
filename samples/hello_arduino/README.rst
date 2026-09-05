@@ -15,9 +15,10 @@ Building and Running
 This application can be built and executed on QEMU as follows:
 
 .. zephyr-app-commands::
-   :zephyr-app: samples/hello_world
+   :zephyr-app: samples/hello_arduino
    :host-os: unix
    :board: qemu_x86
+   :snippets: arduino-core
    :goals: run
    :compact:
 
