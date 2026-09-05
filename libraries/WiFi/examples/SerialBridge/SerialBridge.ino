@@ -84,7 +84,7 @@ static void uart_irq_callback(const struct device *dev, void *user_data) {
 	uint8_t chunk[CHUNK_SIZE];
 	struct bridge_port *port = static_cast<struct bridge_port *>(user_data);
 
-	uart_irq_update(dev)) {
+	uart_irq_update(dev);
 
 	while (uart_irq_rx_ready(dev)) {
 		uint32_t space = ring_buf_space_get(port->rx);
