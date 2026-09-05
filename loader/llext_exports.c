@@ -27,6 +27,12 @@
 	extern void name(void);                                                                        \
 	EXPORT_SYMBOL(name);
 
+#define EXPORT_DEVICE_API_SYMS(name)                                                               \
+	extern const uint8_t _##name##_driver_api_list_start[];                                        \
+	extern const uint8_t _##name##_driver_api_ext_end[];                                           \
+	EXPORT_SYMBOL(_##name##_driver_api_list_start);                                                \
+	EXPORT_SYMBOL(_##name##_driver_api_ext_end);
+
 /*
  * Libc functions are exported with a __real_ prefix so that the sketch
  * core can provide long-call trampolines under the original names.
@@ -517,6 +523,53 @@ STRUCT_SECTION_START_EXTERN(device);
 STRUCT_SECTION_END_EXTERN(device);
 EXPORT_SYMBOL(TYPE_SECTION_START(device));
 EXPORT_SYMBOL(TYPE_SECTION_END(device));
+#endif
+
+/* Symbols required by DEVICE_API_GET() checks in sketch code. */
+#if defined(CONFIG_ADC)
+EXPORT_DEVICE_API_SYMS(adc)
+#endif
+#if defined(CONFIG_CAN)
+EXPORT_DEVICE_API_SYMS(can)
+#endif
+#if defined(CONFIG_CLOCK_CONTROL)
+EXPORT_DEVICE_API_SYMS(clock_control)
+#endif
+#if defined(CONFIG_COUNTER)
+EXPORT_DEVICE_API_SYMS(counter)
+#endif
+#if defined(CONFIG_DAC)
+EXPORT_DEVICE_API_SYMS(dac)
+#endif
+#if defined(CONFIG_ENTROPY_GENERATOR)
+EXPORT_DEVICE_API_SYMS(entropy)
+#endif
+#if defined(CONFIG_FLASH)
+EXPORT_DEVICE_API_SYMS(flash)
+#endif
+#if defined(CONFIG_GPIO)
+EXPORT_DEVICE_API_SYMS(gpio)
+#endif
+#if defined(CONFIG_I2C)
+EXPORT_DEVICE_API_SYMS(i2c)
+#endif
+#if defined(CONFIG_PWM)
+EXPORT_DEVICE_API_SYMS(pwm)
+#endif
+#if defined(CONFIG_REGULATOR)
+EXPORT_DEVICE_API_SYMS(regulator)
+#endif
+#if defined(CONFIG_RTC)
+EXPORT_DEVICE_API_SYMS(rtc)
+#endif
+#if defined(CONFIG_SPI)
+EXPORT_DEVICE_API_SYMS(spi)
+#endif
+#if defined(CONFIG_SERIAL)
+EXPORT_DEVICE_API_SYMS(uart)
+#endif
+#if defined(CONFIG_VIDEO)
+EXPORT_DEVICE_API_SYMS(video)
 #endif
 
 #if defined(CONFIG_BOARD_ARDUINO_NANO_CONNECT)
