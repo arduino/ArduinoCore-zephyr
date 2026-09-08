@@ -18,6 +18,7 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/device.h>
 #include <zephyr/posix/unistd.h>
+#include <zephyr/retention/bootmode.h>
 #if defined(CONFIG_MBEDTLS)
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
@@ -527,4 +528,8 @@ EXPORT_SYMBOL(magic_location);
 #if defined(CONFIG_REGULATOR)
 FORCE_EXPORT_SYM(regulator_enable);
 FORCE_EXPORT_SYM(regulator_disable);
+#endif
+
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+EXPORT_SYMBOL(bootmode_set);
 #endif
