@@ -8,6 +8,7 @@
 #include <strings.h>
 #include <zephyr/llext/symbol.h>
 #include <zephyr/usb/usb_device.h>
+#include <zephyr/sys/reboot.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,8 @@
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
 #endif
+
+#include "../cores/arduino/zephyr_sketch_header.h"
 
 #define FORCE_EXPORT_SYM(name)                                                                     \
 	extern void name(void);                                                                        \
@@ -51,6 +54,7 @@ EXPORT_LIBC_SYM(strstr);
 EXPORT_LIBC_SYM(strncmp);
 EXPORT_LIBC_SYM(strncpy);
 EXPORT_LIBC_SYM(strcasecmp);
+EXPORT_LIBC_SYM(strncasecmp);
 EXPORT_LIBC_SYM(strcmp);
 EXPORT_LIBC_SYM(strlen);
 EXPORT_LIBC_SYM(strnlen);
@@ -347,6 +351,7 @@ EXPORT_LIBC_SYM(gettimeofday);
 #endif
 
 EXPORT_SYMBOL(sys_clock_settime);
+
 EXPORT_SYMBOL(mktime);
 EXPORT_SYMBOL(gmtime);
 
@@ -407,6 +412,7 @@ EXPORT_AEABI_SYM(__aeabi_fcmpun);
 EXPORT_AEABI_SYM(__aeabi_d2iz);
 EXPORT_AEABI_SYM(__aeabi_d2uiz);
 EXPORT_AEABI_SYM(__aeabi_d2lz);
+EXPORT_AEABI_SYM(__aeabi_d2ulz);
 EXPORT_AEABI_SYM(__aeabi_i2d);
 EXPORT_AEABI_SYM(__aeabi_ui2d);
 EXPORT_AEABI_SYM(__aeabi_l2d);
@@ -525,3 +531,5 @@ EXPORT_SYMBOL(magic_location);
 FORCE_EXPORT_SYM(regulator_enable);
 FORCE_EXPORT_SYM(regulator_disable);
 #endif
+
+EXPORT_SYMBOL(sketch_header_v1_verify);

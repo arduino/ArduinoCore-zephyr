@@ -72,6 +72,9 @@ giga.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 giga.debug.cortex-debug.custom.request=attach
 giga.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
 
+giga.build.ota.magic=0x23410266
+giga.build.ota.sketch_offset=0xA0000
+
 ##########################################################################################
 
 nano33ble.name=Arduino Nano 33 BLE
@@ -256,6 +259,9 @@ portentah7.bootloader.interface=0
 portentah7.bootloader.file=zephyr-{build.variant}.bin
 portentah7.bootloader.address=0x08040000
 
+portentah7.build.ota.magic=0x2341025B
+portentah7.build.ota.sketch_offset=0xA0000
+
 portentah7.debug.tool=gdb
 portentah7.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
 portentah7.debug.server.openocd.scripts.1={programmer.transport_script}
@@ -307,6 +313,9 @@ nicla_vision.bootloader.pid=0x035f
 nicla_vision.bootloader.interface=0
 nicla_vision.bootloader.file=zephyr-{build.variant}.bin
 nicla_vision.bootloader.address=0x08040000
+
+nicla_vision.build.ota.magic=0x2341025F
+nicla_vision.build.ota.sketch_offset=0xA0000
 
 nicla_vision.debug.tool=gdb
 nicla_vision.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -458,6 +467,9 @@ portentac33.leave.dfuse={empty} -Q
 portentac33.loader.args.with_sketch={empty} -w
 portentac33.sketch.args.without_loader={empty} -w
 
+portentac33.build.ota.magic=0x23410068
+portentac33.build.ota.sketch_offset=0xF0000
+
 ##########################################################################################
 
 opta.name=Arduino Opta
@@ -509,6 +521,9 @@ opta.debug.server.openocd.scripts.1={programmer.transport_script}
 opta.debug.server.openocd.scripts.2=target/stm32h7x_dual_bank.cfg
 opta.debug.cortex-debug.custom.request=attach
 opta.debug.svd_file={runtime.platform.path}/svd/STM32H747_CM7.svd
+
+opta.build.ota.magic=0x23410064
+opta.build.ota.sketch_offset=0xA0000
 
 ##########################################################################################
 
