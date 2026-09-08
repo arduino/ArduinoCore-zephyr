@@ -17,7 +17,6 @@
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/device.h>
-#include <zephyr/posix/unistd.h>
 #include <zephyr/retention/bootmode.h>
 #if defined(CONFIG_MBEDTLS)
 #include <mbedtls/memory_buffer_alloc.h>
