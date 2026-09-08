@@ -768,26 +768,31 @@ mezza.vid.0=0x2341
 mezza.pid.0=0x0080
 mezza.vid.1=0x1209
 mezza.pid.1=0xca01
-mezza.upload_port.0.vid=0x2341
-mezza.upload_port.0.pid=0x0080
-mezza.upload.address=0x80F0000
-mezza.upload.target=stm32h5f5xx
 
-mezza.upload.tool=remoteocd
-mezza.upload.tool.default=remoteocd
-mezza.upload.tool.network=remoteocd_network
+
+mezza.upload.tool=dfu-util
+mezza.upload.tool.default=dfu-util
 mezza.upload.protocol=
 mezza.upload.transport=
 mezza.upload.vid=0x2341
-mezza.upload.pid=0x007B
-mezza.upload.interface=0
-mezza.upload.use_1200bps_touch=false
-mezza.upload.wait_for_upload_port=false
+mezza.upload.pid=0x017B
+mezza.upload.interface=1
+mezza.upload.use_1200bps_touch=true
+mezza.upload.wait_for_upload_port=true
 mezza.upload.native_usb=true
-mezza.upload.maximum_size=1966080
-mezza.upload.maximum_data_size=523624
+mezza.upload.dfuse=
+mezza.upload_port.0.vid=0x2341
+mezza.upload_port.0.pid=0x017B
+mezza.upload.target=stm32h5f5xx
 
-mezza.bootloader.tool=remoteocd
-mezza.bootloader.tool.default=remoteocd
-mezza.bootloader.file=zephyr-{build.var
+mezza.leave.dfuse=
+mezza.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
 
+mezza.bootloader.tool=dfu-util
+mezza.bootloader.tool.default=dfu-util
+mezza.bootloader.file=zephyr-{build.variant}.bin
+mezza.bootloader.vid=0x2341
+mezza.bootloader.pid=0x017B
+mezza.bootloader.native_usb=true
+mezza.bootloader.interface=0
+mezza.bootloader.dfuse=
