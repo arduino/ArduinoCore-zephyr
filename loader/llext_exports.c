@@ -23,6 +23,8 @@
 #include <mbedtls/debug.h>
 #endif
 
+#include "../cores/arduino/zephyr_sketch_header.h"
+
 #define FORCE_EXPORT_SYM(name)                                                                     \
 	extern void name(void);                                                                        \
 	EXPORT_SYMBOL(name);
@@ -525,3 +527,5 @@ EXPORT_SYMBOL(magic_location);
 FORCE_EXPORT_SYM(regulator_enable);
 FORCE_EXPORT_SYM(regulator_disable);
 #endif
+
+EXPORT_SYMBOL(sketch_header_v1_verify);
