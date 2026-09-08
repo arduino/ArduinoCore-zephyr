@@ -9,11 +9,18 @@
 #include <zephyr/drivers/uart/cdc_acm.h>
 #include <zephyr/usb/usb_device.h>
 #include <SerialUSB.h>
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+#include <zephyr/retention/retention.h>
+#include <zephyr/retention/bootmode.h>
+#endif
 
 #if ZARD_BOARD_HAS_SERIALUSB
 const struct device *const usb_dev = DEVICE_DT_GET(ZARD_SERIALUSB_PHANDLE);
 
 void __attribute__((weak)) _on_1200_bps() {
+#ifdef CONFIG_BOARD_ARDUINO_MEZZA
+	bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+#endif
 	NVIC_SystemReset();
 }
 
