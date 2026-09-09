@@ -1,0 +1,285 @@
+/*
+ * Copyright (c) 2026 Seeed Studio
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&zephyr_udc0 {
+	board_cdc_acm_uart: board_cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+};
+
+/*
+ * Seeed Studio XIAO nRF52840 ships with the Adafruit nRF52 USB Bootloader
+ * placed at the END of flash. The SoftDevice-reserved layout provided by
+ * the board definition is preserved and a user sketch partition is carved
+ * out of the Application partition.
+ */
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@27000 {
+			label = "code";
+			reg = <0x00027000 0x00059000>;
+			read-only;
+		};
+
+		user_sketch: partition@80000 {
+			label = "user";
+			reg = <0x00080000 0x0006c000>;
+		};
+
+		storage_partition: partition@ec000 {
+			label = "storage";
+			reg = <0x000ec000 0x00008000>;
+		};
+
+		boot_partition: partition@f4000 {
+			label = "UF2";
+			reg = <0x000f4000 0x0000c000>;
+			read-only;
+		};
+	};
+};
+
+/ {
+	chosen {
+		zephyr,log-uart = &log_uarts;
+	};
+
+	log_uarts: log_uarts {
+		compatible = "zephyr,log-uart";
+		uarts = <&uart0 &board_cdc_acm_uart>;
+	};
+};
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&xiao_d 0 0>,	/* D0  - P0.02 / AIN0 */
+				    <&xiao_d 1 0>,	/* D1  - P0.03 / AIN1 */
+				    <&xiao_d 2 0>,	/* D2  - P0.28 / AIN4 */
+				    <&xiao_d 3 0>,	/* D3  - P0.29 / AIN5 */
+				    <&xiao_d 4 0>,	/* D4  - P0.04 / AIN2 / SDA */
+				    <&xiao_d 5 0>,	/* D5  - P0.05 / AIN3 / SCL */
+				    <&xiao_d 6 0>,	/* D6  - P1.11 / TX */
+				    <&xiao_d 7 0>,	/* D7  - P1.12 / RX */
+				    <&xiao_d 8 0>,	/* D8  - P1.13 / SCK */
+				    <&xiao_d 9 0>,	/* D9  - P1.14 / MISO */
+				    <&xiao_d 10 0>,	/* D10 - P1.15 / MOSI */
+				    <&gpio0 26 0>,	/* D11 - LED R */
+				    <&gpio0 6 0>,	/* D12 - LED B */
+				    <&gpio0 30 0>;	/* D13 - LED G */
+
+		pwm-pin-gpios =	    <&xiao_d 0 0>,
+				    <&xiao_d 1 0>,
+				    <&xiao_d 2 0>,
+				    <&xiao_d 3 0>,
+				    <&xiao_d 4 0>,
+				    <&xiao_d 5 0>,
+				    <&xiao_d 6 0>,
+				    <&xiao_d 7 0>,
+				    <&xiao_d 8 0>,
+				    <&xiao_d 9 0>,
+				    <&xiao_d 10 0>;
+
+		adc-pin-gpios =	    <&xiao_d 0 0>,	/* A0 */
+				    <&xiao_d 1 0>,	/* A1 */
+				    <&xiao_d 2 0>,	/* A2 */
+				    <&xiao_d 3 0>,	/* A3 */
+				    <&xiao_d 4 0>,	/* A4 */
+				    <&xiao_d 5 0>;	/* A5 */
+
+		builtin-led-gpios = <&gpio0 26 0>;	/* LED R */
+
+		pwms =	<&pwm1 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm1 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm2 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm3 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm3 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm3 2 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		io-channels =	<&adc 0>,	/* AIN0 */
+				<&adc 1>,	/* AIN1 */
+				<&adc 4>,	/* AIN4 */
+				<&adc 5>,	/* AIN5 */
+				<&adc 2>,	/* AIN2 */
+				<&adc 3>;	/* AIN3 */
+
+		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&uart0>; /* 'Serial1' onwards, D6 (TX), D7 (RX) */
+		i2cs = <&i2c1>; /* 'Wire', D4 (SDA), D5 (SCL) */
+		spis = <&spi2>; /* 'SPI', D8 (SCK), D9 (MISO), D10 (MOSI) */
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>; /* P0.02 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN1>; /* P0.03 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN2>; /* P0.04 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN3>; /* P0.05 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN4>; /* P0.28 */
+		zephyr,resolution = <12>;
+	};
+
+	channel@5 {
+		reg = <5>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29 */
+		zephyr,resolution = <12>;
+	};
+};
+
+&pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	pwm1_default: pwm1_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 2)>,	/* D0 */
+				<NRF_PSEL(PWM_OUT1, 0, 3)>,	/* D1 */
+				<NRF_PSEL(PWM_OUT2, 0, 28)>,	/* D2 */
+				<NRF_PSEL(PWM_OUT3, 0, 29)>;	/* D3 */
+		};
+	};
+
+	pwm1_sleep: pwm1_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 2)>,
+				<NRF_PSEL(PWM_OUT1, 0, 3)>,
+				<NRF_PSEL(PWM_OUT2, 0, 28)>,
+				<NRF_PSEL(PWM_OUT3, 0, 29)>;
+				low-power-enable;
+		};
+	};
+
+	pwm2_default: pwm2_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 4)>,	/* D4 */
+				<NRF_PSEL(PWM_OUT1, 0, 5)>,	/* D5 */
+				<NRF_PSEL(PWM_OUT2, 1, 11)>,	/* D6 */
+				<NRF_PSEL(PWM_OUT3, 1, 12)>;	/* D7 */
+		};
+	};
+
+	pwm2_sleep: pwm2_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 4)>,
+				<NRF_PSEL(PWM_OUT1, 0, 5)>,
+				<NRF_PSEL(PWM_OUT2, 1, 11)>,
+				<NRF_PSEL(PWM_OUT3, 1, 12)>;
+				low-power-enable;
+		};
+	};
+
+	pwm3_default: pwm3_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 13)>,	/* D8 */
+				<NRF_PSEL(PWM_OUT1, 1, 14)>,	/* D9 */
+				<NRF_PSEL(PWM_OUT2, 1, 15)>;	/* D10 */
+		};
+	};
+
+	pwm3_sleep: pwm3_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 13)>,
+				<NRF_PSEL(PWM_OUT1, 1, 14)>,
+				<NRF_PSEL(PWM_OUT2, 1, 15)>;
+				low-power-enable;
+		};
+	};
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm2_sleep>;
+	pinctrl-2 = <&pwm2_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm3_sleep>;
+	pinctrl-2 = <&pwm3_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&i2c1 {
+	zephyr,deferred-init;
+};
+
+&spi2 {
+	zephyr,deferred-init;
+};
+&rtc2 {
+    status = "okay";
+    clock-frequency = <32768>;
+    prescaler = <1>;
+};

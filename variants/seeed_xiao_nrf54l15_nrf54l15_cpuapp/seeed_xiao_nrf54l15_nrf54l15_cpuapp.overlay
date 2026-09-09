@@ -1,0 +1,202 @@
+/*
+ * Copyright (c) 2026 Seeed Studio
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * RRAM layout for the Arduino loader.
+ *
+ * The MCUboot0 reserved area provided by the Zephyr board definition is
+ * preserved (protectable via FPROTECT). The dual image slots are replaced
+ * by a single loader image + user sketch partition.
+ */
+&cpuapp_rram {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@10000 {
+			label = "code";
+			reg = <0x00010000 0x00060000>;
+			read-only;
+		};
+
+		user_sketch: partition@70000 {
+			label = "user";
+			reg = <0x00070000 0x00104000>;
+		};
+
+		storage_partition: partition@174000 {
+			label = "storage";
+			reg = <0x000174000 0x00009000>;
+		};
+	};
+};
+
+/delete-node/ &slot1_partition;
+
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&xiao_d 0 0>,	/* D0  - P1.04 / AIN0 */
+				    <&xiao_d 1 0>,	/* D1  - P1.05 / AIN1 */
+				    <&xiao_d 2 0>,	/* D2  - P1.06 / AIN2 */
+				    <&xiao_d 3 0>,	/* D3  - P1.07 / AIN3 */
+				    <&xiao_d 4 0>,	/* D4  - P1.10 / SDA0 */
+				    <&xiao_d 5 0>,	/* D5  - P1.11 / SCL0 */
+				    <&xiao_d 6 0>,	/* D6  - P2.08 / TX */
+				    <&xiao_d 7 0>,	/* D7  - P2.07 / RX */
+				    <&xiao_d 8 0>,	/* D8  - P2.01 / SCK */
+				    <&xiao_d 9 0>,	/* D9  - P2.04 / MISO */
+				    <&xiao_d 10 0>,	/* D10 - P2.02 / MOSI */
+				    <&xiao_d 11 0>,	/* D11 - P0.03 / SCL1 */
+				    <&xiao_d 12 0>,	/* D12 - P0.04 / SDA1 */
+				    <&xiao_d 13 0>,	/* D13 - P2.10 */
+				    <&xiao_d 14 0>,	/* D14 - P2.09 */
+				    <&xiao_d 15 0>,	/* D15 - P2.06 */
+				    <&gpio2 0 0>;	/* D16 - LED (builtin) */
+
+		pwm-pin-gpios =	    <&xiao_d 0 0>,	/* D0 */
+				    <&xiao_d 1 0>,
+				    <&xiao_d 2 0>,
+				    <&xiao_d 3 0>,
+				    <&xiao_d 4 0>,
+				    <&xiao_d 5 0>,
+				    <&xiao_d 6 0>,
+				    <&xiao_d 7 0>,
+				    <&xiao_d 8 0>,
+				    <&xiao_d 9 0>,
+				    <&xiao_d 10 0>,
+				    <&xiao_d 11 0>;
+
+		adc-pin-gpios =	    <&xiao_d 0 0>,	/* A0 */
+				    <&xiao_d 1 0>,	/* A1 */
+				    <&xiao_d 2 0>,	/* A2 */
+				    <&xiao_d 3 0>;	/* A3 */
+
+		builtin-led-gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
+
+		pwms =	<&pwm20 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm22 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm22 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm22 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm22 3 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		io-channels =	<&adc 0>,	/* AIN0 */
+				<&adc 1>,	/* AIN1 */
+				<&adc 2>,	/* AIN2 */
+				<&adc 3>;	/* AIN3 */
+
+		serials = <&uart21>; /* 'Serial1' onwards, D6 (TX), D7 (RX) */
+		i2cs = <&i2c22>; /* 'Wire', D4 (SDA), D5 (SCL) */
+		spis = <&spi00>; /* 'SPI', D8 (SCK), D9 (MISO), D10 (MOSI) */
+	};
+};
+
+&pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	pwm20_default: pwm20_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>,	/* D0 */
+				<NRF_PSEL(PWM_OUT1, 1, 5)>,	/* D1 */
+				<NRF_PSEL(PWM_OUT2, 1, 6)>,	/* D2 */
+				<NRF_PSEL(PWM_OUT3, 1, 7)>;	/* D3 */
+		};
+	};
+
+	pwm20_sleep: pwm20_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>,
+				<NRF_PSEL(PWM_OUT1, 1, 5)>,
+				<NRF_PSEL(PWM_OUT2, 1, 6)>,
+				<NRF_PSEL(PWM_OUT3, 1, 7)>;
+				low-power-enable;
+		};
+	};
+
+	pwm21_default: pwm21_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 10)>,	/* D4 */
+				<NRF_PSEL(PWM_OUT1, 1, 11)>,	/* D5 */
+				<NRF_PSEL(PWM_OUT2, 2, 8)>,	/* D6 */
+				<NRF_PSEL(PWM_OUT3, 2, 7)>;	/* D7 */
+		};
+	};
+
+	pwm21_sleep: pwm21_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 10)>,
+				<NRF_PSEL(PWM_OUT1, 1, 11)>,
+				<NRF_PSEL(PWM_OUT2, 2, 8)>,
+				<NRF_PSEL(PWM_OUT3, 2, 7)>;
+				low-power-enable;
+		};
+	};
+
+	pwm22_default: pwm22_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 2, 1)>,	/* D8 */
+				<NRF_PSEL(PWM_OUT1, 2, 4)>,	/* D9 */
+				<NRF_PSEL(PWM_OUT2, 2, 2)>,	/* D10 */
+				<NRF_PSEL(PWM_OUT3, 0, 3)>;	/* D11 */
+		};
+	};
+
+	pwm22_sleep: pwm22_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 2, 1)>,
+				<NRF_PSEL(PWM_OUT1, 2, 4)>,
+				<NRF_PSEL(PWM_OUT2, 2, 2)>,
+				<NRF_PSEL(PWM_OUT3, 0, 3)>;
+				low-power-enable;
+		};
+	};
+};
+
+&pwm20 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm20_sleep>;
+	pinctrl-2 = <&pwm20_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm21 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm21_sleep>;
+	pinctrl-2 = <&pwm21_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm22 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm22_sleep>;
+	pinctrl-2 = <&pwm22_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&i2c22 {
+	zephyr,deferred-init;
+};
+
+&spi00 {
+	zephyr,deferred-init;
+};
