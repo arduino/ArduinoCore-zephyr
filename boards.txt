@@ -454,9 +454,12 @@ portentac33.upload.wait_for_upload_port=false
 portentac33.upload.native_usb=true
 portentac33.upload.dfuse=
 
+portentac33.sfu.file=loader/blobs/c33_sfu.bin
+portentac33.sfu.size=0x20000
+
 portentac33.bootloader.tool=dfu-util
 portentac33.bootloader.tool.default=dfu-util
-portentac33.bootloader.file=zephyr-{build.variant}.bin
+portentac33.bootloader.file=zephyr-{build.variant}-sfu.bin
 portentac33.bootloader.interface=0
 portentac33.bootloader.address=0x10000
 portentac33.bootloader.pid=0x0368
