@@ -149,9 +149,7 @@ int digitalPinToPinIndex(pin_size_t pinNumber);
 void analogWriteResolution(int bits);
 #endif
 
-#if defined(__arm__)
-#define F_CPU (SystemCoreClock)
-#endif
+#define F_CPU CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC
 
 #include <variant.h>
 
