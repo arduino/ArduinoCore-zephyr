@@ -108,7 +108,7 @@ if [ x"$target" == x"arduino_mezza" ]; then
 	cmake --build ${IMAGE_DIR} --target llext-edk
 else
 	IMAGE_DIR=${BUILD_DIR}
-	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk ${args}
+	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
 fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
