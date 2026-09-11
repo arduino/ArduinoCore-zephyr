@@ -249,7 +249,7 @@ FORCE_EXPORT_SYM(bt_ctlr_set_public_addr);
 FORCE_EXPORT_SYM(__stack_chk_guard);
 FORCE_EXPORT_SYM(__stack_chk_fail);
 // Required by  __stack_chk_init()
-EXPORT_LIBC_SYM(getentropy);
+FORCE_EXPORT_SYM(getentropy);
 #endif
 
 #if defined(CONFIG_VIDEO)
