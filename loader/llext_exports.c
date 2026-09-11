@@ -248,8 +248,14 @@ FORCE_EXPORT_SYM(bt_ctlr_set_public_addr);
 #if defined(CONFIG_STACK_CANARIES)
 FORCE_EXPORT_SYM(__stack_chk_guard);
 FORCE_EXPORT_SYM(__stack_chk_fail);
-// Required by  __stack_chk_init()
-EXPORT_LIBC_SYM(getentropy);
+/*
+ * Required by __stack_chk_init(). Exported under __real_ so the
+ * llext_wrappers.c trampoline can import it; declared locally instead of
+ * including <zephyr/posix/unistd.h> to avoid clashing with other
+ * prototypes already visible in this file.
+ */
+extern int getentropy(void *buffer, size_t length);
+EXPORT_SYMBOL_NAMED(getentropy, __real_getentropy);
 #endif
 
 #if defined(CONFIG_VIDEO)
