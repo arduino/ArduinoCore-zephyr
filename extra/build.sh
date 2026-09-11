@@ -101,12 +101,20 @@ echo "Build target: $target ${args[*]}"
 
 # Get the variant name (NORMALIZED_BOARD_TARGET in Zephyr)
 variant=$(extra/get_variant_name.sh $target)
+zephyr_variant=$(extra/get_variant_name.sh $target)
 
-if [ -z "${variant}" ] ; then
-	echo "Failed to get variant name from '$target'"
-	exit 1
+if [ -n "$chosen_board" ]; then
+	variant=$(jq -cr '.variant' <<< "$chosen_board")
 else
-	echo "Build variant: $variant"
+	variant=$zephyr_variant
+fi
+
+if [ -z "${zephyr_variant}" ] || [ -z "${variant}" ] ; then
+ 	echo "Failed to get variant name from '$target'"
+ 	exit 1
+else
+	echo "Zephyr variant: $zephyr_variant"
+ 	echo "Build variant: $variant"
 fi
 
 # Warn when several boards.txt entries share this variant directory (e.g. a
