@@ -230,14 +230,12 @@ jobs:
       - name: Build loader
         shell: bash
         run: |
-          # create the report directory
           mkdir -p reports
           echo "::group::ccache stats before build"
           ccache --show-stats
           echo "::endgroup::"
-          # run the build, capturing stdout and stderr
+
           if ! ./extra/build.sh ${{ matrix.board }} 1> >(tee $REPORT.stdout) 2> >(tee $REPORT.stderr) ; then
-            # build failed, capture errors in summary and stop job without artifacts
             echo "### :x: ${{ matrix.board }} (\`${{ matrix.variant }}\`) build errors" > $GITHUB_STEP_SUMMARY
             echo >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -246,7 +244,6 @@ jobs:
             exit 1
           fi
 
-          # look for warnings (errors are a happy path!)
           grep -i "warning:" $REPORT.stdout > $REPORT.warnings || true
 
           # compute the memory usage from the linker map file
