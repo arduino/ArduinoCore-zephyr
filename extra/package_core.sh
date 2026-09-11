@@ -45,6 +45,9 @@ else
 	EXCLUDED_BOARDS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"$ARTIFACT\")) | .[].board")
 fi
 
+echo "Variants:"
+echo "$INCLUDED_VARIANTS"
+
 log_msg group "Packaging ${ARTIFACT_NAME:-all variants} ($(basename $OUTPUT_FILE))"
 
 # create a temporary boards.txt file with the correct list of boards
