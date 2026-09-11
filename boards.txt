@@ -843,7 +843,7 @@ nano_chandler_monica.build.artifact=zephyr_main
 # Shared with the bare 'nano_chandler' board: the two differ only by shield.
 # Whichever board is built last owns the shared artifacts under this directory
 # (llext-edk/, syms-*.ld, tls-syms.S) and firmwares/zephyr-<variant>.*.
-nano_chandler_monica.build.variant=arduino_nano_chandler_pic32ck1025gc01144
+nano_chandler_monica.build.variant=arduino_nano_chandler_monica_pic32ck1025gc01144
 nano_chandler_monica.build.extra_flags=
 nano_chandler_monica.build.board=NANO_CHANDLER_MONICA
 
@@ -861,7 +861,8 @@ nano_chandler_monica.pid.0=0x008e
 nano_chandler_monica.upload_port.0.vid=0x2341
 nano_chandler_monica.upload_port.0.pid=0x008e
 nano_chandler_monica.upload.target=pic32ck1025sg01144
-nano_chandler_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+#nano_chandler_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+nano_chandler_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{runtime.platform.path}/variants/arduino_nano_chandler_pic32ck1025gc01144/pyocd_user.py"
 
 # Same upload path as the bare module - see the comment on nano_chandler above.
 # The two boards share the variant, the partition table and one BFM image, so
