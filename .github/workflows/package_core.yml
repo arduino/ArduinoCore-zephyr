@@ -201,14 +201,12 @@ jobs:
       - name: Build loader
         shell: bash
         run: |
-          # create the report directory
           mkdir -p reports
           echo "::group::ccache stats before build"
           ccache --show-stats
           echo "::endgroup::"
-          # run the build, capturing stdout and stderr
+
           if ! ./extra/build.sh ${{ matrix.board }} 1> >(tee $REPORT.stdout) 2> >(tee $REPORT.stderr) ; then
-            # build failed, capture errors in summary and stop job without artifacts
             echo "### :x: ${{ matrix.board }} (\`${{ matrix.variant }}\`) build errors" > $GITHUB_STEP_SUMMARY
             echo >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -217,24 +215,71 @@ jobs:
             exit 1
           fi
 
-          # look for warnings (errors are a happy path!)
           grep -i "warning:" $REPORT.stdout > $REPORT.warnings || true
 
-          # extract the memory usage table (from the header to the first non-% line)
-          # override the size of the Flash with the size of the loader partition
-          # and add the size of the sketch partition (not reported by Zephyr)
-          LOADER_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_loader_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
-          SKETCH_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_sketch_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
-          cat $REPORT.stdout | sed -n '/^Memory region/,/^[^%]*$/p' | head -n -1 \
-                             | awk 'BEGIN {split("B KB MB GB", u); for(i in u) m[u[i]]=1024^(i-1)} /:/ {print "[\"" $1 "\"," $2*m[$3] "," $4*m[$5] "]"}' \
-                             | sort \
-                             | jq -s "map((select(.[0] == \"FLASH:\") | .[2]) |= ${LOADER_SIZE}) + [ [ \"SKETCH:\", 0, ${SKETCH_SIZE} ] ]" > $REPORT.meminfo
+          LOADER_SIZE=$(( $(grep '_loader_max_size' variants/${{ matrix.variant }}/syms-static.ld | cut -d '=' -f 2 | tr -d ') ;') ))
+          SKETCH_SIZE=$(( $(grep '_sketch_max_size' variants/${{ matrix.variant }}/syms-static.ld | cut -d '=' -f 2 | tr -d ') ;') ))
 
-          # ccache stats update
-          echo "::group::ccache stats after build"
-          ccache --evict-older-than 30d
-          ccache --show-stats
-          echo "::endgroup::"
+          python3 - "$REPORT.stdout" "$REPORT.meminfo" "$LOADER_SIZE" "$SKETCH_SIZE" <<'PY'
+          import json
+          import re
+          import sys
+
+          stdout_path, meminfo_path, loader_size, sketch_size = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
+
+          unit_scale = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3}
+
+          mem_lines = []
+          in_section = False
+
+          with open(stdout_path, "r", errors="replace") as f:
+              for raw in f:
+                  line = raw.rstrip("\n")
+
+                  if line.startswith("Memory region"):
+                      in_section = True
+                      continue
+
+                  if in_section:
+                      # Zephyr table ends at the first non-percent line after the section
+                      if not re.search(r"\d+(\.\d+)?%", line):
+                          break
+                      mem_lines.append(line)
+
+          meminfo = []
+
+          for line in mem_lines:
+              # Accept lines like:
+              # FLASH:   1234 B   56 KB   2.1%
+              m = re.match(
+                  r'^\s*(?P<name>[^:]+:)\s+'
+                  r'(?P<used>\d+(?:\.\d+)?)\s+(?P<used_unit>B|KB|MB|GB)\s+'
+                  r'(?P<total>\d+(?:\.\d+)?)\s+(?P<total_unit>B|KB|MB|GB)\s+'
+                  r'(?P<pct>\d+(?:\.\d+)?)%\s*$',
+                  line
+              )
+              if not m:
+                  continue
+
+              used = float(m.group("used")) * unit_scale[m.group("used_unit")]
+              total = float(m.group("total")) * unit_scale[m.group("total_unit")]
+
+              # Skip invalid or useless entries instead of serializing bad data
+              if total <= 0:
+                  continue
+
+              meminfo.append([m.group("name"), int(used), int(total)])
+
+          # Preserve the existing override behavior
+          for row in meminfo:
+              if row[0] == "FLASH:":
+                  row[2] = loader_size
+
+          meminfo.append(["SKETCH:", 0, sketch_size])
+
+          with open(meminfo_path, "w") as f:
+              json.dump(meminfo, f)
+          PY
 
       - name: Package board artifacts
         if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
