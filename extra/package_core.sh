@@ -34,14 +34,14 @@ log_msg() {
 # and boards for exclude because we want to remove matching lines in boards.txt
 BOARD_DETAILS=$(extra/get_board_details.sh)
 if [ $ARTIFACT == "zephyr" ] ; then
-	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr ".[].variant")
+	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr "[.[].variant] | unique[]")
 	EXCLUDED_BOARDS=""
 elif [ ! -f extra/artifacts/${ARTIFACT}.json ]; then
 	echo "Unknown artifact '$ARTIFACT'."
 	exit 3
 else
 	ARTIFACT_NAME="$(grep '"name"' extra/artifacts/${ARTIFACT}.json | head -n 1 | cut -d '"' -f 4) (${VERSION})"
-	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact == \"$ARTIFACT\")) | .[].variant")
+	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact == \"$ARTIFACT\") | .variant) | unique[]")
 	EXCLUDED_BOARDS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"$ARTIFACT\")) | .[].board")
 fi
 
