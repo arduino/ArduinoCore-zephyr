@@ -49,4 +49,4 @@ manifest:
     - name: cannectivity
       path: modules/lib/cannectivity
       url: https://github.com/CANnectivity/cannectivity.git
-      revision: main
+      revision: a048ce0fc32f25d31aedbb5b588c7d20623596dd
