@@ -232,7 +232,10 @@ loader.args.with_sketch={empty}
 loader.args.without_sketch={empty}
 sketch.args.with_loader={empty}
 sketch.args.without_loader={empty}
-flash-loader-condition=not eq "v{upload.port.properties.configuration}" "v{version}"
+# Version alone can't tell sibling boards apart (e.g. nano_chandler vs.
+# nano_chandler_monica): they can share one core version yet need different
+# loaders, so the connected device's steady-state PID is compared too.
+flash-loader-condition=not eq "v{upload.port.properties.configuration}#{upload.port.properties.pid}" "v{version}#{upload_port.0.pid}"
 flash-loader-and-sketch.1=if {flash-loader-condition} {loader.cmd}{loader.args.with_sketch}
 flash-loader-and-sketch.2=if {flash-loader-condition} {sketch.cmd}{sketch.args.with_loader}
 flash-loader-and-sketch.3=if not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
@@ -337,6 +340,11 @@ tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
 # {version} comes from the per-board `<board>.version=` that extra/build.sh
 # writes into boards.local.txt, so a development tree compares against the
 # loader it just built rather than against the 9.9.9 placeholder.
+#
+# {upload.port.properties.pid} is compared alongside the version for the same
+# reason: sibling boards built from the same commit share {version} but not
+# {upload_port.0.pid}, so the PID mismatch is what triggers the reflash when
+# switching board selection without a core update.
 #
 # The bootloader re-checks this itself before touching anything (the staging
 # package carries a CRC of the loader region it assumes), so a stale delta is
