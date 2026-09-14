@@ -212,7 +212,7 @@ static int loader(const struct shell *sh) {
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 	void matrixBegin(void);
 	void matrixEnd(void);
-	void matrixPlay(uint8_t *buf, uint32_t len);
+	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
 	void matrixGrayscaleWrite(uint8_t *buf);
 #include "bootanimation.h"
