@@ -143,7 +143,7 @@
         zephyr,resolution = <16>;
     };
 
-    channel@12 {
+    channel@c {
         reg = <12>;
         zephyr,gain = "ADC_GAIN_1";
         zephyr,reference = "ADC_REF_INTERNAL";
