@@ -42,7 +42,7 @@ static const struct pwm_dt_spec CLOCK_PWM = PWM_DT_SPEC_GET(CLOCK_NODE);
 #define CAMERA_SENSOR_NODE   DT_NODE_REMOTE_DEVICE(CAMERA_ENDPOINT_NODE)
 
 #ifdef CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS
-extern "C" int video_import_buffer(uint8_t *mem, size_t sz, uint16_t *idx);
+struct video_buffer *video_import_buffer(uint8_t *mem, size_t sz);
 extern "C" int smh_region_video_init(void);
 
 struct mem_block {
@@ -72,33 +72,12 @@ struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
 		}
 	}
 
-	if (vbuf == NULL) {
-		return NULL;
-	}
-
 	block->data = shared_multi_heap_aligned_alloc(SMH_REG_ATTR_CACHEABLE, align, size);
 	if (block->data == NULL) {
 		return NULL;
 	}
 
-	uint16_t idx = 0;
-	int ret = video_import_buffer((uint8_t *)block->data, size, &idx);
-	if (ret != 0) {
-		shared_multi_heap_free(block->data);
-		block->data = NULL;
-		return NULL;
-	}
-
-	vbuf->buffer = (uint8_t *)block->data;
-	vbuf->index = idx;
-	vbuf->type = VIDEO_BUF_TYPE_OUTPUT;
-	vbuf->memory = VIDEO_MEMORY_EXTERNAL;
-	vbuf->size = size;
-	vbuf->bytesused = 0;
-	vbuf->timestamp = 0;
-	vbuf->line_offset = 0;
-
-	return vbuf;
+	return video_import_buffer((uint8_t *)block->data, size);
 }
 
 int user_video_buffer_release(struct video_buffer *vbuf) {
