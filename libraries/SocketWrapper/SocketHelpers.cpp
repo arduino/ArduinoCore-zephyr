@@ -142,10 +142,9 @@ void NetworkInterface::config(const IPAddress ip, const IPAddress dns_server,
 }
 
 void NetworkInterface::setLocalIP(const IPAddress ip) {
-	struct in_addr addr;
-	addr.s_addr = ip;
+	m_addr.s_addr = ip;
 
-	if (!net_if_ipv4_addr_add(netif, &addr, NET_ADDR_MANUAL, 0)) {
+	if (!net_if_ipv4_addr_add(netif, &m_addr, NET_ADDR_MANUAL, 0)) {
 		LOG_ERR("Failed to set local IP address");
 		return;
 	}
@@ -157,9 +156,7 @@ void NetworkInterface::setSubnetMask(const IPAddress subnet) {
 	netmask_addr.s_addr = subnet;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-	// TODO: store the address that was manually set and replace this call
-	// with net_if_ipv4_set_netmask_by_addr
-	net_if_ipv4_set_netmask(netif, &netmask_addr);
+	net_if_ipv4_set_netmask_by_addr(netif, &m_addr, &netmask_addr);
 #pragma GCC diagnostic pop
 	LOG_INF("Subnet mask set: %s", subnet.toString().c_str());
 	return;
