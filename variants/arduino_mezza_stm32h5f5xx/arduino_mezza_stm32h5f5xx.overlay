@@ -34,6 +34,42 @@
 
 */
 
+&fdcan1 {
+	zephyr,deferred-init;
+};
+
+&fdcan2 {
+	zephyr,deferred-init;
+};
+
+&uart7 {
+	zephyr,deferred-init;
+};
+
+&i2c1 {
+	zephyr,deferred-init;
+};
+
+&i2c2 {
+	zephyr,deferred-init;
+};
+
+&adc2 {
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&adc2_inp2_pf13 &adc2_inp6_pf14>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm15 {
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&tim15_ch1_pi14>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
 / {
 	zephyr,user {
 		digital-pin-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>,   /* D0 user button */
