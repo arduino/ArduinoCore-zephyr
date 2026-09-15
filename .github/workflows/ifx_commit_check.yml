@@ -1,0 +1,37 @@
+name: 'Infineon Check Commit Message'
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+    branches:
+      - 'ifx-main'
+      - 'edge-main'
+      - 'control-main'
+
+jobs:
+  check-commit-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check commit messages format'
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^[^!]+: [A-Za-z]+.+ .+$'
+          flags: 'gm'
+          error: 'Commit subject line / PR title must match the following pattern: <scope>: <description>'
+          excludeTitle: 'false'
+          excludeDescription: 'true'
+          checkAllCommitMessages: 'true'
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Check commit messages length'
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^[^#].{10,80}$'
+          error: 'Commit subject line maximum line length of 80 characters is exceeded.'
+          excludeTitle: 'true'
+          excludeDescription: 'true'
+          checkAllCommitMessages: 'true'
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
