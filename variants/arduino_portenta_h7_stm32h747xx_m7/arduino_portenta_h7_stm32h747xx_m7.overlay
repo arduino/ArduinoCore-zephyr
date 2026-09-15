@@ -16,16 +16,28 @@
 &uart4 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&uart4_tx_pa0 &uart4_rx_pi9>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &usart6 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&usart6_tx_pg14 &usart6_rx_pg9>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &uart8 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&uart8_tx_pj8 &uart8_rx_pj9>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &rtc {
@@ -38,6 +50,10 @@
 &fdcan1 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&fdcan1_rx_pb8 &fdcan1_tx_ph13>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clocks = <&rcc STM32_CLOCK(APB1_2, 8)>,
 		 <&rcc STM32_SRC_HSE FDCAN_SEL(0)>;
 };
@@ -45,6 +61,10 @@
 &i2c3 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c3_scl_ph7 &i2c3_sda_ph8>;
+	pinctrl-names = "default", "sleep", "arduino";
 
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
@@ -85,14 +105,20 @@
 &i2c4 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c4_scl_ph11 &i2c4_sda_ph12>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &spi2 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&spi2_sck_pi1
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&spi2_sck_pi1
 		     &spi2_miso_pc2 &spi2_mosi_pc3>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &timers1 {
@@ -180,10 +206,12 @@
 	status = "okay";
 	zephyr,deferred-init;
 	/* ext-sdram = <&sdram1>; */
-	pinctrl-0 = <&dcmi_hsync_pa4 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&dcmi_hsync_pa4 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
 		     &dcmi_d0_ph9 &dcmi_d1_ph10 &dcmi_d2_ph11 &dcmi_d3_ph12
 		     &dcmi_d4_ph14 &dcmi_d5_pi4 &dcmi_d6_pi6 &dcmi_d7_pi7>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 	dmas = <&dma1 1 75 (STM32_DMA_PERIPH_TO_MEMORY | STM32_DMA_PERIPH_NO_INC |
 			    STM32_DMA_MEM_INC | STM32_DMA_PERIPH_32BITS | STM32_DMA_MEM_32BITS |
 			    STM32_DMA_PRIORITY_HIGH) STM32_DMA_FIFO_FULL>; //FULL for 7670, default FIFO_1_4

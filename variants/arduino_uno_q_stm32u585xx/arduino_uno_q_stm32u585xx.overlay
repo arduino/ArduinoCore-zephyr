@@ -7,9 +7,11 @@
 &i2c4 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c4_scl_pd12 &i2c4_sda_pd13>;
-	pinctrl-1 = <&i2c4_scl_pf14 &i2c4_sda_pf15>;
-	pinctrl-names = "default", "sleep"; /* TODO: sleep is jmisc mux */
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c4_scl_pd12 &i2c4_sda_pd13>;
+	pinctrl-3 = <&i2c4_scl_pf14 &i2c4_sda_pf15>; /* alternate: JMISC connector */
+	pinctrl-names = "default", "sleep", "arduino", "arduino_alt";
 	clock-frequency = <I2C_BITRATE_FAST>;
 
 /*
@@ -32,8 +34,10 @@
 &i2c3 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c3_scl_pc0 &i2c3_sda_pc1>;
-	pinctrl-names = "default"; 
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c3_scl_pc0 &i2c3_sda_pc1>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -220,6 +224,10 @@
 
 &spi3 {
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&spi3_sck_pg9 &spi3_miso_pg10 &spi3_mosi_pb5 &spi3_nss_pg12>;
+	pinctrl-names = "default", "sleep", "arduino";
 	device0: device@0 {
         compatible = "zephyr,spi-slave";
         reg = <0>;
@@ -235,18 +243,29 @@
 &fdcan1 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&fdcan1_rx_pa11 &fdcan1_tx_pa12>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&fdcan1_rx_pa11 &fdcan1_tx_pa12>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clocks = <&rcc STM32_CLOCK_BUS_APB1_2 0x00000200>,
 		 <&rcc STM32_SRC_PLL1_Q FDCAN1_SEL(1)>;
 };
 
 &spi2 {
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&spi2_sck_pb13 &spi2_miso_pb14 &spi2_mosi_pb15 &spi2_nss_pb9>;
+	pinctrl-3 = <&spi2_sck_pd1 &spi2_miso_pc2 &spi2_mosi_pc3 &spi2_nss_pb9>; /* alternate: ICSP connector */
+	pinctrl-names = "default", "sleep", "arduino", "arduino_alt";
 };
 
 &i2c2 {
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c2_scl_pb10 &i2c2_sda_pb11>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &usart1 {
@@ -261,14 +280,20 @@
 &usart3 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&usart3_tx_pb10 &usart3_rx_pb11>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&usart3_tx_pb10 &usart3_rx_pb11>;
+	pinctrl-names = "default", "sleep", "arduino";
 	current-speed = <115200>;
 };
 
 &lpuart1 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&lpuart1_tx_pg7 &lpuart1_rx_pg8 &lpuart1_rts_pg6 &lpuart1_cts_pg5>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 / {

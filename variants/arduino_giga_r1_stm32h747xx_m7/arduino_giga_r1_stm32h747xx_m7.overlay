@@ -21,24 +21,30 @@
 &usart2 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&usart2_tx_pd5 &usart2_rx_pd6>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&usart2_tx_pd5 &usart2_rx_pd6>;
+	pinctrl-names = "default", "sleep", "arduino";
 	current-speed = <115200>;
 };
 
 &uart4 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&uart4_tx_ph13 &uart4_rx_pi9>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&uart4_tx_ph13 &uart4_rx_pi9>;
+	pinctrl-names = "default", "sleep", "arduino";
 	current-speed = <115200>;
 };
 
 &usart6 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&usart6_tx_pg14 &usart6_rx_pc7>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&usart6_tx_pg14 &usart6_rx_pc7>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &rtc {
@@ -51,6 +57,10 @@
 &i2c4 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c4_scl_pb6 &i2c4_sda_ph12>;
+	pinctrl-names = "default", "sleep", "arduino";
 	gc2145: gc2145@3c {
 		compatible = "galaxycore,gc2145";
 		zephyr,deferred-init;
@@ -74,16 +84,20 @@
 &i2c1 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
 &i2c2 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c2_scl_ph4 &i2c2_sda_pb11>;
-	pinctrl-names = "default";
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&i2c2_scl_ph4 &i2c2_sda_pb11>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -194,6 +208,10 @@
 &fdcan2 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&fdcan2_tx_pb13 &fdcan2_rx_pb5>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clocks = <&rcc STM32_CLOCK(APB1_2, 8)>,
 		 <&rcc STM32_SRC_HSE FDCAN_SEL(0)>;
 };
@@ -202,10 +220,12 @@
 	status = "okay";
 	zephyr,deferred-init;
 	/* ext-sdram = <&sdram1>; */
-	pinctrl-0 = <&dcmi_hsync_ph8 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&dcmi_hsync_ph8 &dcmi_pixclk_pa6 &dcmi_vsync_pi5
 				&dcmi_d0_ph9 &dcmi_d1_ph10 &dcmi_d2_ph11 &dcmi_d3_pg11
 				&dcmi_d4_ph14 &dcmi_d5_pi4 &dcmi_d6_pi6 &dcmi_d7_pi7>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 	dmas = <&dma1 1 75 (STM32_DMA_PERIPH_TO_MEMORY | STM32_DMA_PERIPH_NO_INC |
 			STM32_DMA_MEM_INC | STM32_DMA_PERIPH_32BITS | STM32_DMA_MEM_32BITS |
 			STM32_DMA_PRIORITY_HIGH) STM32_DMA_FIFO_1_4>;
@@ -224,17 +244,21 @@
 &spi1 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&spi1_sck_pb3
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&spi1_sck_pb3
 		     &spi1_miso_pg9 &spi1_mosi_pd7>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &spi5 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&spi5_sck_ph6
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&spi5_sck_ph6
 		     &spi5_miso_pj11 &spi5_mosi_pj10>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &adc1 {

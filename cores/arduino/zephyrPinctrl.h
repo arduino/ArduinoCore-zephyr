@@ -6,13 +6,29 @@
 
 #pragma once
 
-#include <zephyr/kernel.h>
+#include <stddef.h>
+#include <stdint.h>
+
+struct device;
+
+namespace arduino {
+
+/* Zephyr state IDs, not pinctrl-N property indices. Additional states
+ * can be selected with static_cast<PinctrlState>(state_id).
+ */
+enum class PinctrlState : uint8_t {
+	Standard = 2,
+	Alt1 = 3,
+};
+
+} // namespace arduino
 
 namespace zephyr {
 namespace arduino {
 
 int init_dev_apply_channel_pinctrl(const struct device *dev, size_t state_pin_idx);
-int init_dev_apply_pinctrl(const struct device *dev);
+int init_dev_apply_pinctrl(const struct device *dev,
+						   ::arduino::PinctrlState state = ::arduino::PinctrlState::Standard);
 
 /*
  * Resolve pin index in a device ARDUINO pinctrl state from a DT spec array.
