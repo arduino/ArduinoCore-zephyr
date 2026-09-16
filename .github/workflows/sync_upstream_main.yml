@@ -1,0 +1,117 @@
+name: Sync main with upstream
+
+# Keeps the fork's main branch synchronized with arduino/ArduinoCore-zephyr's
+# main branch. Infineon-specific commits belong on the downstream branches.
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # nightly, 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: ${{ github.repository != 'arduino/ArduinoCore-zephyr' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+          persist-credentials: false
+
+      - name: Sync main from upstream
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+          upstream_sync_branch: main
+          upstream_sync_repo: arduino/ArduinoCore-zephyr
+          upstream_repo_access_token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+
+      - name: Main sync result
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "New commits were found to sync into main."
+
+      - name: Main already up to date
+        if: steps.sync.outputs.has_new_commits == 'false'
+        run: echo "main was already up to date."
+
+      - name: Show main sync status
+        run: echo "has_new_commits=${{ steps.sync.outputs.has_new_commits }}"
+
+  # Rebase the common Infineon branch onto the synchronized fork mirror.
+  rebase-ifx-main:
+    needs: sync
+    if: ${{ github.repository != 'arduino/ArduinoCore-zephyr' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ifx-main
+          token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+
+      - name: Rebase ifx-main onto main
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: ifx-main
+          target_repo_token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+          upstream_sync_branch: main
+          upstream_sync_repo: ${{ github.repository }}
+          git_config_pull_rebase: true
+          target_branch_push_args: '--force-with-lease'
+
+      - name: ifx-main sync result
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "New commits were found to sync into ifx-main."
+
+      - name: ifx-main already up to date
+        if: steps.sync.outputs.has_new_commits == 'false'
+        run: echo "ifx-main was already up to date."
+
+      - name: Show ifx-main sync status
+        run: echo "has_new_commits=${{ steps.sync.outputs.has_new_commits }}"
+
+  # Rebase each MCU-family branch onto the common Infineon branch.
+  rebase-mcu-branches:
+    needs: rebase-ifx-main
+    if: ${{ github.repository != 'arduino/ArduinoCore-zephyr' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - edge-main
+          - control-main
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+          token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+
+      - name: Rebase family branch onto ifx-main
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_sync_branch: ${{ matrix.branch }}
+          target_repo_token: ${{ secrets.GH_ACT_SYNCH_UPSTREAM }}
+          upstream_sync_branch: ifx-main
+          upstream_sync_repo: ${{ github.repository }}
+          git_config_pull_rebase: true
+          target_branch_push_args: '--force-with-lease'
+
+      - name: Family branch sync result
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "New commits were found to sync into ${{ matrix.branch }}."
+
+      - name: Family branch already up to date
+        if: steps.sync.outputs.has_new_commits == 'false'
+        run: echo "${{ matrix.branch }} was already up to date."
+
+      - name: Show family branch sync status
+        run: echo "${{ matrix.branch }} has_new_commits=${{ steps.sync.outputs.has_new_commits }}"
