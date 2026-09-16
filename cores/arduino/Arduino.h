@@ -131,8 +131,16 @@ enum dacPins {
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void interrupts(void);
 void noInterrupts(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 int digitalPinToInterrupt(pin_size_t pin);
 
