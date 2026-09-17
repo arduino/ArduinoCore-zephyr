@@ -7,6 +7,7 @@
 #include <cmsis_core.h>
 #include <zephyr/init.h>
 #include <zephyr/drivers/led.h>
+#include <zephyr/sys/printk.h>
 
 #ifndef CONFIG_CPP
 void __cxa_pure_virtual() {
@@ -202,6 +203,44 @@ int smh_init(void) {
 
 SYS_INIT(smh_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #endif
+
+#if defined(CONFIG_SOC_FLASH_STM32) && defined(CONFIG_SOC_SERIES_STM32H7X)
+
+int internal_flash_clean_regs(void) {
+	/*
+	 * During boot some stm32h7 experienced issues of stale errors on flash register.
+	 * The error is PGSERR, indicating an incorrect write/erase operation happened before boot,
+	 * it is reported when accessing the flash the first time, in our case when reading, which
+	 * is not the root cause. We clean the register, before starting the loader.
+	 */
+
+	FLASH_TypeDef *regs = FLASH;
+	uint32_t const error_bank1 = (FLASH_FLAG_ALL_ERRORS_BANK1 & ~FLASH_FLAG_SNECCERR_BANK1);
+	uint32_t sr = 0;
+
+	sr = regs->SR1;
+	if (sr & error_bank1) {
+		printk("Flash error: Status Bank%d: 0x%08x\n", 1, sr);
+	}
+
+	regs->CCR1 = FLASH_FLAG_ALL_BANK1;
+#ifdef DUAL_BANK
+	uint32_t const error_bank2 = (FLASH_FLAG_ALL_ERRORS_BANK2 & ~FLASH_FLAG_SNECCERR_BANK2);
+	sr = regs->SR2;
+
+	if (sr & error_bank2) {
+		printk("Flash error: Status Bank%d: 0x%08x\n", 2, sr);
+	}
+
+	regs->CCR2 = FLASH_FLAG_ALL_BANK2;
+#endif
+
+	return 0;
+}
+
+SYS_INIT(internal_flash_clean_regs, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+
+#endif // defined(CONFIG_SOC_FLASH_STM32) && defined(CONFIG_SOC_SERIES_STM32H7X)
 
 #if defined(CONFIG_BOARD_ARDUINO_PORTENTA_C33) && defined(CONFIG_LLEXT)
 #include <zephyr/kernel.h>
