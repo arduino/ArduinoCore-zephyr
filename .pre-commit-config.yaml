@@ -1,0 +1,17 @@
+repos:
+  - repo: local
+    hooks:
+      - id: arduino-zephyr-commit-message
+        name: Check commit message format
+        entry: >-
+          python3 -c "import re, sys; lines = open(sys.argv[1], encoding='utf-8').read().splitlines(); msg = lines[0] if lines else ''; sys.exit(0 if re.fullmatch(r'^[^!]+: [A-Za-z]+.+ .+$', msg) and re.fullmatch(r'^[^#].{10,80}$', msg) else 1)"
+        language: system
+        stages: [commit-msg]
+        pass_filenames: true
+      - id: arduino-zephyr-clang-format
+        name: Check clang-format
+        entry: >-
+          bash -c 'formatter=$(command -v clang-format-19 || command -v clang-format) || { echo "clang-format or clang-format-19 is required" >&2; exit 1; }; "$formatter" --dry-run --Werror "$@"' --
+        language: system
+        files: '^(cores/arduino|loader|libraries)/.*\.(c|cpp|h|hpp)$'
+        exclude: '^(cores/arduino/api/|loader/llext_exports\.c$|loader/blobs/4343WA1_.*\.c$|loader/blobs/wifi_nvram_image_data\.h$|libraries/examples/|libraries/extras/|libraries/ea_malloc/|libraries/Storage/examples/FlashFormat/4343WA1_bin\.h$)'
