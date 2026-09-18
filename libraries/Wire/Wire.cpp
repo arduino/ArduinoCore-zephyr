@@ -8,6 +8,9 @@
 #include <stddef.h>
 #include <zephyr/sys/util_macro.h>
 
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(sketch, LOG_LEVEL_ERR);
+
 // Helper function to get ZephyrI2C instance from config pointer.
 static arduino::ZephyrI2C *getInstance(struct i2c_target_config *config) {
 #pragma GCC diagnostic push
@@ -133,6 +136,21 @@ size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len_in, bool stop
 
 	ARG_UNUSED(stopBit);
 
+	if (len_in > ring_buf_capacity_get(&rxRingBuffer.rb)) {
+		// There is not enough space in the ring buffer
+		LOG_ERR("wire buffer capacity (%u bytes) is too small for the requested %zu bytes",
+				ring_buf_capacity_get(&rxRingBuffer.rb), len_in);
+		return 0;
+	}
+
+	if (!ring_buf_is_empty(&rxRingBuffer.rb)) {
+		LOG_WRN("wire buffer is not empty before reset");
+	}
+
+	// requestFrom() replaces the RX buffer following legacy cores behavior
+	ring_buf_reset(&rxRingBuffer.rb);
+
+	// This claims MIN(len_in, capacity).
 	len = ring_buf_put_claim(&rxRingBuffer.rb, &buf, len_in);
 	if (len && buf) {
 		ret = i2c_read(i2c_dev, buf, len, address);
