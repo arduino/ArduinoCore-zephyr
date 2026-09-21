@@ -111,7 +111,7 @@
 		pwm-pin-gpios = <&gpiof 4 0>;
 		
 		cdc-acm-serial = <&board_cdc_acm_uart>;
-		serials = <&uart7>;
+		serials = <&uart7>, <&usart2>;
 
 		i2cs = <&i2c2>, <&i2c1>, <&i2c4>;
 		spis = <&spi4>, <&spi1>;
