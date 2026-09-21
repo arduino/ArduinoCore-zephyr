@@ -78,12 +78,12 @@ int EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 }
 
 EthernetLinkStatus EthernetClass::linkStatus() {
-	if (hardwareStatus() == EthernetOk) {
-		if (net_if_is_up(netif)) {
-			return LinkON;
-		} else {
-			return LinkOFF;
-		}
+	if (hardwareStatus() != EthernetOk) {
+		return LinkOFF;
+	}
+
+	if (net_if_is_carrier_ok(netif)) {
+		return LinkON;
 	}
 
 	return LinkOFF;
@@ -115,10 +115,6 @@ EthernetHardwareStatus EthernetClass::hardwareStatus() {
 		if (ret < 0) {
 			return EthernetNoHardware;
 		}
-	}
-
-	if (!net_if_is_up(netif)) {
-		net_if_up(netif);
 	}
 
 	return EthernetOk;
