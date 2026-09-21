@@ -558,6 +558,12 @@ jobs:
       CORE_VER: ${{ needs.build-env.outputs.CORE_VER }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
+      # Repository variables aren't available to pull_request runs triggered from a
+      # fork, so failures caused by outside factors are instead silenced via PR
+      # labels (`ci-ignore:<pattern>`), which come from the PR itself and work the
+      # same regardless of where it was opened from. Only accounts with triage/write
+      # access can label a PR, so external contributors can't self-exempt.
+      PR_LABELS: ${{ github.event.pull_request && toJSON(github.event.pull_request.labels.*.name) || '[]' }}
     steps:
 
       - uses: actions/checkout@v6
