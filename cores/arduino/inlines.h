@@ -13,11 +13,11 @@
 
 #include <zephyr/kernel.h>
 
-inline __attribute__((always_inline)) void delay(unsigned long ms) {
+extern inline __attribute__((always_inline, gnu_inline)) void delay(unsigned long ms) {
 	k_sleep(K_MSEC(ms));
 }
 
-inline __attribute__((always_inline)) void delayMicroseconds(unsigned int us) {
+extern inline __attribute__((always_inline, gnu_inline)) void delayMicroseconds(unsigned int us) {
 	if (us == 0) {
 		return;
 	}
