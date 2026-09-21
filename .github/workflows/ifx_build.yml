@@ -1,0 +1,103 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Infineon-specific counterpart of build.yml: builds the same native Zephyr
+# samples upstream builds, plus each feature board's own native samples (as
+# declared by <board>.build.feature_board=true and
+# <board>.build.ci_native_samples in boards.txt).
+#
+# Kept as a separate file (instead of editing build.yml) so upstream's own
+# CI workflow stays untouched and rebases/syncs from upstream/main never
+# conflict here.
+
+name: Build native Zephyr samples (Infineon)
+
+on:
+  push:
+    branches:
+      - edge-main
+      - control-main
+  pull_request:
+    branches:
+      - edge-main
+      - control-main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build native Zephyr samples
+    runs-on: ubuntu-latest
+    container: zephyrprojectrtos/ci-base:latest
+    env:
+      CMAKE_PREFIX_PATH: /opt/toolchains
+      CCACHE_IGNOREOPTIONS: -specs=*
+      MODULE_PATH: ../modules/lib/ArduinoCore-zephyr
+
+      # action-setup-zephyr will initialize the repo in $GITHUB_WORKSPACE/..,
+      # so we need to put the module in $GITHUB_WORKSPACE's parent, but
+      # actions/checkout would not be able to checkout the module there
+      # directly, so we use "subfolder" and move it later.
+      #
+      # using action-setup-zephyr also requires a local west.yml and so the
+      # folder must be manually added to Zephyr as a module via
+      # EXTRA_ZEPHYR_MODULES.
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          path: subfolder
+
+      - name: Fix module path, list needed HALs
+        run: |
+          mkdir -p $(dirname $MODULE_PATH) && mv subfolder $MODULE_PATH
+          NEEDED_HALS=$(grep 'build.zephyr_hals=' $MODULE_PATH/boards.txt | cut -d '=' -f 2 | xargs -n 1 echo | sort -u)
+          HAL_FILTER="-hal_.*"
+          for hal in $NEEDED_HALS; do
+            HAL_FILTER="$HAL_FILTER,+$hal"
+          done
+          echo "HAL_FILTER=$HAL_FILTER" | tee -a $GITHUB_ENV
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          toolchains: arm-zephyr-eabi
+          manifest-file-name: ${{ env.MODULE_PATH }}/west.yml
+          west-project-filter: ${{ env.HAL_FILTER }}
+          enable-ccache: false
+
+      - name: Add manifest path as module
+        run: |
+          echo EXTRA_ZEPHYR_MODULES="$(pwd)/$MODULE_PATH" >> $GITHUB_ENV
+
+      - name: Fetch the Arduino API
+        run: |
+          west blobs --auto-accept fetch arduino-api
+
+      - name: Build fade
+        run: |
+          west build -p -b arduino_nano_33_ble//sense $MODULE_PATH/samples/fade
+
+      - name: Build i2cdemo
+        run: |
+          west build -p -b ek_ra8d1 $MODULE_PATH/samples/i2cdemo
+
+      - name: Build adc
+        run: |
+          west build -p -b arduino_nano_33_ble/nrf52840/sense $MODULE_PATH/samples/analog_input
+
+      - name: Build feature boards' native samples
+        run: |
+          (cd "$MODULE_PATH" && ./extra/get_board_details.sh) | \
+            jq -c '.[] | select(.feature_board == true and .ci_native_samples != "")' | \
+          while IFS= read -r board_json; do
+            target=$(jq -r '.target' <<< "$board_json")
+            samples=$(jq -r '.ci_native_samples | split(",")[]' <<< "$board_json")
+            while IFS= read -r sample; do
+              echo "Building $target native sample: $sample"
+              west build -p -b "$target" "$MODULE_PATH/samples/$sample"
+            done <<< "$samples"
+          done

@@ -1,0 +1,760 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Infineon-specific counterpart of package_core.yml: same build/package/test
+# pipeline, minus the Arduino-only publishing jobs (S3 upload, ci-builds
+# upload) that need secrets this fork doesn't have.
+#
+# Kept as a separate file (instead of editing package_core.yml) so upstream's
+# own CI workflow stays untouched and rebases/syncs from upstream/main never
+# conflict here.
+
+name: Package, test and upload core (Infineon)
+
+on:
+  push:
+    branches:
+      - edge-main
+      - control-main
+    tags-ignore:
+      - 'tools/**' # do not run on tags created for tool releases
+  pull_request:
+    branches:
+      - edge-main
+      - control-main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.actor }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+env:
+  # use the head SHA for PR hashes, instead of the merge commit
+  HEAD_REF: ${{ github.event.pull_request.head.sha || github.ref }}
+
+jobs:
+
+
+
+  # Prepare the Zephyr build environment once for all boards, to speed up the
+  # overall process and ensure all builds use the same environment and metadata.
+  # Several outputs are made available for later jobs to use.
+
+  build-env:
+    name: Prepare build environment
+    runs-on: ubuntu-latest
+    outputs:
+      # User-friendly SemVer-compatible version for the build. Matches the tag
+      # name if building a tagged commit, otherwise it is "slightly more" than
+      # the latest tag.
+      CORE_VER: ${{ steps.identify-core.outputs.CORE_VER }}
+      # Tag (if found) or hash identifying this core build, should be used for
+      # user-friendly strings and file names
+      CORE_TAG: ${{ env.CORE_TAG }}
+      # Target branch referred to by this workflow (HEAD_REF for branch pushes,
+      # or closest branch that contains the tag), used for ci-builds tracking
+      CORE_BRANCH: ${{ env.CORE_BRANCH }}
+      # Hash identifying this core build, should be used for exact version match
+      CORE_HASH: ${{ env.CORE_HASH }}
+      # JSON describing all boards to build, collected by get_board_details.sh
+      ALL_BOARD_DATA: ${{ env.ALL_BOARD_DATA }}
+      # Extended version of ALL_BOARD_DATA with link_mode alternatives added
+      ALL_BOARD_FQBNS: ${{ env.ALL_BOARD_FQBNS }}
+      # List of artifacts to produce, including the "zephyr" umbrella artifact
+      ARTIFACTS: ${{ env.ARTIFACTS }}
+      # List of architectures the artifacts will be built for
+      SUB_ARCHES: ${{ env.SUB_ARCHES }}
+      # URL of the latest ci-builds index for this branch, if any
+      CI_BUILDS_URL: ${{ env.CI_BUILDS_URL }}
+    steps:
+
+      - name: Install OS dependencies
+        working-directory: /opt
+        timeout-minutes: 5 # early error on Github network issues
+        run: |
+          sudo apt-get remove --purge man-db -y # skips the mandb triggers
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true # needed for get_core_version.sh
+
+      - name: Identify current version and board set
+        id: identify-core
+        run: |
+          # Set up basic environment for later steps
+          CORE_VER=$(extra/get_core_version.sh)
+          echo "CORE_HASH=$(git describe --always $HEAD_REF)" >> "$GITHUB_ENV"
+          echo "ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')" >> "$GITHUB_ENV"
+          echo "CORE_VER=${CORE_VER}" >> "$GITHUB_ENV"
+          echo "CORE_VER=${CORE_VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Map output packages
+        # needs the above env vars
+        run: |
+          echo "## Building \`$CORE_VER\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "CORE_TAG=$(git describe --tags --exact-match --exclude '*/*' 2>/dev/null || echo $CORE_HASH)" >> "$GITHUB_ENV"
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            BRANCH=$(git branch -r --contains HEAD --sort=-committerdate --format='%(refname:short)' | sed 's|origin/||' | grep -v HEAD | head -1)
+            [[ -n "$BRANCH" ]] || { echo "::error::No branch found containing tag ${{ github.ref_name }}"; exit 1; }
+            echo "CORE_BRANCH=${BRANCH}" >> "$GITHUB_ENV"
+          else
+            echo "CORE_BRANCH=${{ github.base_ref || github.ref_name }}" >> "$GITHUB_ENV"
+          fi
+          echo "ALL_BOARD_FQBNS=$(jq -c 'map((. + {link_mode: "static"}), (. + {link_mode: "dynamic"}))' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
+          echo "ARTIFACTS=$(jq -c '["zephyr"] + (map(.artifact) | unique)' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
+          echo "SUB_ARCHES=$(jq -c 'map(.subarch) | unique' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
+
+      - name: Cache west modules and blobs
+        uses: actions/cache@v5
+        with:
+          key: west-cache-${{ hashFiles('west.yml', 'boards.txt') }}
+          restore-keys: |
+            west-blobs-
+          path: ${{ runner.temp }}/west-cache
+
+      - name: Initialize Zephyr environment
+        timeout-minutes: 10 # early error on Github network issues
+        env:
+          WEST_CACHE: ${{ runner.temp }}/west-cache
+        run: |
+          # Install Zephyr as a core user would, but faster
+          yes | ./extra/bootstrap.sh -o=--filter=tree:0
+          # Archive the build environment for later jobs
+          (cd && tar cphf - .cmake work zephyr-sdk-* | zstd > build-env.tar.zstd)
+
+      - name: Get ci-builds package index link
+        run: |
+          # use the latest official Arduino ci-built core as a reference, falling back to main
+          CI_BUILDS_URL="https://arduino.github.io/core-ci-builds/package_arduino_zephyr_${CORE_BRANCH}_ci_index.json"
+          if ! wget -q --method=HEAD "$CI_BUILDS_URL" >& /dev/null ; then
+            CLOSEST_BRANCH=$(git branch -r | grep -vE "HEAD|/$(git branch --show-current)$" | while read -r b; do \
+                               echo "$(git rev-list --count $b..HEAD) $b" ; \
+                             done | sort -n | head -n 1 | awk '{print $2}' | cut -d / -f 2)
+            [ -z "$CLOSEST_BRANCH" ] && CLOSEST_BRANCH="main"
+            echo "::warning::No ci-builds index found for branch $CORE_BRANCH, using $CLOSEST_BRANCH"
+            CI_BUILDS_URL="https://arduino.github.io/core-ci-builds/package_arduino_zephyr_${CLOSEST_BRANCH}_ci_index.json"
+            if ! wget -q --method=HEAD "$CI_BUILDS_URL" >& /dev/null ; then
+              echo "::warning::No ci-builds index found for branch $CLOSEST_BRANCH, using main"
+              CI_BUILDS_URL="https://arduino.github.io/core-ci-builds/package_arduino_zephyr_main_ci_index.json"
+            fi
+          fi
+          echo "CI_BUILDS_URL=$CI_BUILDS_URL" >> "$GITHUB_ENV"
+
+      - name: Download test data
+        run: |
+          extra/ci_fetch_tests.sh
+
+      - name: Archive test data
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-data
+          path: test-data/
+          retention-days: 1
+
+      - name: Archive build environment
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-env
+          path: ~/build-env.tar.zstd
+          retention-days: 1
+          archive: false
+
+
+
+  # Extract the build environment and compile the loader project for each board
+  # in parallel. The build logs and artifacts are intermediate results archived
+  # for later jobs.
+
+  build-board:
+    # NOTE: this name is hardcoded in ci_collect_data.py
+    name: Build for ${{ matrix.board }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+    env:
+      # Reuse the version computed by build-env instead of recomputing it per board.
+      PINNED_CORE_VERSION: ${{ needs.build-env.outputs.CORE_VER }}
+      # ccache, don't look for the spec file anywhere
+      CCACHE_IGNOREOPTIONS: -specs=*
+      # build-specific name of the generated artifacts
+      ARTIFACT_TAG: ${{ needs.build-env.outputs.CORE_HASH }}-${{ matrix.board }}
+      # report file stem for this board
+      REPORT: reports/zephyr-${{ matrix.variant }}
+    strategy:
+      matrix:
+        include:
+          ${{ fromJSON( needs.build-env.outputs.ALL_BOARD_DATA ) }}
+      fail-fast: false
+    steps:
+
+      - uses: actions/download-artifact@v8
+        timeout-minutes: 10 # early error on Github network issues
+        with:
+          path: /home/runner
+          name: build-env.tar.zstd
+
+      - name: Restore build environment
+        id: restore-env
+        timeout-minutes: 5 # early error on Github network issues
+        run: |
+          sudo apt-get remove --purge man-db -y # skips the mandb triggers
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache
+          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zstd && rm build-env.tar.zstd)
+
+      - name: ccache
+        uses: actions/cache@v5
+        with:
+          key: ${{ github.job }}-${{ matrix.board }} # independent caches
+          path: ~/.cache/ccache
+
+      - name: Build loader
+        shell: bash
+        run: |
+          # create the report directory
+          mkdir -p reports
+          echo "::group::ccache stats before build"
+          ccache --show-stats
+          echo "::endgroup::"
+          # run the build, capturing stdout and stderr
+          if ! ./extra/build.sh ${{ matrix.board }} 1> >(tee $REPORT.stdout) 2> >(tee $REPORT.stderr) ; then
+            # build failed, capture errors in summary and stop job without artifacts
+            echo "### :x: ${{ matrix.board }} (\`${{ matrix.variant }}\`) build errors" > $GITHUB_STEP_SUMMARY
+            echo >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat $REPORT.stderr >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # look for warnings (errors are a happy path!)
+          grep -i "warning:" $REPORT.stdout > $REPORT.warnings || true
+
+          # extract the memory usage table (from the header to the first non-% line)
+          # override the size of the Flash with the size of the loader partition
+          # and add the size of the sketch partition (not reported by Zephyr)
+          LOADER_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_loader_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
+          SKETCH_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_sketch_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
+          cat $REPORT.stdout | sed -n '/^Memory region/,/^[^%]*$/p' | head -n -1 \
+                             | awk 'BEGIN {split("B KB MB GB", u); for(i in u) m[u[i]]=1024^(i-1)} /:/ {print "[\"" $1 "\"," $2*m[$3] "," $4*m[$5] "]"}' \
+                             | sort \
+                             | jq -s "map((select(.[0] == \"FLASH:\") | .[2]) |= ${LOADER_SIZE}) + [ [ \"SKETCH:\", 0, ${SKETCH_SIZE} ] ]" > $REPORT.meminfo
+
+          # ccache stats update
+          echo "::group::ccache stats after build"
+          ccache --evict-older-than 30d
+          ccache --show-stats
+          echo "::endgroup::"
+
+      - name: Package board artifacts
+        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        run: |
+          # add the config file to the report files, list them for later archiving
+          cp firmwares/zephyr-${{ matrix.variant }}.config $REPORT.config
+          echo "REPORT_FILES<<EOF" >> $GITHUB_ENV
+          ls reports/* >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          # Preprare an archive of the built binaries (and build dir on failure)
+          [ "${{ job.status }}" == "failure" ] && FULL_BUILD_DIR="build/${{ matrix.variant }}/"
+          sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
+          tar chf - \
+            firmwares/*${{ matrix.variant }}* \
+            variants/${{ matrix.variant }}/ \
+            boards.local_${{ matrix.variant }}.txt \
+            cores/arduino/api/ \
+            ${FULL_BUILD_DIR} \
+          | zstd > binaries-${ARTIFACT_TAG}.tar.zstd
+
+      - name: Archive board binaries
+        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          # prefix the name with 'failed-' if the build failed, so that it is not removed
+          name: ${{ format('{0}binaries-{1}', (job.status == 'failure') && 'failed-' || '', env.ARTIFACT_TAG) }}
+          path: binaries-${{ env.ARTIFACT_TAG }}.tar.zstd
+          retention-days: 7 # for failed build inspection
+          archive: false
+
+      - name: Archive build reports
+        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-report-${{ env.ARTIFACT_TAG }}
+          path: ${{ env.REPORT_FILES }}
+          retention-days: 1
+
+
+
+  # Compose the core packages for each architecture in parallel, by retrieving
+  # the API snapshot and the built binaries for all boards and packaging them.
+  # The resulting core packages are final artifacts, ready for publishing.
+  # The 'zephyr' umbrella package is also created here by including all others.
+
+  package-core:
+    name: Package ${{ matrix.artifact }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+      - build-board
+    env:
+      ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
+      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+      CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
+    strategy:
+      matrix:
+        artifact: ${{ fromJSON( needs.build-env.outputs.ARTIFACTS ) }}
+      fail-fast: false
+    if: ${{ !cancelled() && needs.build-env.result == 'success' }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true
+
+      # Get all built binaries
+      - uses: actions/download-artifact@v8
+        with:
+          path: .
+          pattern: binaries-*
+          merge-multiple: true
+
+      - name: Package core
+        run: |
+          # Extract the board binaries in place
+          # (each will also include the same copy of the API)
+          for f in binaries-*.tar.zstd ; do
+            tar --use-compress-program=unzstd -xpf $f
+          done
+          cat $(ls boards.local_*.txt | sort) >> boards.local.txt
+          # Create the core artifact for this set of boards
+          ./extra/package_core.sh ${{ matrix.artifact }} ${CORE_TAG} distrib/${CORE_ARTIFACT}
+
+      - uses: actions/upload-artifact@v7
+        id: upload-core
+        if: ${{ success() || failure() }}
+        with:
+          name: ${{ env.CORE_ARTIFACT }}
+          path: distrib/${{ env.CORE_ARTIFACT }}
+          archive: false
+
+      - name: Archive artifact ID
+        run: |
+          echo '${{ steps.upload-core.outputs.artifact-id }}' > ${{ matrix.artifact }}.id
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: artifact-id-${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.id
+
+
+
+  # Prepare this PR's temporary package index JSON by merging the newly
+  # built core packages with the latest package index from ci-builds.
+
+  package-index:
+    name: Package index URL for offline tests
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+      - package-core
+    if: ${{ github.event_name == 'pull_request' && needs.build-env.outputs.CI_BUILDS_URL != '' }}
+    env:
+      CORE_HASH: ${{ needs.build-env.outputs.CORE_HASH }}
+      CORE_BRANCH: ${{ needs.build-env.outputs.CORE_BRANCH }}
+      ARTIFACTS: ${{ needs.build-env.outputs.ARTIFACTS }}
+      CI_BUILDS_URL: ${{ needs.build-env.outputs.CI_BUILDS_URL }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ArduinoCore-*.tar.bz2
+          path: .
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: artifact-id-*
+          path: .
+          merge-multiple: true
+
+      - name: Prepare PR package index
+        run: |
+          wget ${CI_BUILDS_URL} -O ci_index.json
+          # clear other platforms from the index
+          jq '.packages[0].platforms = []' ci_index.json > ci_index.tmp && mv ci_index.tmp ci_index.json
+
+          mkdir -p snippets/platforms/
+          jq -cr '.[]' <<< ${ARTIFACTS} | while read -r artifact; do
+            [ $artifact == "zephyr" ] && continue
+            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.bz2
+            PACKAGE_JSON=snippets/platforms/${artifact}.json
+            ./extra/gen_package_index_json.sh ${artifact} ${ARTIFACT_FILE} ${PACKAGE_JSON}
+            # replace the download URL with this PR's artifact link
+            ARTIFACT_ID=$(cat ${artifact}.id)
+            ARTIFACT_URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${ARTIFACT_ID}/zip"
+            sed -i -e "s!\"url\":.*!\"url\": \"${ARTIFACT_URL}\",!" ${PACKAGE_JSON}
+            # append the new snippet to the index
+            jq -s '.[0].packages[0].platforms += .[1].packages[0].platforms | .[0]' \
+                    ci_index.json ${PACKAGE_JSON} > ci_index.tmp && mv ci_index.tmp ci_index.json
+          done
+          PACKAGE_INDEX_FILE="package_arduino_zephyr_pr_${{ github.event.pull_request.number }}_ci_index.json"
+          echo "PACKAGE_INDEX_FILE=${PACKAGE_INDEX_FILE}" >> $GITHUB_ENV
+          mv ci_index.json ${PACKAGE_INDEX_FILE}
+
+      - name: Archive PR package index
+        id: package-index-json
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_INDEX_FILE }}
+          path: ${{ env.PACKAGE_INDEX_FILE }}
+          archive: false
+
+      - name: Display final URL in the summary
+        run: |
+          ARTIFACT_ID=${{ steps.package-index-json.outputs.artifact-id }}
+          PACKAGE_INDEX_URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${ARTIFACT_ID}/zip"
+          PACKAGE_INDEX_URL="${PACKAGE_INDEX_URL}#${{ env.PACKAGE_INDEX_FILE }}"
+          echo "[${PACKAGE_INDEX_URL}](${PACKAGE_INDEX_URL})" >> $GITHUB_STEP_SUMMARY
+
+
+
+  # After generating the final cores, the following temporary artifacts are
+  # no longer used and can be removed:
+  #
+  #  - the Zephyr build environment
+  #  - the API and per-board binaries
+  #  - the artifact download URLs
+
+  cleanup-build:
+    name: Clean up intermediates
+    runs-on: ubuntu-latest
+    needs:
+      - package-core
+      - package-index
+    permissions:
+      actions: write
+    steps:
+
+      - uses: geekyeggo/delete-artifact@v6
+        with:
+          name: |
+            arduino-api.tar.zstd
+            binaries-*
+            build-env.tar.zstd
+            artifact-id-*
+          failOnError: false
+
+
+
+  # For each board and link mode, compile all test sketches using the just
+  # built core. The compilation reports are archived for later inspection.
+  # This step never fails, so that expected errors do not block the CI run.
+
+  test-core:
+    # NOTE: this name is hardcoded in ci_collect_data.py
+    name: Test ${{ matrix.board }}:${{ matrix.link_mode }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+      - package-core
+    strategy:
+      matrix:
+        include:
+          ${{ fromJSON( needs.build-env.outputs.ALL_BOARD_FQBNS ) }}
+      fail-fast: false
+    env:
+      PLAT: arduino:${{ matrix.subarch }}
+      FQBN: arduino:${{ matrix.subarch }}:${{ matrix.board }}:link_mode=${{ matrix.link_mode }}
+      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+      ARTIFACT_TAG: ${{ needs.build-env.outputs.CORE_HASH }}-${{ matrix.board }}-${{ matrix.link_mode }}
+      CI_BUILDS_URL: ${{ needs.build-env.outputs.CI_BUILDS_URL }}
+    if: ${{ !cancelled() && needs.build-env.result == 'success' }}
+    steps:
+
+      # only needs the test list generator and artifact information
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          sparse-checkout: |
+            extra/ci_apply_tests.sh
+            extra/artifacts/
+            variants/*/test_setup.sh
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.CORE_ARTIFACT }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-data
+          path: test-data/
+
+      - name: Set up core
+        run: |
+          tar xf ${CORE_ARTIFACT} # will create ArduinoCore-zephyr/
+          echo "REPORT_FILE=$(echo ${FQBN} | tr ':' '-').json" >> $GITHUB_ENV
+
+      - name: Get test sketches
+        run: |
+          # sets ALL_TESTS and ALL_LIBRARIES env vars in GITHUB_ENV
+          extra/ci_apply_tests.sh ${{ matrix.artifact }} ${{ matrix.variant }}
+
+      - name: Compile tests for ${{ matrix.board }}
+        uses: pillo79/compile-sketches@next
+        with:
+          # Use ci-builds core, if possible, to use the exact set of tools required by the source
+          fqbn: ${{ env.FQBN }}
+          platforms: |
+            # Use Board Manager version first to install the tools
+            - name: ${{ env.PLAT }}
+              ${{ env.CI_BUILDS_URL != '' && format('source-url: {0}', env.CI_BUILDS_URL) || '' }}
+            # ... then replace that with the local version
+            - name: ${{ env.PLAT }}
+              source-path: "ArduinoCore-zephyr"
+          sketch-paths: |
+            ${{ env.ALL_TESTS }}
+          libraries: |
+            ${{ env.ALL_LIBRARIES }}
+          cli-compile-flags: |
+            - '--build-property'
+            - 'compiler.c.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
+            - '--build-property'
+            - 'compiler.cpp.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
+          verbose: 'false'
+          enable-deltas-report: 'false'
+          enable-issues-report: 'true'
+          always-succeed: 'true'
+
+      - name: Prepare log
+        if: ${{ success() || failure() }}
+        run: |
+          # make sure to create an empty report if none was created
+          [ ! -f sketches-reports/${REPORT_FILE} ] && mkdir -p sketches-reports && echo "{}" > sketches-reports/${REPORT_FILE}
+          # remove base path of the core install from all file references to make logs cleaner
+          sed -i -e 's!/home/runner/.arduino15/packages/arduino/hardware/zephyr/[^/]*/!!g' sketches-reports/${REPORT_FILE}
+
+      # archive the compile report for later
+      - uses: actions/upload-artifact@v7
+        if: ${{ success() || failure() }}
+        with:
+          name: test-report-${{ env.ARTIFACT_TAG }}
+          path: sketches-reports/*
+          retention-days: 1
+
+
+
+  # Collect all build and test reports, analyze them and produce a summary.
+  # See ci_collect_data.py and ci_generate_report.py for details.
+
+  verify-core:
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+      - package-core
+      - test-core
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+      actions: read
+    env:
+      ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
+      CORE_VER: ${{ needs.build-env.outputs.CORE_VER }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: .
+          pattern: "*-report-*"
+          merge-multiple: true
+
+      - name: Generate workflow summary
+        run: |
+          # gather the array of job metadata (especially name and ID) for the current workflow run
+          export WORKFLOW_JOBS=$(gh run view ${{ github.run_id }} --attempt ${{ github.run_attempt }} --json jobs --jq '.jobs')
+          # Archive the input set of reports for later inspection
+          tar jchf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 zephyr-* arduino-*.json
+          # Collect all CI data into a JSON file, then generate the report
+          extra/ci_collect_data.py build_info.json
+          extra/ci_generate_report.py build_info.json result summary full_log
+          cat result
+
+          # Display the summary and full log in the step summary
+          cat summary >> $GITHUB_STEP_SUMMARY
+          cat full_log >> $GITHUB_STEP_SUMMARY
+
+          # Create a comment for PRs using the summary file
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            mkdir -p comment-request
+            echo "${{ github.event.pull_request.number }}" > comment-request/pr_number
+            echo -e "## Built \`$CORE_VER\`\n" > comment-request/comment_body
+            # strip LaTeX color commands and escape sequences for mail readability
+            cat summary | sed -e 's!\${\\color{\S*}\(.*\)}\$!\1!g' -e 's!\\%!%!g' >> comment-request/comment_body
+          fi
+
+          # Prepare latest size artifact file on push events
+          if [ "${{ github.event_name }}" == "push" ]; then
+            tar jchf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 arduino-*.json
+          fi
+
+      - name: Compute code size changes
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          export GITHUB_BASE_SHA=$(git rev-list --parents -n 1 HEAD | cut -d' ' -f2)
+          # errors due to race conditions with parallel branch runs should not fail the job
+          extra/ci_calc_size_reports.py ${GITHUB_BASE_SHA} sketches-reports/ || true
+
+      # upload build metadata artifact, for upload to ci-builds
+      - name: Archive build metadata information
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-metadata
+          path: build_info.json
+          retention-days: 1
+
+      # upload comment request artifact (will be retrieved by leave_pr_comment.yml)
+      - name: Archive comment information
+        uses: actions/upload-artifact@v7
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          name: comment-request
+          path: comment-request/
+          retention-days: 1
+
+      # upload size delta report artifact (will be retrieved by report_size_deltas.yml)
+      - name: Archive size deltas report information
+        uses: actions/upload-artifact@v7
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          name: sketches-reports
+          path: sketches-reports/
+          retention-days: 1
+
+      # upload new official test size artifact (for AWS storage)
+      - name: Archive sketch size information
+        uses: actions/upload-artifact@v7
+        if: ${{ github.event_name == 'push' }}
+        with:
+          name: size-reports
+          path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          retention-days: 1
+          archive: false
+
+      # upload input set of build reports artifact (for CI debugging)
+      - name: Archive input test reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports
+          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          retention-days: 1
+          archive: false
+
+      # The last line makes the job fail if the 'result' file does not contain "PASSED".
+      # No further actions are allowed in case of error.
+      - run: |
+          cat result
+          grep -q "PASSED" result # otherwise CI test failed
+
+
+
+  # Clean up test results only if the verification actually passed, so that
+  # they are still available for action re-runs in case of failure.
+
+  clean-temps:
+    name: Clean up test results
+    runs-on: ubuntu-latest
+    if: ${{ needs.verify-core.result == 'success' }}
+    needs:
+      - build-env
+      - package-core
+      - verify-core
+    permissions:
+      actions: write
+    steps:
+
+      - name: Clean up intermediate artifacts
+        uses: geekyeggo/delete-artifact@v6
+        with:
+          name: |
+            build-report-*
+            test-report-*
+          failOnError: false
+
+
+
+  # Prepare the package index JSON snippets for the newly built core packages.
+  # (Arduino's S3/ci-builds publishing jobs are intentionally not replicated
+  # here: they need Arduino-only secrets this fork doesn't have.)
+
+  prepare-json:
+    name: Prepare jsons
+    runs-on: ubuntu-latest
+    needs:
+      - build-env
+      - package-core
+      - verify-core
+    env:
+      CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
+      CORE_HASH: ${{ needs.build-env.outputs.CORE_HASH }}
+      ARTIFACTS: ${{ needs.build-env.outputs.ARTIFACTS }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ArduinoCore-*.tar.bz2
+          path: .
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-metadata
+          path: snippets/metadata/
+
+      - name: Prepare package index snippets
+        run: |
+          mkdir -p snippets/platforms/
+          jq -cr '.[]' <<< ${ARTIFACTS} | while read -r artifact; do
+            # note: the archive names are always hash-based so they use a
+            # predictable pattern. JSON files can use the tag for user-friendliness.
+            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.bz2
+            PACKAGE_JSON=snippets/platforms/ArduinoCore-${artifact}-${CORE_TAG}.json
+            ./extra/gen_package_index_json.sh ${artifact} ${ARTIFACT_FILE} ${PACKAGE_JSON}
+          done
+
+      - name: Archive package index snippets
+        uses: actions/upload-artifact@v7
+        with:
+          name: snippets-${{ env.CORE_TAG }}
+          path: snippets/
