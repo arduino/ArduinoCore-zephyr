@@ -295,6 +295,10 @@
 	};
 };
 
+&ltdc {
+	zephyr,deferred-init;
+};
+
 / {
 	chosen {
 		zephyr,camera = &dcmi;
