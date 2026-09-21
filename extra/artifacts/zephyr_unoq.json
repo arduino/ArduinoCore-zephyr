@@ -4,7 +4,7 @@
   "category": "Arduino",
   "libraryDependencies": [
     { "name":"Arduino_RouterBridge", "version":"0.4.3" },
-    { "name":"Arduino_RPClite", "version":"0.3.0" },
+    { "name":"Arduino_RPClite", "version":"0.3.1" },
     { "name":"MsgPack", "version":"0.4.2" },
     { "name":"DebugLog", "version":"0.8.4" },
     { "name":"ArxTypeTraits", "version":"0.3.2" },
