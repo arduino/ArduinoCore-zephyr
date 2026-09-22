@@ -9,3 +9,6 @@
 
 EXPORT_SYMBOL(ota_sketch_ready);
 EXPORT_SYMBOL(ota_sketch_start);
+
+EXPORT_SYMBOL(ota_loader_ready);
+EXPORT_SYMBOL(ota_loader_start);
