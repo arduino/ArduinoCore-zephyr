@@ -339,6 +339,35 @@ tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.ad
 
 
 #
+# ADAFRUIT-NRFUTIL
+#
+# Talks to the factory Adafruit nRF52 bootloader of boards whose only
+# programming entry point from stock state is that bootloader's serial
+# DFU mode (e.g. Seeed XIAO nRF52840). Since the bootloader writes
+# application images at a fixed address, every upload sends one combined
+# loader+sketch image; a small per-variant helper
+# (variants/<board>/nrfutil-upload.py) assembles, packages and flashes it.
+# adafruit-nrfutil is not an Arduino-packaged dependency; users install
+# it with:  pip install adafruit-nrfutil
+# (same PATH-based approach as pyocd for the NXP/Renesas boards).
+#
+
+tools.adafruit-nrfutil.path=
+tools.adafruit-nrfutil.cmd=python
+tools.adafruit-nrfutil.cmd.windows=python
+tools.adafruit-nrfutil.cmd.linux=python3
+tools.adafruit-nrfutil.cmd.darwin=python3
+
+tools.adafruit-nrfutil.upload.params.verbose=--verbose
+tools.adafruit-nrfutil.upload.params.quiet=
+tools.adafruit-nrfutil.upload.pattern="{cmd}" "{runtime.platform.path}/variants/{build.variant}/nrfutil-upload.py" --loader "{upload.artifacts.loader}" --sketch "{upload.artifacts.sketch}" --port {serial.port} --loader-addr {bootloader.address} --sketch-addr {upload.address} {upload.verbose}
+
+tools.adafruit-nrfutil.bootloader.params.verbose=--verbose
+tools.adafruit-nrfutil.bootloader.params.quiet=
+tools.adafruit-nrfutil.bootloader.pattern="{cmd}" "{runtime.platform.path}/variants/{build.variant}/nrfutil-upload.py" --loader "{upload.artifacts.loader}" --port {serial.port} --loader-addr {bootloader.address} {bootloader.verbose}
+
+
+#
 # PYOCD WRAPPER
 #
 

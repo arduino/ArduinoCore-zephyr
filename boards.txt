@@ -727,3 +727,58 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##########################################################################################
+
+seeed_xiao_ble.name=Seeed Studio XIAO nRF52840
+seeed_xiao_ble.build.core=arduino
+seeed_xiao_ble.build.crossprefix=arm-zephyr-eabi-
+seeed_xiao_ble.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+seeed_xiao_ble.menu.debug.false=Standard
+seeed_xiao_ble.menu.debug.true=Debug
+seeed_xiao_ble.menu.debug.true.build.zsk_args.debug=-debug
+
+seeed_xiao_ble.menu.link_mode.dynamic=Dynamic
+seeed_xiao_ble.menu.link_mode.static=Static
+seeed_xiao_ble.menu.link_mode.static.build.link_mode=static
+seeed_xiao_ble.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+seeed_xiao_ble.build.zephyr_target=xiao_ble
+seeed_xiao_ble.build.zephyr_args=
+seeed_xiao_ble.build.zephyr_hals=hal_nordic
+seeed_xiao_ble.build.zephyr_toolchain=arm-zephyr-eabi
+seeed_xiao_ble.build.artifact=zephyr_contrib
+seeed_xiao_ble.build.variant=xiao_ble_nrf52840
+
+seeed_xiao_ble.build.extra_flags=
+seeed_xiao_ble.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+seeed_xiao_ble.build.board=SEEED_XIAO_NRF52840
+seeed_xiao_ble.upload_port.0.vid=0x2886
+seeed_xiao_ble.upload_port.0.pid=0x8044
+seeed_xiao_ble.upload_port.1.vid=0x2886
+seeed_xiao_ble.upload_port.1.pid=0x0045
+seeed_xiao_ble.upload_port.2.vid=0x2886
+seeed_xiao_ble.upload_port.2.pid=0x0044
+
+# WIP: 1200bps-touch -> serial DFU flow; upload recipe and the tool
+# dependency for the package index are still to be discussed with Arduino.
+seeed_xiao_ble.upload.tool=adafruit-nrfutil
+seeed_xiao_ble.upload.tool.default=adafruit-nrfutil
+seeed_xiao_ble.upload.protocol=
+seeed_xiao_ble.upload.transport=
+seeed_xiao_ble.upload.use_1200bps_touch=true
+seeed_xiao_ble.upload.wait_for_upload_port=true
+seeed_xiao_ble.upload.native_usb=true
+seeed_xiao_ble.upload.offset=0x0 # uploader programs at absolute addresses (sketch partition start)
+
+seeed_xiao_ble.bootloader.tool=adafruit-nrfutil
+seeed_xiao_ble.bootloader.tool.default=adafruit-nrfutil
+seeed_xiao_ble.bootloader.file=zephyr-{build.variant}.bin
+seeed_xiao_ble.bootloader.address=0x27000
+
+seeed_xiao_ble.debug.tool=gdb
+seeed_xiao_ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
+seeed_xiao_ble.debug.server.openocd.scripts.1={programmer.transport_script}
+seeed_xiao_ble.debug.server.openocd.scripts.2=target/nrf52.cfg
+seeed_xiao_ble.debug.cortex-debug.custom.request=attach
