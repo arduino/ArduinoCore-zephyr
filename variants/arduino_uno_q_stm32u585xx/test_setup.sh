@@ -30,3 +30,4 @@ get_branch_tip libraries arduino-libraries/Arduino_RPClite main \
 	examples/rpc_lite_server \
 
 skip_for_this_board libraries/Arduino_RPClite/extras/integration_test
+skip_for_this_board libraries/OTA

@@ -17,6 +17,7 @@ skip_for_this_board examples/arduino-examples/examples/04.Communication/SerialPa
 skip_for_this_board libraries/Arduino_SecureElement
 skip_for_this_board libraries/Camera
 skip_for_this_board libraries/Ethernet
+skip_for_this_board libraries/OTA
 skip_for_this_board libraries/Storage
 skip_for_this_board libraries/WiFi
 skip_for_this_board libraries/Zephyr_SDRAM

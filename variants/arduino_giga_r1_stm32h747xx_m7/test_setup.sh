@@ -22,4 +22,5 @@ get_branch_tip libraries arduino-libraries/Arduino_Video main \
 	examples/LVGLDemo \
 
 skip_for_this_board libraries/Ethernet
+skip_for_this_board libraries/OTA
 skip_for_this_board libraries/PDM
