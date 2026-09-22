@@ -16,13 +16,13 @@
 
 #define LOADER_PROVIDES_EXTRA_USB_CLASSES
 
-// TODO: correctly handle these legacy defines
-#define MOSI    0
-#define MISO    0
-#define SCK     0
-#define SS      0
-#define SDA     0
-#define SCL     0
+// SPI2 and I2C4 (primary SPI/Wire) pins; indices match digital-pin-gpios
+#define MOSI    D11 /* PB15 */
+#define MISO    D12 /* PB14 */
+#define SCK     D13 /* PB13 */
+#define SS      D10 /* PB12 */
+#define SDA     D21 /* PH12 */
+#define SCL     D20 /* PH11 */
 
 #define ST_VREF_MASK        0x80
 
