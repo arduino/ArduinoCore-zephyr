@@ -57,6 +57,10 @@ if ! [ -z "$chosen_board" ]; then
 	if [ x$2 == x"--debug" ]; then
 		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
 	fi
+
+	# check if the board requires to prepend a second stage bootloader to the loader
+	sfu_file=$(jq -cr '.sfu_file' <<< "$chosen_board")
+	sfu_size=$(jq -cr '.sfu_size' <<< "$chosen_board")
 else
 	# expect Zephyr-compatible target and args
 	target=$1
@@ -124,6 +128,17 @@ for ext in elf bin hex uf2; do
 done
 cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# Some boards, like the C33, need a second stage bootloader to enable OTA upgrades,
+# if the file is specified in boards.txt under .sfu.file, prepend it to the loader binary into a
+# firmwares/zephyr-$variant-sfu.bin file.
+# this file needs to be specified in bootloader.file=zephyr-{build.variant}-sfu.bin
+if [ "$sfu_file" ] ; then
+    dd if=${sfu_file} of=firmwares/zephyr-$variant-sfu.bin conv=notrunc status=none
+
+    offset=$(printf "%d" "${sfu_size}")
+    dd if=firmwares/zephyr-$variant.bin of=firmwares/zephyr-$variant-sfu.bin bs=1 seek=${offset} conv=notrunc status=none
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
