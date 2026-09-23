@@ -83,7 +83,7 @@ if [ -n "$PINNED_CORE_VERSION" ] ; then
 		exit 1
 	fi
 else
-	exact_version=$(git describe --tags --exact-match --exclude '*/*' 2>/dev/null)
+	exact_version=$(git describe --tags --exact-match --exclude '*/*' --exclude 'windows_toolchain_*' 2>/dev/null)
 	if [ -n "$exact_version" ] ; then
 		# this is a tagged build, extract the version components from the tag
 		# must match <maj>.<min>.<patch>(-<prerel>)
@@ -101,7 +101,7 @@ else
 		# no additional information
 		v_tweak=""
 	else
-		version_from_git=$(git describe --tags --long --exclude '*/*' 2>/dev/null)
+		version_from_git=$(git describe --tags --long --exclude '*/*' --exclude 'windows_toolchain_*' 2>/dev/null)
 		# must match <maj>.<min>.<patch>(-<prerel>)-<number-of-commits-since-tag>-g<commit-hash>
 		pattern='^([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?-([0-9]+)-g.*'
 		if [[ $version_from_git =~ $pattern ]]; then
@@ -110,6 +110,13 @@ else
 			v_patch="${BASH_REMATCH[3]}"
 			v_extra="${BASH_REMATCH[4]}" # optional, lead -
 			count="${BASH_REMATCH[5]}"
+		elif [ -z "$version_from_git" ]; then
+			# no matching tag reachable at all (eg. a fresh branch history)
+			v_maj=9
+			v_min=9
+			v_patch=9
+			v_extra="-0"
+			count=0
 		else
 			echo "Error: unexpected git describe output '$version_from_git'" >&2
 			exit 1
