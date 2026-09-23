@@ -90,6 +90,7 @@ jobs:
           west build -p -b arduino_nano_33_ble/nrf52840/sense $MODULE_PATH/samples/analog_input
 
       - name: Build feature boards' native samples
+        shell: bash
         run: |
           (cd "$MODULE_PATH" && ./extra/get_board_details.sh) | \
             jq -c '.[] | select(.feature_board == true and .ci_native_samples != "")' | \
