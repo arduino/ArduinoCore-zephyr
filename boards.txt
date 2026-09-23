@@ -764,6 +764,7 @@ kit_pse84_ai.build.zephyr_args=
 kit_pse84_ai.build.zephyr_hals=hal_infineon
 kit_pse84_ai.build.variant=kit_pse84_ai_pse846gps2dbzc4a_m33
 kit_pse84_ai.build.release_group=pse84
+kit_pse84_ai.build.feature_board=true
 kit_pse84_ai.build.mcu=cortex-m33
 kit_pse84_ai.build.fpu=-mfpu=fpv5-sp-d16
 kit_pse84_ai.build.architecture=cortex-m33
