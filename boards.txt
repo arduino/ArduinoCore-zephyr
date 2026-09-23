@@ -460,6 +460,58 @@ portentac33.sketch.args.without_loader={empty} -w
 
 ##########################################################################################
 
+unor4wifi.name=Arduino UNO R4 WiFi
+unor4wifi.build.core=arduino
+unor4wifi.build.crossprefix=arm-zephyr-eabi-
+unor4wifi.build.compiler_path={runtime.tools.arm-zephyr-eabi-0.16.8.path}/bin/
+
+unor4wifi.menu.debug.false=Standard
+unor4wifi.menu.debug.true=Debug
+unor4wifi.menu.debug.true.build.zsk_args.debug=-debug
+
+unor4wifi.menu.link_mode.dynamic=Dynamic
+unor4wifi.menu.link_mode.static=Static
+unor4wifi.menu.link_mode.static.build.link_mode=static
+unor4wifi.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+unor4wifi.build.zephyr_target=arduino_uno_r4@wifi
+unor4wifi.build.zephyr_args=
+unor4wifi.build.zephyr_hals=hal_renesas
+unor4wifi.build.artifact=zephyr_main
+unor4wifi.build.variant=arduino_uno_r4_r7fa4m1ab3cfm
+unor4wifi.build.mcu=cortex-m4
+unor4wifi.build.fpu=-mfpu=fpv4-sp-d16
+unor4wifi.build.architecture=cortex-m4
+
+unor4wifi.build.float-abi=-mfloat-abi=hard
+unor4wifi.build.extra_flags=
+unor4wifi.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+unor4wifi.build.board=ARDUINO_UNO_R4_WIFI
+unor4wifi.vid.0=0x2341
+unor4wifi.pid.0=0x1002
+unor4wifi.upload_port.0.vid=0x2341
+unor4wifi.upload_port.0.pid=0x1002
+
+unor4wifi.upload.tool=pyocd
+unor4wifi.upload.tool.default=pyocd
+unor4wifi.upload.protocol=
+unor4wifi.upload.transport=
+unor4wifi.upload.interface=0
+unor4wifi.upload.use_1200bps_touch=false
+unor4wifi.upload.wait_for_upload_port=false
+unor4wifi.upload.native_usb=true
+unor4wifi.upload.maximum_size=122880
+unor4wifi.upload.maximum_data_size=16384
+unor4wifi.upload.address=0x22000
+unor4wifi.upload.target=r7fa4m1ab
+
+unor4wifi.bootloader.tool=pyocd
+unor4wifi.bootloader.tool.default=pyocd
+unor4wifi.bootloader.file=zephyr-{build.variant}.elf
+unor4wifi.bootloader.target=r7fa4m1ab
+
+##########################################################################################
+
 opta.name=Arduino Opta
 opta.build.core=arduino
 opta.build.crossprefix=arm-zephyr-eabi-
