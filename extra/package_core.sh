@@ -26,7 +26,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # we use variants for include because we filter on file paths
 # and boards for exclude because we want to remove matching lines in boards.txt
-BOARD_DETAILS=$(extra/get_board_details.sh)
+BOARD_DETAILS=${ALL_BOARD_DATA:-$(extra/get_board_details.sh)}
 if [ $ARTIFACT == "zephyr" ] ; then
 	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr ".[].variant")
 	EXCLUDED_BOARDS=""

@@ -90,8 +90,14 @@ jobs:
         run: |
           # Set up basic environment for later steps
           CORE_VER=$(extra/get_core_version.sh)
+          ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # limit direct pushes to this board family's own boards; PRs still
+            # validate the full board matrix before merge
+            ALL_BOARD_DATA=$(jq -c 'map(select(.feature_board == true))' <<< "${ALL_BOARD_DATA}")
+          fi
           echo "CORE_HASH=$(git describe --always $HEAD_REF)" >> "$GITHUB_ENV"
-          echo "ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')" >> "$GITHUB_ENV"
+          echo "ALL_BOARD_DATA=${ALL_BOARD_DATA}" >> "$GITHUB_ENV"
           echo "CORE_VER=${CORE_VER}" >> "$GITHUB_ENV"
           echo "CORE_VER=${CORE_VER}" >> "$GITHUB_OUTPUT"
 
