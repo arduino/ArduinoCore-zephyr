@@ -342,6 +342,8 @@ To add a new board that is already supported by mainline Zephyr with the target 
   * A `zephyr,user` section containing the description for GPIOs, Analog, UART, SPI and I2C devices. Feel free to leave some fields empty in case Zephyr support is missing. This will result in some APIs not being available at runtime (eg. `analogWrite` if PWM section is empty).
 
   The Kconfig file must include any board-specific options required by this target.
+* Add the variant's `.conf` and `.overlay` files to the board target in
+  [`zephyr/snippets/arduino-core/snippet.yml`](/zephyr/snippets/arduino-core/snippet.yml).
 * Build the Loader: run `./extra/build.sh $your_board` (with any additional arguments as required) and start debugging the errors. :grin:
 * Update the `boards.txt`: add an entry for your board, manually filling the required fields.
 
