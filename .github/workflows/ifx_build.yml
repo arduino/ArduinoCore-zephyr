@@ -90,15 +90,5 @@ jobs:
           west build -p -b arduino_nano_33_ble/nrf52840/sense $MODULE_PATH/samples/analog_input
 
       - name: Build feature boards' native samples
-        shell: bash
         run: |
-          (cd "$MODULE_PATH" && ./extra/get_board_details.sh) | \
-            jq -c '.[] | select(.feature_board == true and .ci_native_samples != "")' | \
-          while IFS= read -r board_json; do
-            target=$(jq -r '.target' <<< "$board_json")
-            samples=$(jq -r '.ci_native_samples | split(",")[]' <<< "$board_json")
-            while IFS= read -r sample; do
-              echo "Building $target native sample: $sample"
-              west build -p -b "$target" "$MODULE_PATH/samples/$sample"
-            done <<< "$samples"
-          done
+          bash $MODULE_PATH/extra/ci_build_native_samples.sh $MODULE_PATH
