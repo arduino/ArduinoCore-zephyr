@@ -18,3 +18,5 @@ get_branch_tip libraries arduino-libraries/Arduino_Video main \
 	examples/LVGLDemo \
 
 skip_for_this_board libraries/PDM
+
+get_latest_release libraries arduino-libraries/Arduino_SE05x

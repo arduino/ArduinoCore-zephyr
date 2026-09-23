@@ -14,3 +14,5 @@
 skip_for_this_board libraries/Camera
 skip_for_this_board libraries/RTC
 skip_for_this_board libraries/PDM
+
+get_latest_release libraries arduino-libraries/Arduino_SE05x
