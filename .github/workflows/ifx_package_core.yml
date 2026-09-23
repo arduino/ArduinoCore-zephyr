@@ -224,6 +224,15 @@ jobs:
           key: ${{ github.job }}-${{ matrix.board }} # independent caches
           path: ~/.cache/ccache
 
+      - name: Install PSE84 signing dependencies
+        if: ${{ matrix.board == 'kit_pse84_ai' }}
+        run: |
+          # imgtool (invoked by hal_infineon's pse84_metadata.cmake to sign the
+          # image) needs these; its own pip-install-at-configure-time attempt
+          # only warns on failure, so pre-install them here to be safe.
+          source venv/bin/activate
+          pip3 install cryptography cbor2 click intelhex Pillow
+
       - name: Build loader
         shell: bash
         run: |
