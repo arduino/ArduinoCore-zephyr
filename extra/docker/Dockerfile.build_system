@@ -1,0 +1,92 @@
+FROM ubuntu:26.04
+
+ARG BASE_DIR="/arduino"
+
+ENV CORE_LOCATION=${BASE_DIR}/ArduinoCore-zephyr
+ENV ZEPHYR_BASE=${BASE_DIR}/zephyr
+ENV ZEPHYR_SDK_INSTALL_DIR=${BASE_DIR}/zephyr-sdk
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHON_VENV_PATH=${BASE_DIR}/venv
+
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+
+# install base tools
+RUN <<EOF
+	apt-get -y update
+	apt-get -y upgrade
+
+	apt-get install -y --no-install-recommends \
+		git \
+		cmake \
+		xz-utils \
+		wget \
+		python3-pip \
+		ninja-build \
+		curl \
+		yq \
+		zip \
+		python3-venv \
+		ccache \
+		file \
+		zstd \
+		rsync
+EOF
+
+WORKDIR ${BASE_DIR}/
+
+# prepare venv for next step
+RUN <<EOF
+	python3 -m venv ${PYTHON_VENV_PATH}
+	source ${PYTHON_VENV_PATH}/bin/activate
+
+	pip install --no-cache-dir west protobuf grpcio-tools
+EOF
+
+RUN mkdir -p ${CORE_LOCATION}
+
+ENV PATH=${PYTHON_VENV_PATH}/bin:$PATH
+COPY west.yml ${CORE_LOCATION}
+
+# clone zephyr repository locally at required revision and install python dependencies
+RUN <<EOF
+	ZEPHYR_URL=$(yq -r '.manifest as $m | ($m.projects[] | select(.name == "zephyr")) as $p | ($m.remotes[] | select(.name == $p.remote)) as $r | "\($r["url-base"])/\($p.name)"' ${CORE_LOCATION}/west.yml)
+	ZEPHYR_REVISION=$(yq -r '.manifest.projects[] | select(.name == "zephyr") | .revision' ${CORE_LOCATION}/west.yml)
+
+	git clone --depth 1 --branch ${ZEPHYR_REVISION} ${ZEPHYR_URL} ${ZEPHYR_BASE}
+	pip3 install --no-cache-dir  -r ${ZEPHYR_BASE}/scripts/requirements-base.txt
+
+	echo "export ZEPHYR_URL=\"${ZEPHYR_URL}\"" >> ~/.bashrc
+	echo "export ZEPHYR_REVISION=\"${ZEPHYR_REVISION}\"" >> ~/.bashrc
+EOF
+
+COPY boards.txt ${CORE_LOCATION}
+COPY extra/artifacts/_common.json ${CORE_LOCATION}/extra/artifacts/_common.json
+COPY extra/bootstrap.sh ${CORE_LOCATION}/extra/
+
+# initialize west project
+RUN <<EOF
+	cd ${CORE_LOCATION}
+	${CORE_LOCATION}/extra/bootstrap.sh west_init
+EOF
+
+# run west update
+RUN <<EOF
+	cd ${CORE_LOCATION}
+	${CORE_LOCATION}/extra/bootstrap.sh west_update -o=--depth=1 -n
+EOF
+
+# download the toolchain
+RUN <<EOF
+	cd ${CORE_LOCATION}
+	${CORE_LOCATION}/extra/bootstrap.sh sdk -d ${ZEPHYR_SDK_INSTALL_DIR}
+EOF
+
+COPY zephyr/module.yml ${CORE_LOCATION}/zephyr/module.yml
+COPY zephyr/blobs/ArduinoCore-API/LICENSE ${CORE_LOCATION}/zephyr/blobs/ArduinoCore-API/LICENSE
+
+# download blobs
+RUN <<EOF
+	cd ${CORE_LOCATION}
+	${CORE_LOCATION}/extra/bootstrap.sh blobs --auto-accept
+EOF
