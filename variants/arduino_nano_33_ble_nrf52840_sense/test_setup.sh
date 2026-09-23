@@ -27,6 +27,7 @@ get_branch_tip libraries arduino-libraries/Arduino_HS300x master \
 skip_for_this_board libraries/Arduino_SecureElement
 skip_for_this_board libraries/Camera
 skip_for_this_board libraries/Ethernet
+skip_for_this_board libraries/OTA
 skip_for_this_board libraries/Storage
 skip_for_this_board libraries/WiFi
 skip_for_this_board libraries/Zephyr_SDRAM

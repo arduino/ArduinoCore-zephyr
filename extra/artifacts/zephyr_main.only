@@ -4,4 +4,5 @@
 # Files listed here are included by this package only, and automatically
 # excluded by all other artifacts.
 
+libraries/OTA/
 libraries/PDM/
