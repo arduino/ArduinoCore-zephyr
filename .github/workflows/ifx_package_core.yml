@@ -93,8 +93,13 @@ jobs:
           ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')
           if [[ "${{ github.event_name }}" == "push" ]]; then
             # limit direct pushes to this board family's own boards; PRs still
-            # validate the full board matrix before merge
-            ALL_BOARD_DATA=$(jq -c 'map(select(.feature_board == true))' <<< "${ALL_BOARD_DATA}")
+            # validate the full board matrix before merge. Only apply the
+            # filter if it leaves at least one board, so branches with no
+            # feature_board opted in yet keep building the full board set.
+            FEATURE_BOARD_DATA=$(jq -c 'map(select(.feature_board == true))' <<< "${ALL_BOARD_DATA}")
+            if [[ "$(jq 'length' <<< "${FEATURE_BOARD_DATA}")" -gt 0 ]]; then
+              ALL_BOARD_DATA="${FEATURE_BOARD_DATA}"
+            fi
           fi
           echo "CORE_HASH=$(git describe --always $HEAD_REF)" >> "$GITHUB_ENV"
           echo "ALL_BOARD_DATA=${ALL_BOARD_DATA}" >> "$GITHUB_ENV"
