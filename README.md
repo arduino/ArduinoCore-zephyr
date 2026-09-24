@@ -1,6 +1,41 @@
-[![Default branch status](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=main&event=push)](https://github.com/arduino/ArduinoCore-zephyr/actions/workflows/package_core.yml)
+[![Branch status](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml/badge.svg?branch=ifx-main&event=push)](https://github.com/Infineon/ArduinoCore-zephyr/actions/workflows/package_core.yml?query=branch%3Aifx-main)
 
-# 🪁 Arduino Core for Zephyr
+# Infineon ArduinoCore-Zephyr
+
+This repository hosts the enablement of Infineon microcontrollers in
+[ArduinoCore-Zephyr](https://github.com/zephyrproject-rtos/arduino-core-zephyr).
+
+> [!NOTE]
+> This project is still in early development and may change as Infineon
+> microcontroller support evolves.
+
+The [`ifx-main`](https://github.com/Infineon/ArduinoCore-zephyr/tree/ifx-main)
+branch extends the upstream project with the configuration and workflows needed
+to enable preliminary releases before the changes are officially merged
+upstream.
+
+## Supported Infineon Microcontrollers
+
+Infineon support is currently being implemented for two microcontrollers families:
+
+* [**PSOC™ Edge**](https://www.infineon.com/products/microcontroller/32-bit-psoc-arm-cortex/32-bit-psoc-edge-arm): Development is hosted in the
+  [`edge-main`](https://github.com/Infineon/ArduinoCore-zephyr/tree/edge-main)
+  branch.
+
+> [!TIP]
+> The installation instructions for the basic PSOC™ Edge enablement, version
+> `0.0.1`, are temporarily available in the
+> [`psoc-edge-main`](https://github.com/Infineon/ArduinoCore-zephyr/tree/psoc-edge-main)
+> branch.
+
+
+* [**PSOC™ Control**](https://www.infineon.com/products/microcontroller/32-bit-psoc-arm-cortex/32-bit-psoc-control-arm-cortex-m33-mcu): Development is hosted in the
+  [`control-main`](https://github.com/Infineon/ArduinoCore-zephyr/tree/control-main)
+  branch.
+
+--------------------------------------
+
+## Arduino Core for Zephyr
 
 This repository is a downstream fork of the [Arduino Core for Zephyr RTOS-based
 boards](https://github.com/zephyrproject-rtos/arduino-core-zephyr) that
