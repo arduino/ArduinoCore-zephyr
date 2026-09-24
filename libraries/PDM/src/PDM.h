@@ -7,9 +7,8 @@
 #ifndef ARDUINO_ZEPHYR_PDM_H
 #define ARDUINO_ZEPHYR_PDM_H
 
-/* TODO: add GIGA when zephyr support is added */
-#if !defined(ARDUINO_NANO33BLE)
-#error "Only Nano 33 BLE board is currently supported"
+#if !defined(ARDUINO_NANO33BLE) && !defined(ARDUINO_GIGA)
+#error "Only Nano 33 BLE and Arduino GIGA boards are currently supported"
 #endif
 
 #include <Arduino.h>

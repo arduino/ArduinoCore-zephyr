@@ -628,6 +628,21 @@
 	zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE) )>;
 };
 
+&pll2 {
+	status = "okay";
+};
+
+dfsdm: &dfsdm {
+	zephyr,deferred-init;
+	status = "okay";
+};
+
+dmic_dev: &pdm0 {
+	zephyr,deferred-init;
+	filter-order = <5>;
+	status = "okay";
+};
+
 /* Include common flash filesystem configuration */
 qspi_flash: &n25q128a1 {};
 #include "../common/arduino_flash_fs.dtsi"
