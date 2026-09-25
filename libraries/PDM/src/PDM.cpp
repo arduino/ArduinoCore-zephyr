@@ -49,13 +49,13 @@ static void (*_onReceive)(void) = NULL;
  * ---- PDM DRIVER INTERFACE (zephyr dmic) ----
  */
 
-#if defined(ARDUINO_NANO33BLE) || defined(ARDUINO_GIGA)
+#if defined(ARDUINO_NANO33BLE) || defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
 
 static struct pcm_stream_cfg stream;
 static struct dmic_cfg cfg;
 /* the PDM mic zephyr device */
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
-#if defined(ARDUINO_GIGA)
+#if defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
 static const struct device *dfsdm_dev = DEVICE_DT_GET(DT_NODELABEL(dfsdm));
 #endif
 
@@ -69,7 +69,7 @@ static int pdm_configure(int channels, int sampleRate) {
 	/* note: due to the hierarchical structure of the DFSDM peripheral with
 	 * Arduino GIGA is necessary to turn dfsm on before the actual pdm which in
 	 * this case is just a filter within the dfsdm */
-#if defined(ARDUINO_GIGA)
+#if defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
 	if (!device_is_ready(dfsdm_dev)) {
 		int err = device_init(dfsdm_dev);
 		if (err < 0) {
