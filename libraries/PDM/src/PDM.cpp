@@ -57,6 +57,29 @@ static struct dmic_cfg cfg;
 static const struct device *const dmic_dev = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 #if defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
 static const struct device *dfsdm_dev = DEVICE_DT_GET(DT_NODELABEL(dfsdm));
+
+/* DFSDM has no analog gain: apply a saturating digital gain per sample. */
+static int pdm_digital_gain = PDM_DEFAULT_GAIN;
+
+static void pdm_apply_gain(void *block, size_t bytes) {
+	const int g = pdm_digital_gain;
+	if (g <= 1) {
+		return;
+	}
+#if PDM_SAMPLE_BIT_WIDTH == 16
+	int16_t *s = (int16_t *)block;
+	for (size_t i = 0; i < bytes / sizeof(int16_t); i++) {
+		int64_t v = (int64_t)s[i] * g;
+		s[i] = (v > INT16_MAX) ? INT16_MAX : (v < INT16_MIN) ? INT16_MIN : (int16_t)v;
+	}
+#elif PDM_SAMPLE_BIT_WIDTH == 24
+	int32_t *s = (int32_t *)block;
+	for (size_t i = 0; i < bytes / sizeof(int32_t); i++) {
+		int64_t v = (int64_t)s[i] * g;
+		s[i] = (v > 8388607) ? 8388607 : (v < -8388608) ? -8388608 : (int32_t)v;
+	}
+#endif
+}
 #endif
 
 static int pdm_read(void **buffer, size_t *size) {
@@ -139,6 +162,9 @@ static void pdm_gain(int gain) {
 #if defined(ARDUINO_NANO33BLE)
 	NRF_PDM->GAINR = gain;
 	NRF_PDM->GAINL = gain;
+#elif defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
+	/* linear digital gain multiplier, applied per sample in the RX thread */
+	pdm_digital_gain = (gain < 1) ? 1 : gain;
 #endif
 }
 
@@ -156,6 +182,9 @@ void pdm_thread(void *, void *, void *) {
 		if (ret < 0) {
 			continue;
 		}
+#if defined(ARDUINO_GIGA) || defined(ARDUINO_NICLA_VISION)
+		pdm_apply_gain(buffer, size);
+#endif
 
 		if (k_msgq_put(&pdm_rx_msgq, &buffer, K_NO_WAIT) == 0) {
 			if (_onReceive) {

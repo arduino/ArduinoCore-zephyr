@@ -21,6 +21,12 @@
 #define PDM_SAMPLE_BIT_WIDTH 16
 #endif
 
+/* Default digital gain (linear multiplier) for boards with no analog mic gain,
+ * e.g. GIGA/DFSDM. Applied per sample with saturation; override with setGain(). */
+#ifndef PDM_DEFAULT_GAIN
+#define PDM_DEFAULT_GAIN 4
+#endif
+
 /* receiving thread configuration */
 #ifndef PDM_THREAD_STACK_SIZE
 #define PDM_THREAD_STACK_SIZE 1024
