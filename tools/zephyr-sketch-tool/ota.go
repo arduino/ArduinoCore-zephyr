@@ -78,17 +78,24 @@ func runOTA(loaderPath, sketchPath, offsetStr, magicStr, outputBase string) erro
 		suffix   string
 		payload  []byte
 		compress bool
+		header   bool
 		label    string
 	}{
-		{".ota", sketch, false, "sketch"},
-		{".lzss.ota", sketch, true, "sketch (LZSS)"},
-		{"-bundle.ota", merged, false, "loader+sketch"},
-		{"-bundle.lzss.ota", merged, true, "loader+sketch (LZSS)"},
+		{".ota", sketch, false, true, "sketch"},
+		{".lzss.ota", sketch, true, true, "sketch (LZSS)"},
+		{"-bundle.bin", merged, false, false, "loader+sketch"},
+		{"-bundle.ota", merged, false, true, "loader+sketch"},
+		{"-bundle.lzss.ota", merged, true, true, "loader+sketch (LZSS)"},
 	}
 
 	for _, v := range variants {
 		path := base + v.suffix
-		out := buildOTA(uint32(magic), v.payload, v.compress)
+
+		out := v.payload
+		if v.header {
+			out = buildOTA(uint32(magic), v.payload, v.compress)
+		}
+
 		if err := os.WriteFile(path, out, 0644); err != nil {
 			return fmt.Errorf("write %s: %w", path, err)
 		}

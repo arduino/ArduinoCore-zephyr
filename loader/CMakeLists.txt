@@ -18,6 +18,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(app LANGUAGES C CXX)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
+add_subdirectory_ifdef(CONFIG_OTA ${CMAKE_CURRENT_SOURCE_DIR}/ota)
 
 # Memory region relocation based on Kconfig
 # Relocate LLEXT heap if region specified
@@ -44,3 +45,4 @@ target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
 
 target_link_libraries(app PUBLIC blobs)
+target_link_libraries_ifdef(CONFIG_OTA app PUBLIC ota)
