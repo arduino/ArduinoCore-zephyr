@@ -1,0 +1,4 @@
+Contributing
+*************
+
+.. TODO: contribution guidelines.
