@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Boot-mode retention area, shared by the loader and the MCUboot image.
+ *
+ * It lives in the last 1 KB of SRAM. RAM keeps its content across pin and
+ * software resets and loses it on a power cycle.
+ */
+
+/ {
+	chosen {
+		zephyr,boot-mode = &boot_mode0;
+	};
+
+	sram@2003fc00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2003fc00 0x400>;
+		ranges = <0x0 0x2003fc00 0x400>;
+		zephyr,memory-region = "BootMode";
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		bootmode_retained_mem: bootmode_retained_mem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			ranges;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/* 2-byte prefix + 1 boot-mode byte + CRC-8 */
+			boot_mode0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x4>;
+				prefix = [52 4b];
+				checksum = <1>;
+			};
+		};
+	};
+};
+
+/* Hand the last 1 KB to the retained area above. */
+&sram0 {
+	reg = <0x20000000 DT_SIZE_K(255)>;
+};

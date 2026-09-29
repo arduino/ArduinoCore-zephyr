@@ -1,0 +1,373 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Flash layout, shared with the MCUboot image as well. */
+#include "rak4631_nrf52840_partitions.dtsi"
+/* Boot-mode retention area, shared with the MCUboot image as well. */
+#include "rak4631_nrf52840_bootmode.dtsi"
+
+/ {
+	chosen {
+		zephyr,console = &board_cdc_acm_logging;
+		zephyr,log-uart = &log_uarts;
+		zephyr,shell-uart = &board_cdc_acm_shell;
+		zephyr,code-partition = &code_partition;
+		/delete-property/ zephyr,uart-mcumgr;
+	};
+
+	aliases {
+		/* LED_BUILTIN resolves to the green LED (D7). */
+		led0 = &green_led;
+	};
+
+	log_uarts: log_uarts {
+		compatible = "zephyr,log-uart";
+		uarts = <&board_cdc_acm_logging>;
+	};
+};
+
+/*
+ * USB CDC-ACM ports, in enumeration order:
+ *  1. sketch:  the sketch's 'Serial' (SerialUSB)
+ *  2. shell:   Zephyr shell (debug builds only, unused otherwise)
+ *  3. logging: console (printk/stdout msg) + log backend (debug builds only, unused otherwise)
+ */
+&zephyr_udc0 {
+	board_cdc_acm_sketch: board_cdc_acm_sketch {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	board_cdc_acm_shell: board_cdc_acm_shell {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	board_cdc_acm_logging: board_cdc_acm_logging {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	num-bidir-endpoints = <1>;
+	num-in-endpoints = <6>;
+	num-out-endpoints = <3>;
+	num-isoin-endpoints = <0>;
+	num-isoout-endpoints = <0>;
+};
+
+/*
+ * The RAK4631 LEDs are active high: green on P1.03 (D7),
+ * blue on P1.04 (D8). The base board declares them active low.
+ */
+&green_led {
+	gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+};
+
+&blue_led {
+	gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+};
+
+/*
+ * WisBlock 3V3_S: IO2 (P1.02, WB_IO2 / D1)
+ * IO2=1 on, IO2=0 off.
+ */
+&gpio1 {
+	wb-3v3-s {
+		gpio-hog;
+		gpios = <2 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "3V3_S";
+	};
+};
+
+/* WB_IO5/WB_IO6 (P0.09/P0.10) are the NFC pins; use them as GPIOs. */
+&nfct {
+	status = "disabled";
+};
+
+&uicr {
+	nfct-pins-as-gpios;
+};
+
+/* RTC backend for the Arduino RTC library */
+&rtc2 {
+	status = "okay";
+};
+
+/* Shares the TWI1/SPI1 instance with the SX1262 SPI; keep disabled. */
+&i2c1 {
+	status = "disabled";
+};
+
+/*
+ * The board enables QSPI on P0.03/P0.30/P0.29/P0.28/P0.02/P0.26, but
+ * these pins are repurposed as SPI2, A3/D6, the D11 CS GPIO and the
+ * D13 LED3 GPIO.
+ */
+&qspi {
+	status = "disabled";
+	pinctrl-0 = <&qspi_default>;
+	pinctrl-1 = <&qspi_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+/* WisBlock header SPI: SCK P0.03, MOSI P0.30, MISO P0.29 */
+&spi2 {
+	compatible = "nordic,nrf-spi";
+	status = "okay";
+	cs-gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi2_default>;
+	pinctrl-1 = <&spi2_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+/* Arduino API pin mappings */
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&gpio0 17 0>,	/* D0 - WB_IO1 */
+				    <&gpio1 2 0>,	/* D1 - WB_IO2 */
+				    <&gpio0 21 0>,	/* D2 - WB_IO3 */
+				    <&gpio0 4 0>,	/* D3 - WB_IO4 */
+				    <&gpio0 9 0>,	/* D4 - WB_IO5 */
+				    <&gpio0 10 0>,	/* D5 - WB_IO6 */
+				    <&gpio0 28 0>,	/* D6 - WB_IO7 (AIN4) */
+				    <&gpio1 3 0>,	/* D7 - green LED */
+				    <&gpio1 4 0>,	/* D8 - blue LED */
+				    <&gpio0 5 0>,	/* D9 - WB_A0 (AIN3) */
+				    <&gpio0 31 0>,	/* D10 - WB_A1 (AIN7) */
+				    <&gpio0 26 0>,	/* D11 - WB_SPI_CS */
+				    <&gpio1 1 0>,	/* D12 - WB_SW1 */
+				    <&gpio0 2 0>;	/* D13 - WB_LED3 */
+
+		pwm-pin-gpios = <&gpio1 3 0>,	/* D7 - green LED */
+				<&gpio1 4 0>,	/* D8 - blue LED */
+				<&gpio0 17 0>,	/* D0 - WB_IO1 */
+				<&gpio1 2 0>,	/* D1 - WB_IO2 */
+				<&gpio0 21 0>,	/* D2 - WB_IO3 */
+				<&gpio0 4 0>,	/* D3 - WB_IO4 */
+				<&gpio0 9 0>,	/* D4 - WB_IO5 */
+				<&gpio0 10 0>,	/* D5 - WB_IO6 */
+				<&gpio0 28 0>;	/* D6 - WB_IO7 */
+
+		/*
+		 * WisBlock analog pins. On the RAK19007 base board, A0
+		 * (WB_A0/AIN0) is also wired to the battery voltage
+		 * divider (1.5 MOhm / 2.5 MOhm): VBAT = A0 * 5 / 3.
+		 */
+		adc-pin-gpios = <&gpio0 5 0>,	/* A0 - WB_A0 */
+				<&gpio0 31 0>,	/* A1 - WB_A1 */
+				<&gpio0 4 0>,	/* A2 - WB_IO4 (D3) */
+				<&gpio0 28 0>;	/* A3 - WB_IO7 (D6) */
+
+		/*
+		 * The period cell is in nanoseconds. The PWM counter runs at
+		 * 16 MHz, so one count is 62.5 ns and pwm_set_pulse_dt() turns
+		 * both the period and the pulse into counts:
+		 *
+		 *   counts    = ns * 16000000 / 1000000000 = ns / 62.5
+		 *   COUNTERTOP = 2000000 / 62.5 = 32000    (2 ms, 500 Hz)
+		 *
+		 * analogWrite(pin, v) asks for v/255 of the period, so:
+		 *
+		 *   pulse_ns  = v * period_ns / 255
+		 *   COMPARE   = pulse_ns / 62.5
+		 *   duty      = COMPARE / COUNTERTOP
+		 *
+		 * e.g. v = 64 -> 501960 ns -> COMPARE 8031 -> 25 %.
+		 *
+		 * COMPARE is a whole number, so the period must hold at least
+		 * 255 counts (>= 16 us) for all 256 values of v to differ.
+		 * 500 Hz has 32000 of them and stays well above flicker.
+		 */
+		pwms = <&pwm0 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm1 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm1 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		io-channels = <&adc 3>,	/* A0 - WB_A0 (AIN3) */
+			      <&adc 7>,	/* A1 - WB_A1 (AIN7) */
+			      <&adc 2>,	/* A2 - WB_IO4 (AIN2) */
+			      <&adc 4>;	/* A3 - WB_IO7 (AIN4) */
+
+		i2cs = <&i2c0>;	/* 'Wire': WisBlock sensor I2C (SDA P0.13, SCL P0.14) */
+		spis = <&spi2>;	/* 'SPI': WisBlock header SPI */
+
+		cdc-acm-serial = <&board_cdc_acm_sketch>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&uart0>, <&uart1>;
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN3>; /* P0.05 - WB_A0 */
+		zephyr,resolution = <10>;
+	};
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN7>; /* P0.31 - WB_A1 */
+		zephyr,resolution = <10>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN2>; /* P0.04 - WB_IO4 */
+		zephyr,resolution = <10>;
+	};
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN4>; /* P0.28 - WB_IO7 */
+		zephyr,resolution = <10>;
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-2 = <&pwm0_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm2_sleep>;
+	pinctrl-2 = <&pwm2_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	pwm0_default: pwm0_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 3)>,
+				<NRF_PSEL(PWM_OUT1, 1, 4)>,
+				<NRF_PSEL(PWM_OUT2, 0, 17)>,
+				<NRF_PSEL(PWM_OUT3, 1, 2)>;
+		};
+	};
+
+	pwm0_sleep: pwm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 3)>,
+				<NRF_PSEL(PWM_OUT1, 1, 4)>,
+				<NRF_PSEL(PWM_OUT2, 0, 17)>,
+				<NRF_PSEL(PWM_OUT3, 1, 2)>;
+				low-power-enable;
+		};
+	};
+
+	pwm1_default: pwm1_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 21)>,
+				<NRF_PSEL(PWM_OUT1, 0, 4)>;
+		};
+	};
+
+	pwm1_sleep: pwm1_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 21)>,
+				<NRF_PSEL(PWM_OUT1, 0, 4)>;
+				low-power-enable;
+		};
+	};
+
+	pwm2_default: pwm2_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>,
+				<NRF_PSEL(PWM_OUT1, 0, 10)>,
+				<NRF_PSEL(PWM_OUT2, 0, 28)>;
+		};
+	};
+
+	pwm2_sleep: pwm2_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>,
+				<NRF_PSEL(PWM_OUT1, 0, 10)>,
+				<NRF_PSEL(PWM_OUT2, 0, 28)>;
+				low-power-enable;
+		};
+	};
+
+	spi2_default: spi2_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 3)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 30)>,
+				<NRF_PSEL(SPIM_MISO, 0, 29)>;
+		};
+	};
+
+	spi2_sleep: spi2_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 3)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 30)>,
+				<NRF_PSEL(SPIM_MISO, 0, 29)>;
+			low-power-enable;
+		};
+	};
+
+	qspi_default: qspi_default {
+		group1 {
+			psels = <NRF_PSEL(QSPI_SCK, 0, 3)>,
+				<NRF_PSEL(QSPI_IO0, 0, 30)>,
+				<NRF_PSEL(QSPI_IO1, 0, 29)>,
+				<NRF_PSEL(QSPI_IO2, 0, 28)>,
+				<NRF_PSEL(QSPI_IO3, 0, 2)>,
+				<NRF_PSEL(QSPI_CSN, 0, 26)>;
+		};
+	};
+
+	qspi_sleep: qspi_sleep {
+		group1 {
+			psels = <NRF_PSEL(QSPI_SCK, 0, 3)>,
+				<NRF_PSEL(QSPI_IO0, 0, 30)>,
+				<NRF_PSEL(QSPI_IO1, 0, 29)>,
+				<NRF_PSEL(QSPI_IO2, 0, 28)>,
+				<NRF_PSEL(QSPI_IO3, 0, 2)>,
+				<NRF_PSEL(QSPI_CSN, 0, 26)>;
+			low-power-enable;
+		};
+	};
+};
