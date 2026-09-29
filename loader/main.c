@@ -268,7 +268,7 @@ static int loader(const struct shell *sh) {
 
 	size_t sketch_buf_len = sketch_hdr->len;
 
-	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
+	if (sketch_valid && (sketch_hdr->flags & SKETCH_FLAG_LINKED)) {
 #ifdef CONFIG_BOARD_ARDUINO_PORTENTA_C33
 #if CONFIG_MPU
 		barrier_dmem_fence_full();
