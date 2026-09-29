@@ -23,4 +23,3 @@ zephyr_sources(threads.cpp)
 endif()
 
 endif()
-
