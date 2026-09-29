@@ -1,6 +1,7 @@
 /build/
 /distrib/
 /firmwares/*
+/spdx/
 /venv/
 /boards.local.txt
 /platform.local.txt

@@ -296,6 +296,7 @@ jobs:
           tar chf - \
             firmwares/*${{ matrix.variant }}* \
             variants/${{ matrix.variant }}/ \
+            spdx/${{ matrix.variant }}/ \
             boards.local_${{ matrix.variant }}.txt \
             cores/arduino/api/ \
             ${FULL_BUILD_DIR} \
@@ -335,6 +336,7 @@ jobs:
     env:
       ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
       CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+      SPDX_ARTIFACT: ArduinoCore-zephyr-spdx-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
       CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
     strategy:
       matrix:
@@ -367,6 +369,19 @@ jobs:
           cat $(ls boards.local_*.txt | sort) >> boards.local.txt
           # Create the core artifact for this set of boards
           ./extra/package_core.sh ${{ matrix.artifact }} ${CORE_TAG} distrib/${CORE_ARTIFACT}
+
+      # A single SPDX archive for all boards, created with the umbrella package
+      - name: Package SPDX documents
+        if: ${{ matrix.artifact == 'zephyr' }}
+        run: |
+          tar jcf distrib/${SPDX_ARTIFACT} spdx/
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ matrix.artifact == 'zephyr' }}
+        with:
+          name: ${{ env.SPDX_ARTIFACT }}
+          path: distrib/${{ env.SPDX_ARTIFACT }}
+          archive: false
 
       - uses: actions/upload-artifact@v7
         id: upload-core
