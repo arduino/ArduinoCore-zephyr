@@ -50,7 +50,14 @@ if ! [ -z "$chosen_board" ]; then
 	# the args field is a single string; split it on unquoted whitespace,
 	# keeping quotes so a quoted value with spaces stays one array element
 	arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
-	mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+	if [[ "$OSTYPE" == darwin* ]]; then
+		args=()
+		while IFS= read -r tok; do
+			args+=("$tok")
+		done < <(jq -cr '.args' <<< "$chosen_board" | perl -nle "print \$& while /${arg_token}/g")
+	else
+		mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+	fi
 	upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
 
 	# Check for debug flag and append
