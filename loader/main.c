@@ -25,6 +25,11 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/devicetree/fixed-partitions.h>
 #include "../cores/arduino/zephyr_sketch_header.h"
 
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+#include <zephyr/retention/bootmode.h>
+#include <zephyr/sys/reboot.h>
+#endif
+
 #define SKETCH_RAM_BUFFER_LEN 131072
 
 /* Need to replicate logic from zephyrSerial.h to avoid C++ here */
@@ -59,6 +64,21 @@ static void loader_usb_msg_cb(struct usbd_context *const ctx, const struct usbd_
 			usbd_enable(ctx);
 		}
 	}
+
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+	/* 1200-bps touch while the loader owns USB for no sketch yet case. */
+	if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING && msg->dev == usb_dev) {
+		uint32_t baudrate = 0;
+
+		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+		if (baudrate == 1200) {
+			k_sleep(K_MSEC(100));
+			usbd_disable(ctx);
+			bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+			sys_reboot(SYS_REBOOT_COLD);
+		}
+	}
+#endif
 }
 
 int loader_usb_enable(void) {
@@ -77,6 +97,20 @@ int loader_usb_enable(void) {
 }
 
 #if CONFIG_SHELL
+/*
+ * If the zephyr,shell-uart chosen device is a CDC-ACM port of its own, not the
+ * sketch's 'Serial' port, the shell stays there. Otherwise it is moved to the
+ * sketch's USB port once USB is enabled.
+ */
+#define SHELL_ON_OWN_CDC_PORT                                                                      \
+	(DT_HAS_CHOSEN(zephyr_shell_uart) &&                                                           \
+	 DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_shell_uart), zephyr_cdc_acm_uart) &&                      \
+	 !DT_SAME_NODE(DT_CHOSEN(zephyr_shell_uart),                                                   \
+				   DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0)))
+
+#if SHELL_ON_OWN_CDC_PORT
+static const struct device *const shell_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_shell_uart));
+#else
 static int enable_shell_usb(void) {
 	bool log_backend = CONFIG_SHELL_BACKEND_SERIAL_LOG_LEVEL > 0;
 	uint32_t level = (CONFIG_SHELL_BACKEND_SERIAL_LOG_LEVEL > LOG_LEVEL_DBG) ?
@@ -88,6 +122,7 @@ static int enable_shell_usb(void) {
 
 	return 0;
 }
+#endif
 #endif
 #endif
 
@@ -155,7 +190,36 @@ static int loader(const struct shell *sh) {
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
-#if CONFIG_SHELL
+#if CONFIG_SHELL && SHELL_ON_OWN_CDC_PORT
+	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
+		// the shell already runs on its own port, only enable USB
+		loader_usb_enable();
+		if (debug) {
+			int dtr;
+			do {
+				// wait for the shell port to open
+				uart_line_ctrl_get(shell_dev, UART_LINE_CTRL_DTR, &dtr);
+				k_sleep(K_MSEC(100));
+			} while (!dtr);
+			LOG_INF("shell: port open (DTR set)");
+		}
+	}
+#if CONFIG_LOG
+	for (int i = 0; i < log_backend_count_get(); i++) {
+		const struct log_backend *backend;
+		backend = log_backend_get(i);
+		if (log_backend_is_active(backend)) {
+			// autostarted or already managed by the shell
+			continue;
+		}
+		log_backend_init(backend);
+		log_backend_enable(backend, backend->cb->ctx, CONFIG_LOG_DEFAULT_LEVEL);
+		if (!debug) {
+			break;
+		}
+	}
+#endif
+#elif CONFIG_SHELL
 	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
 		// disables default shell on UART
 		shell_uninit(shell_backend_uart_get_ptr(), NULL);
