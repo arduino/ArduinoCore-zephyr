@@ -62,7 +62,7 @@ compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics
 compiler.zephyr.extra_cxxflags=
 compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++ -lm -lgcc -lc
 
-# these can be overriden in boards.txt
+# these can be overridden in boards.txt
 build.extra_flags=
 build.extra_ldflags=
 build.link_mode=dynamic
@@ -106,7 +106,7 @@ compiler.objcopy.eep.extra_flags=
 compiler.elf2hex.extra_flags=
 
 # {build.library_discovery_phase} is set to 1 by the builder during library discovery.
-# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatiblity)
+# (this is available since arduino-builder>=1.5.5, keeping the default here for backward compatibility)
 build.library_discovery_phase=0
 build.library_discovery_phase_flag=-DARDUINO_LIBRARY_DISCOVERY_PHASE={build.library_discovery_phase}
 
@@ -366,6 +366,36 @@ tools.jlink.cmd.darwin=JLinkExe
 tools.jlink.upload.params.verbose=-v
 tools.jlink.upload.params.quiet=
 tools.jlink.upload.pattern="{path}/{cmd}" -CommanderScript "{build.path}/flasher.jlink"
+
+
+#
+# MCUmgr WRAPPER
+#
+
+tools.mcumgr.path={runtime.tools.mcumgr.path}
+tools.mcumgr.cmd=mcumgr
+tools.mcumgr.cmd.windows=mcumgr.exe
+tools.mcumgr.conn=--conntype serial --connstring "dev={serial.port},baud=115200,mtu=4096"
+
+tools.mcumgr.loader.cmd="{path}/{cmd}" {conn} image upload -n 1 "{upload.artifacts.loader}"
+tools.mcumgr.sketch.cmd="{path}/{cmd}" {conn} image upload -n 2 "{upload.artifacts.sketch}"
+tools.mcumgr.reset.cmd="{path}/{cmd}" {conn} reset
+
+# arduino-cli never sends the 1200-bps touch for burn-bootloader, so the
+# bootloader pattern sends it itself and waits for MCUboot's port.
+tools.mcumgr.touch.cmd=stty -F {serial.port} 1200
+tools.mcumgr.touch.cmd.macosx=stty -f {serial.port} 1200
+tools.mcumgr.touch.cmd.windows=mode {serial.port} BAUD=1200
+tools.mcumgr.wait.cmd=sleep 2
+tools.mcumgr.wait.cmd.windows=powershell -NoProfile -Command Start-Sleep -Seconds 2
+
+tools.mcumgr.upload.params.verbose=
+tools.mcumgr.upload.params.quiet=
+tools.mcumgr.upload.pattern={tools.patterns.flash-loader-and-sketch} :: run {reset.cmd}
+
+tools.mcumgr.bootloader.params.verbose=
+tools.mcumgr.bootloader.params.quiet=
+tools.mcumgr.bootloader.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" run {touch.cmd} :: run {wait.cmd} :: run {loader.cmd} :: run {reset.cmd}
 
 
 #
