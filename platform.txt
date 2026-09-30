@@ -391,7 +391,7 @@ tools.mcumgr.wait.cmd.windows=powershell -NoProfile -Command Start-Sleep -Second
 
 tools.mcumgr.upload.params.verbose=
 tools.mcumgr.upload.params.quiet=
-tools.mcumgr.upload.pattern={tools.patterns.flash-loader-and-sketch} :: run {reset.cmd}
+tools.mcumgr.upload.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" run {sketch.cmd} :: run {reset.cmd}
 
 tools.mcumgr.bootloader.params.verbose=
 tools.mcumgr.bootloader.params.quiet=
