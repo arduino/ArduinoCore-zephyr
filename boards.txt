@@ -48,6 +48,9 @@ giga.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 giga.build.board=GIGA
 giga.upload_port.0.vid=0x2341
 giga.upload_port.0.pid=0x0666
+giga.upload_port.1.pid=0x0266
+giga.upload_port.2.pid=0x0366
+giga.upload_port.3.pid=0x0466
 
 giga.upload.tool=dfu-util
 giga.upload.tool.default=dfu-util
@@ -100,6 +103,10 @@ nano33ble.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 nano33ble.build.board=NANO33BLE
 nano33ble.upload_port.0.vid=0x2341
 nano33ble.upload_port.0.pid=0x065a
+nano33ble.upload_port.1.pid=0x005a
+nano33ble.upload_port.2.pid=0x805a
+nano33ble.upload_port.3.pid=0x015a
+nano33ble.upload_port.4.pid=0x025a
 
 nano33ble.upload.tool=bossac
 nano33ble.upload.tool.default=bossac
@@ -239,6 +246,10 @@ portentah7.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 portentah7.build.board=PORTENTA_H7_M7
 portentah7.upload_port.0.vid=0x2341
 portentah7.upload_port.0.pid=0x065b
+portentah7.upload_port.1.pid=0x025b
+portentah7.upload_port.2.pid=0x035b
+portentah7.upload_port.3.pid=0x045b
+portentah7.upload_port.4.pid=0x055b
 
 portentah7.upload.tool=dfu-util
 portentah7.upload.tool.default=dfu-util
@@ -291,6 +302,10 @@ nicla_vision.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 nicla_vision.build.board=NICLA_VISION
 nicla_vision.upload_port.0.vid=0x2341
 nicla_vision.upload_port.0.pid=0x065f
+nicla_vision.upload_port.1.pid=0x025f
+nicla_vision.upload_port.2.pid=0x035f
+nicla_vision.upload_port.3.pid=0x045f
+nicla_vision.upload_port.4.pid=0x055f
 
 nicla_vision.upload.tool=dfu-util
 nicla_vision.upload.tool.default=dfu-util
@@ -433,6 +448,8 @@ portentac33.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 portentac33.build.board=PORTENTA_C33
 portentac33.upload_port.0.vid=0x2341
 portentac33.upload_port.0.pid=0x0668
+portentac33.upload_port.1.pid=0x0068
+portentac33.upload_port.2.pid=0x0368
 portentac33.upload.target=portentac33
 
 portentac33.upload.tool=dfu-util
@@ -486,6 +503,14 @@ opta.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
 opta.build.board=OPTA
 opta.upload_port.0.vid=0x2341
 opta.upload_port.0.pid=0x0664
+
+opta.upload_port.1.pid=0x0064
+opta.upload_port.2.pid=0x0164
+opta.upload_port.3.pid=0x0264
+opta.upload_port.4.pid=0x0364
+opta.upload_port.5.pid=0x0064
+opta.upload_port.6.pid=0x0164
+opta.upload_port.7.pid=0x0264
 
 opta.upload.tool=dfu-util
 opta.upload.tool.default=dfu-util
@@ -642,6 +667,10 @@ nano_connect.upload.artifacts.sketch={build.path}/{build.project_name}.{upload.e
 nano_connect.build.board=NANO_RP2040_CONNECT
 nano_connect.upload_port.0.vid=0x2341
 nano_connect.upload_port.0.pid=0x065E
+nano_connect.upload_port.1.pid=0x005e
+nano_connect.upload_port.2.pid=0x805e
+nano_connect.upload_port.3.pid=0x015e
+nano_connect.upload_port.4.pid=0x025e
 
 nano_connect.upload.tool=picotool
 nano_connect.upload.tool.default=picotool
