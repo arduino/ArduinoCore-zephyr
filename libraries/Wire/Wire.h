@@ -30,6 +30,10 @@ public:
 	virtual void begin(uint8_t address);
 	virtual void setClock(uint32_t freq);
 
+	/* Select a pinctrl state, falling back to Arduino if it is not defined. */
+	void begin(PinctrlState state);
+	void begin(uint8_t address, PinctrlState state);
+
 	virtual void beginTransmission(uint8_t address);
 	virtual uint8_t endTransmission(bool stopBit);
 	virtual uint8_t endTransmission(void);

@@ -9,7 +9,7 @@ Dynamic pin control means we can switch pad ownership at runtime, so the same ph
 
 Why this matters in Arduino-like APIs:
 
-- Users expect to call, for example, `analogRead(A0)` and later `digitalWrite(A0, HIGH)` on the same pin.
+- Users expect to call, for example, `analogRead(A0)` and later `pinMode(A0, OUTPUT)` followed by `digitalWrite(A0, HIGH)` on the same pin.
 - Users expect to call `analogWrite(Dx, value)` on one PWM pin without disturbing other PWM-capable pins on the same timer block.
 - The core must safely remap pins without requiring users to manually manage pinctrl states.
 
@@ -29,13 +29,15 @@ PINCTRL_STATE_SLEEP      = 1
 PINCTRL_STATE_PRIV_START = 2
 ```
 
-The custom state name `arduino` is defined in devicetree and mapped to `PINCTRL_STATE_ARDUINO`.
+The custom state names `arduino` and `arduino_alt` are defined in devicetree and mapped to `PINCTRL_STATE_ARDUINO` and `PINCTRL_STATE_ARDUINO_ALT`.
 
-Typical mapping:
 
-- default: peripheral operational state (SPI/I2C/UART normal routing)
-- sleep: optional low-power/disconnected state (not used)
-- arduino: custom channel list used for per-pin restore (mainly ADC/PWM/DAC)
+Typical overlay mapping for peripherals managed dynamically by the core:
+
+- `default`: empty, so driver initialization does not acquire the peripheral pins;
+- `sleep`: optional low-power/disconnected state (not used);
+- `arduino`: peripheral operational state (SPI/I2C/UART normal routing or the ordered channel pin list for ADC/PWM/DAC);
+- `arduino_alt`: optional alternate routing for peripheral supporting it.
 
 ## Runtime Infrastructure in `zephyrPinctrl.cpp`
 
@@ -46,9 +48,8 @@ Because the Zephyr logging UART is intentionally not marked with `zephyr,deferre
 
 The map is then used by APIs:
 
-- `init_dev_apply_pinctrl(dev)`
-- `init_dev_apply_channel_pinctrl(dev, state_pin_idx)`
-
+- `init_dev_apply_pinctrl(dev, state = arduino::PinctrlState::Standard)`;
+- `init_dev_apply_channel_pinctrl(dev, state_pin_idx)`.
 If a device has no known pinctrl config in the map:
 
 - `init_dev_apply_channel_pinctrl(...)` returns `-ENOTSUP`,
@@ -57,10 +58,10 @@ If a device has no known pinctrl config in the map:
 
 ## Dynamic Pinmux APIs and Runtime Flow
 
-### `init_dev_apply_pinctrl(dev)`
+### `init_dev_apply_pinctrl(dev, state = arduino::PinctrlState::Standard)`
 
-Purpose: initialize the target device and its dependencies, then apply the whole pinctrl
-`PINCTRL_STATE_DEFAULT` state where pinctrl configuration is known.
+Purpose: initialize the target device and its dependencies, then apply the requested pinctrl state to the
+whole target peripheral. Omitting `state` selects `ARDUINO`.
 
 Used for full peripheral remux, to restore the default state.
 
@@ -130,7 +131,7 @@ pwm4: pwm {
     status = "okay";
     zephyr,deferred-init;
     pinctrl-0 = <>;
-    pinctrl-1 = <&analog_pd13 &analog_pb8 &analog_pb9>;
+    pinctrl-1 = <>;
     pinctrl-2 = <&tim4_ch2_pd13 &tim4_ch3_pb8 &tim4_ch4_pb9>;
     pinctrl-names = "default", "sleep", "arduino";
 };
@@ -144,21 +145,26 @@ Effect:
 
 ## Devicetree Requirements
 
-### For SPI/I2C/UART nodes
+### For SPI/I2C/CAN/UART nodes
 
-Use deferred init and provide usual default/sleep states.
+Use deferred initialization, empty `default`/`sleep` states, and normal routing in `arduino`.
+Add `arduino_alt` only when alternate routing is available.
 
 ```dts
 &spiX {
     status = "okay";
     zephyr,deferred-init;
-    pinctrl-0 = <...>;  /* default */
-    pinctrl-1 = <...>;  /* sleep or empty */
-    pinctrl-names = "default", "sleep";
+    pinctrl-0 = <>;  /* empty */
+    pinctrl-1 = <>;  /* empty */
+    pinctrl-2 = <...>;  /* default */
+    pinctrl-3 = <...>;  /* optional */
+    pinctrl-names = "default", "sleep", "arduino", "arduino_alt";
 };
 ```
 
-Same pattern applies to `i2cX` and `uartX`.
+If no alternate routing is available, omit both `pinctrl-3` and the `arduino_alt` entry from `pinctrl-names`.
+
+Same pattern applies to `i2cX`, `uartX` and `canX`.
 
 Note: the runtime map explicitly includes the node selected as `zephyr,console` even when it is
 not `deferred-init`.

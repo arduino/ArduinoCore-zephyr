@@ -52,8 +52,10 @@
 
 	uart7: uart {
 		zephyr,deferred-init;
-		pinctrl-0 = <&sci7_default>;
-		pinctrl-names = "default";
+		pinctrl-0 = <&empty_default>;
+		pinctrl-1 = <&empty_default>;
+		pinctrl-2 = <&sci7_default>;
+		pinctrl-names = "default", "sleep", "arduino";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -66,8 +68,10 @@
 
 	uart6: uart {
 		zephyr,deferred-init;
-		pinctrl-0 = <&sci6_default>;
-		pinctrl-names = "default";
+		pinctrl-0 = <&empty_default>;
+		pinctrl-1 = <&empty_default>;
+		pinctrl-2 = <&sci6_default>;
+		pinctrl-names = "default", "sleep", "arduino";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -84,8 +88,10 @@
 
 	uart5: uart {
 		zephyr,deferred-init;
-		pinctrl-0 = <&sci5_default>;
-		pinctrl-names = "default";
+		pinctrl-0 = <&empty_default>;
+		pinctrl-1 = <&empty_default>;
+		pinctrl-2 = <&sci5_default>;
+		pinctrl-names = "default", "sleep", "arduino";
 		status = "okay";
 		current-speed = <115200>;
 	};
@@ -167,8 +173,10 @@
 	interrupts = <87 1>, <88 1>, <89 1>, <90 1>;
 	interrupt-names = "rxi", "txi", "tei", "eri";
 	clock-frequency = <I2C_BITRATE_FAST>;
-	pinctrl-0 = <&iic0_default>;
-	pinctrl-names = "default";
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&iic0_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &iic1 {
@@ -178,8 +186,10 @@
 	interrupts = <91 1>, <92 1>, <93 1>, <94 1>;
 	interrupt-names = "rxi", "txi", "tei", "eri";
 	clock-frequency = <I2C_BITRATE_FAST>;
-	pinctrl-0 = <&iic1_default>;
-	pinctrl-names = "default";
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&iic1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 &canfdclk {
@@ -268,6 +278,10 @@
 
 &mdio {
 	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&ether_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 
 	phy: ethernet-phy@0 {
 		zephyr,deferred-init;

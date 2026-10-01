@@ -27,12 +27,24 @@
     clocks = <&rcc STM32_CLOCK(APB1_2, 9)>,
              <&rcc STM32_SRC_PLL1_Q FDCAN_SEL(1)>;
 	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
+	pinctrl-3 = <&fdcan1_rx_pi9 &fdcan1_tx_pd5>; /* alternate: JOMEGA */
+	pinctrl-names = "default", "sleep", "arduino", "arduino_alt";
 };
 
 &fdcan2 {
     clocks = <&rcc STM32_CLOCK(APB1_2, 9)>,
              <&rcc STM32_SRC_PLL1_Q FDCAN_SEL(1)>;
 	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <>;
+	pinctrl-1 = <>;
+	pinctrl-2 = <&fdcan2_rx_pb5 &fdcan2_tx_pb6>;
+	pinctrl-3 = <&fdcan2_rx_pd9 &fdcan2_tx_pa10>; /* alternate: JOMEGA */
+	pinctrl-names = "default", "sleep", "arduino", "arduino_alt";
 };
 
 &fdcan3 {

@@ -21,16 +21,28 @@
 &i2c1 {
     status = "okay";
     zephyr,deferred-init;
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 &i2c2 {
     status = "okay";
     zephyr,deferred-init;
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&i2c2_scl_pf1 &i2c2_sda_pf0>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 &i2c3 {
     status = "okay";
     zephyr,deferred-init;
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&i2c3_scl_pa8 &i2c3_sda_pc9>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 &gc2145 {
@@ -44,19 +56,31 @@
 
 &dcmi {
     zephyr,deferred-init;
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&dcmi_d0_pc6 &dcmi_d1_pc7 &dcmi_d2_pe0 &dcmi_d3_pe1
+                 &dcmi_d4_pe4 &dcmi_d5_pd3 &dcmi_d6_pe5 &dcmi_d7_pe6
+                 &dcmi_pixclk_pa6 &dcmi_hsync_pa4 &dcmi_vsync_pg9>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 /* SPI buses */
 &spi4 {
     status = "okay";
     zephyr,deferred-init;
-    pinctrl-0 = <&spi4_sck_pe12 &spi4_miso_pe13 &spi4_mosi_pe14>;
-    pinctrl-names = "default";
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&spi4_sck_pe12 &spi4_miso_pe13 &spi4_mosi_pe14>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 &spi5 {
     status = "okay";
     zephyr,deferred-init;
+    pinctrl-0 = <>;
+    pinctrl-1 = <>;
+    pinctrl-2 = <&spi5_nss_pf6 &spi5_sck_pf7 &spi5_miso_pf8 &spi5_mosi_pf11>;
+    pinctrl-names = "default", "sleep", "arduino";
 };
 
 &rtc {

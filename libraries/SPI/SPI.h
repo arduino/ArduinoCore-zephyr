@@ -59,6 +59,9 @@ public:
 	virtual void begin();
 	virtual void end();
 
+	/* Select a pinctrl state, falling back to Arduino if it is not defined. */
+	void begin(PinctrlState state);
+
 private:
 	int transfer(void *buf, size_t len, const struct spi_config *config);
 
