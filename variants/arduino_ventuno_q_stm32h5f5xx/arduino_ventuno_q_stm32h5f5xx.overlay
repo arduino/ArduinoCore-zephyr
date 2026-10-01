@@ -41,6 +41,26 @@
 	status = "okay";
 };
 
+&spi2 {
+	zephyr,deferred-init;
+};
+
+&spi3 {
+	zephyr,deferred-init;
+};
+
+&i2c2 {
+	zephyr,deferred-init;
+};
+
+&i2c4 {
+	zephyr,deferred-init;
+};
+
+&dac1 {
+	zephyr,deferred-init;
+};
+
 &adc1 {
         status = "okay";
         zephyr,deferred-init;
@@ -332,7 +352,6 @@
                                 <&gpiob 5 0>,
                                 <&gpiob 2 0>,
                                 <&gpiob 7 0>,
-                                /* <&gpiob 12 0>, */
                                 <&gpiob 15 0>,
                                 <&gpioc 6 0>,
                                 <&gpiog 2 0>;
