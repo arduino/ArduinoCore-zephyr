@@ -421,7 +421,70 @@ qspi_flash: &mx25l12833f {};
 				    <&gpiok 5 0>,		/* LEDR */
 				    <&gpiok 6 0>,		/* LEDG */
 				    <&gpiok 7 0>,		/* LEDB */
-				    <&gpioi 12 0>;		/* SE05X_EN */
+				    <&gpioi 12 0>,		/* SE05X_EN */
+
+				    /* Other GPIO pins on J1/J2 duplicates removed */
+				    /* System devices like SDRam pins also removed */
+
+  					<&gpioa 0 GPIO_ACTIVE_LOW>,
+  					<&gpioa 11 GPIO_ACTIVE_LOW>,
+  					<&gpioa 12 GPIO_ACTIVE_LOW>,
+  					<&gpioa 13 GPIO_ACTIVE_LOW>,
+  					<&gpioa 14 GPIO_ACTIVE_LOW>,
+
+  					<&gpiob 2 GPIO_ACTIVE_LOW>,
+  					<&gpiob 3 GPIO_ACTIVE_LOW>,
+  					<&gpiob 4 GPIO_ACTIVE_LOW>,
+  					<&gpiob 6 GPIO_ACTIVE_LOW>,
+  					<&gpiob 7 GPIO_ACTIVE_LOW>,
+  					<&gpiob 8 GPIO_ACTIVE_LOW>,
+  					<&gpiob 9 GPIO_ACTIVE_LOW>,
+  					<&gpiob 14 GPIO_ACTIVE_LOW>,
+  					<&gpiob 15 GPIO_ACTIVE_LOW>,
+
+  					<&gpioc 13 GPIO_ACTIVE_LOW>,
+  					<&gpioc 15 GPIO_ACTIVE_LOW>,
+
+  					<&gpiod 3 GPIO_ACTIVE_LOW>,
+  					<&gpiod 4 GPIO_ACTIVE_LOW>,
+  					<&gpiod 5 GPIO_ACTIVE_LOW>,
+  					<&gpiod 6 GPIO_ACTIVE_LOW>,
+  					<&gpiod 7 GPIO_ACTIVE_LOW>,
+
+  					<&gpioe 2 GPIO_ACTIVE_LOW>,
+  					<&gpioe 3 GPIO_ACTIVE_LOW>,
+
+  					<&gpiog 3 GPIO_ACTIVE_LOW>,
+  					<&gpiog 9 GPIO_ACTIVE_LOW>,
+  					<&gpiog 10 GPIO_ACTIVE_LOW>,
+  					<&gpiog 14 GPIO_ACTIVE_LOW>,
+
+  					<&gpioh 6 GPIO_ACTIVE_LOW>,
+  					<&gpioh 9 GPIO_ACTIVE_LOW>,
+  					<&gpioh 10 GPIO_ACTIVE_LOW>,
+  					<&gpioh 11 GPIO_ACTIVE_LOW>,
+  					<&gpioh 12 GPIO_ACTIVE_LOW>,
+  					<&gpioh 13 GPIO_ACTIVE_LOW>,
+  					<&gpioh 14 GPIO_ACTIVE_LOW>,
+
+  					<&gpioi 2 GPIO_ACTIVE_LOW>,
+  					<&gpioi 3 GPIO_ACTIVE_LOW>,
+  					<&gpioi 4 GPIO_ACTIVE_LOW>,
+  					<&gpioi 5 GPIO_ACTIVE_LOW>,
+  					<&gpioi 6 GPIO_ACTIVE_LOW>,
+  					<&gpioi 7 GPIO_ACTIVE_LOW>,
+  					<&gpioi 8 GPIO_ACTIVE_LOW>,
+  					<&gpioi 9 GPIO_ACTIVE_LOW>,
+  					<&gpioi 10 GPIO_ACTIVE_LOW>,
+  					<&gpioi 13 GPIO_ACTIVE_LOW>,
+  					<&gpioi 14 GPIO_ACTIVE_LOW>,
+  					<&gpioi 15 GPIO_ACTIVE_LOW>,
+
+  					<&gpioj 6 GPIO_ACTIVE_LOW>,
+  					<&gpioj 7 GPIO_ACTIVE_LOW>,
+  					<&gpioj 8 GPIO_ACTIVE_LOW>,
+  					<&gpioj 9 GPIO_ACTIVE_LOW>,
+  					<&gpioj 10 GPIO_ACTIVE_LOW>;
 
 		builtin-led-gpios = <&gpiok 6 0>,
 				    <&gpiok 5 0>,
