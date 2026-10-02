@@ -363,21 +363,13 @@ struct backup_store {
 __stm32_backup_sram_section struct backup_store backup;
 #endif
 
-#if defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
+#if defined(CONFIG_USBD_GS_USB)
 
 #include <cannectivity/usb/class/gs_usb.h>
+#include <zephyr/drivers/pinctrl.h>
 
 int cannectivity_led_init(void);
 int cannectivity_timestamp_init(void);
-
-static const struct gs_usb_ops gs_usb_ops = {
-#ifdef CONFIG_CANNECTIVITY_TIMESTAMP
-	.timestamp = cannectivity_timestamp_get,
-#endif
-#ifdef CONFIG_CANNECTIVITY_LED
-	.event = cannectivity_led_event,
-#endif
-};
 
 #define CANNECTIVITY_DT_NODE_ID     DT_NODELABEL(cannectivity)
 #define CANNECTIVITY_DT_HAS_CHANNEL DT_HAS_COMPAT_STATUS_OKAY(cannectivity_channel)
@@ -385,12 +377,89 @@ static const struct gs_usb_ops gs_usb_ops = {
 	DT_FOREACH_CHILD_STATUS_OKAY_SEP(CANNECTIVITY_DT_NODE_ID, fn, sep)
 #define CHANNEL_CAN_CONTROLLER_DT_GET(node_id) DEVICE_DT_GET(DT_PHANDLE(node_id, can_controller))
 
+static const struct device *channels[] = {
+	CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_CAN_CONTROLLER_DT_GET, (, ))};
+
+/* Pinctrl configuration for cannectivity deferred controllers. */
+#define CHANNEL_PINCTRL_SELECTED(node_id)                                                          \
+	DT_PROP(DT_PHANDLE(node_id, can_controller), zephyr_deferred_init)
+#define CHANNEL_PINCTRL_DECLARE(node_id)                                                           \
+	COND_CODE_1(CHANNEL_PINCTRL_SELECTED(node_id),                                               \
+		    (PINCTRL_DT_DEV_CONFIG_DECLARE(DT_PHANDLE(node_id, can_controller));), ())
+#define CHANNEL_PINCTRL_GET(node_id)                                                               \
+	COND_CODE_1(CHANNEL_PINCTRL_SELECTED(node_id),                                               \
+		    (PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE(node_id, can_controller))), (NULL))
+
+DT_FOREACH_CHILD_STATUS_OKAY(CANNECTIVITY_DT_NODE_ID, CHANNEL_PINCTRL_DECLARE)
+
+static const struct pinctrl_dev_config *const channel_pinctrl[] = {
+	CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_PINCTRL_GET, (, ))};
+
+#define CHANNEL_PINCTRL_UNSELECTED(node_id) UINT8_MAX
+static uint8_t selected_pinctrl[] = {
+	CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_PINCTRL_UNSELECTED, (, ))};
+
+void cannectivity_pinctrl_selected(const struct device *dev, uint8_t state_id) {
+	for (size_t ch = 0; ch < ARRAY_SIZE(channels); ch++) {
+		if (channels[ch] == dev && channel_pinctrl[ch] != NULL) {
+			const struct pinctrl_state *state;
+			/* Match init_dev_apply_pinctrl() fallback for unavailable states. */
+			if (pinctrl_lookup_state(channel_pinctrl[ch], state_id, &state) == -ENOENT) {
+				state_id = PINCTRL_STATE_ARDUINO;
+			}
+			selected_pinctrl[ch] = state_id;
+			return;
+		}
+	}
+}
+
+static int cannectivity_channel_event(const struct device *dev, uint16_t ch,
+				     enum gs_usb_event event, void *user_data) {
+	if (ch >= ARRAY_SIZE(channels)) {
+		return -EINVAL;
+	}
+
+	/* Reapply the selected pinctrl state, or Standard if none was selected. */
+	if (event == GS_USB_EVENT_CHANNEL_STARTED && channel_pinctrl[ch] != NULL) {
+		const uint8_t *selected = user_data;
+		uint8_t state_id = selected[ch] == UINT8_MAX ? PINCTRL_STATE_ARDUINO : selected[ch];
+		int err = pinctrl_apply_state(channel_pinctrl[ch], state_id);
+		if (err != 0) {
+			return err;
+		}
+	}
+
+#ifdef CONFIG_CANNECTIVITY_LED
+	return cannectivity_led_event(dev, ch, event, user_data);
+#else
+	ARG_UNUSED(dev);
+	ARG_UNUSED(user_data);
+	return 0;
+#endif
+}
+
+static const struct gs_usb_ops gs_usb_ops = {
+#ifdef CONFIG_CANNECTIVITY_TIMESTAMP
+	.timestamp = cannectivity_timestamp_get,
+#endif
+	.event = cannectivity_channel_event,
+};
+
 int enable_cannectivity() {
 
 	const struct device *gs_usb = DEVICE_DT_GET(DT_NODELABEL(gs_usb0));
-	const struct device *channels[] = {
-		CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_CAN_CONTROLLER_DT_GET, (, ))};
 	int err;
+
+	/* Initialize deferred controllers: if pinctrl-0 is empty, 
+	 * they are initialized without acquiring any pins. */
+	for (size_t ch = 0; ch < ARRAY_SIZE(channels); ch++) {
+		if (!device_is_ready(channels[ch])) {
+			err = device_init(channels[ch]);
+			if (err != 0) {
+				return err;
+			}
+		}
+	}
 
 	if (IS_ENABLED(CONFIG_CANNECTIVITY_LED)) {
 		err = cannectivity_led_init();
@@ -406,7 +475,8 @@ int enable_cannectivity() {
 		}
 	}
 
-	err = gs_usb_register(gs_usb, channels, ARRAY_SIZE(channels), &gs_usb_ops, NULL);
+	err = gs_usb_register(gs_usb, channels, ARRAY_SIZE(channels), &gs_usb_ops,
+			      selected_pinctrl);
 	if (err != 0U) {
 		return -1;
 	}
@@ -414,6 +484,10 @@ int enable_cannectivity() {
 }
 
 SYS_INIT(enable_cannectivity, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+
+#endif /* CONFIG_USBD_GS_USB */
+
+#if defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/drivers/pwm.h>
@@ -665,4 +739,4 @@ int system_utilities(void) {
 
 SYS_INIT(system_utilities, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
-#endif
+#endif /* CONFIG_BOARD_ARDUINO_VENTUNO_Q */

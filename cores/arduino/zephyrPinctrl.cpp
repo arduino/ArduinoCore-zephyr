@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <Arduino.h>
 #include <zephyrPinctrl.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/pinctrl.h>
+#include <zephyr/sys/util.h>
 
 // Keep the public IDs independent of the driver header, but verify their mapping here.
 static_assert(static_cast<uint8_t>(arduino::PinctrlState::Standard) == PINCTRL_STATE_ARDUINO,
