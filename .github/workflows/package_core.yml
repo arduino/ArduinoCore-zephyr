@@ -22,9 +22,12 @@ env:
   HEAD_REF: ${{ github.event.pull_request.head.sha || github.ref }}
 
 jobs:
-
-
-
+  build-loader-docker:
+    uses: ./.github/workflows/docker_build.yml
+    with:
+      image_name: ${{ github.repository }}-loader_build
+      dockerfile: extra/docker/Dockerfile.build_system
+      registry: ghcr.io
   # Prepare the Zephyr build environment once for all boards, to speed up the
   # overall process and ensure all builds use the same environment and metadata.
   # Several outputs are made available for later jobs to use.
@@ -57,14 +60,6 @@ jobs:
       CI_BUILDS_URL: ${{ env.CI_BUILDS_URL }}
     steps:
 
-      - name: Install OS dependencies
-        working-directory: /opt
-        timeout-minutes: 5 # early error on Github network issues
-        run: |
-          sudo apt-get remove --purge man-db -y # skips the mandb triggers
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build
-
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
@@ -95,26 +90,7 @@ jobs:
           echo "ARTIFACTS=$(jq -c '["zephyr"] + (map(.artifact) | unique)' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
           echo "SUB_ARCHES=$(jq -c 'map(.subarch) | unique' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
 
-      - name: Cache west modules and blobs
-        uses: actions/cache@v5
-        with:
-          key: west-cache-${{ hashFiles('west.yml', 'boards.txt') }}
-          restore-keys: |
-            west-blobs-
-          path: ${{ runner.temp }}/west-cache
-
-      - name: Initialize Zephyr environment
-        timeout-minutes: 10 # early error on Github network issues
-        env:
-          WEST_CACHE: ${{ runner.temp }}/west-cache
-        run: |
-          # Install Zephyr as a core user would, but faster
-          yes | ./extra/bootstrap.sh -o=--filter=tree:0
-          # Archive the build environment for later jobs
-          (cd && tar cphf - .cmake work zephyr-sdk-* | zstd > build-env.tar.zstd)
-
       - name: Get ci-builds package index link
-        if: ${{ github.repository == 'arduino/ArduinoCore-zephyr' }}
         run: |
           # for pull requests and pushes to the official Arduino repo, use the latest ci-built core as a reference
           CI_BUILDS_URL="https://arduino.github.io/core-ci-builds/package_arduino_zephyr_${CORE_BRANCH}_ci_index.json"
@@ -143,15 +119,6 @@ jobs:
           path: test-data/
           retention-days: 1
 
-      - name: Archive build environment
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-env
-          path: ~/build-env.tar.zstd
-          retention-days: 1
-          archive: false
-
-
 
   # Extract the build environment and compile the loader project for each board
   # in parallel. The build logs and artifacts are intermediate results archived
@@ -162,7 +129,13 @@ jobs:
     name: Build for ${{ matrix.board }}
     runs-on: ubuntu-latest
     needs:
+      - build-loader-docker
       - build-env
+    container:
+      image: ${{ needs.build-loader-docker.outputs.output_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     env:
       # ccache, don't look for the spec file anywhere
       CCACHE_IGNOREOPTIONS: -specs=*
@@ -177,20 +150,12 @@ jobs:
       fail-fast: false
     steps:
 
-      - uses: actions/download-artifact@v8
-        timeout-minutes: 10 # early error on Github network issues
+      - uses: actions/checkout@v6
         with:
-          path: /home/runner
-          name: build-env.tar.zstd
-
-      - name: Restore build environment
-        id: restore-env
-        timeout-minutes: 5 # early error on Github network issues
-        run: |
-          sudo apt-get remove --purge man-db -y # skips the mandb triggers
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache
-          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zstd && rm build-env.tar.zstd)
+          submodules: 'recursive'
+          fetch-depth: 0
+          persist-credentials: false
+          fetch-tags: true # needed for get_core_version.sh
 
       - name: ccache
         uses: actions/cache@v5
@@ -198,7 +163,17 @@ jobs:
           key: ${{ github.job }}-${{ matrix.board }} # independent caches
           path: ~/.cache/ccache
 
+      - name: Prepare build env
+        run: |
+          cp -r ${CORE_LOCATION}/zephyr/blobs/ zephyr/
+          rm -rf ${CORE_LOCATION}
+          ln -s $PWD ${CORE_LOCATION}
+          cd ${CORE_LOCATION}
+
+          git config --global --add safe.directory "${CORE_LOCATION}"
+
       - name: Build loader
+        id: build-loader
         shell: bash
         run: |
           # create the report directory
@@ -237,7 +212,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Package board artifacts
-        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.build-loader.outcome == 'success' && !cancelled() }}
         run: |
           # add the config file to the report files, list them for later archiving
           cp firmwares/zephyr-${{ matrix.variant }}.config $REPORT.config
@@ -245,7 +220,7 @@ jobs:
           ls reports/* >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-          # Preprare an archive of the built binaries (and build dir on failure)
+          # Preparare an archive of the built binaries (and build dir on failure)
           [ "${{ job.status }}" == "failure" ] && FULL_BUILD_DIR="build/${{ matrix.variant }}/"
           sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
           tar chf - \
@@ -257,7 +232,7 @@ jobs:
           | zstd > binaries-${ARTIFACT_TAG}.tar.zstd
 
       - name: Archive board binaries
-        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.build-loader.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           # prefix the name with 'failed-' if the build failed, so that it is not removed
@@ -267,7 +242,7 @@ jobs:
           archive: false
 
       - name: Archive build reports
-        if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.build-loader.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: build-report-${{ env.ARTIFACT_TAG }}
@@ -295,7 +270,7 @@ jobs:
       matrix:
         artifact: ${{ fromJSON( needs.build-env.outputs.ARTIFACTS ) }}
       fail-fast: false
-    if: ${{ !cancelled() && needs.build-env.result == 'success' }}
+    if: ${{ !cancelled() && needs.build-board.result == 'success' }}
     steps:
 
       - uses: actions/checkout@v6
@@ -466,7 +441,7 @@ jobs:
       CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
       ARTIFACT_TAG: ${{ needs.build-env.outputs.CORE_HASH }}-${{ matrix.board }}-${{ matrix.link_mode }}
       CI_BUILDS_URL: ${{ needs.build-env.outputs.CI_BUILDS_URL }}
-    if: ${{ !cancelled() && needs.build-env.result == 'success' }}
+    if: ${{ !cancelled() && needs.package-core.result == 'success' }}
     steps:
 
       # only needs the test list generator and artifact information
