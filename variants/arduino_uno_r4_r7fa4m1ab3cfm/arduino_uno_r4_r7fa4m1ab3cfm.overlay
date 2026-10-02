@@ -1,0 +1,126 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/* RA4M1 has 256 KB flash. Split as:
+ *   0x00000 - 0x04000 (16 KB)   bootloader
+ *   0x04000 - 0x22000 (120 KB)  loader (image-0)
+ *   0x22000 - 0x40000 (120 KB)  user_sketch
+ */
+&flash0 {
+	/delete-node/ partitions;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "bootloader";
+			reg = <0x00000000 DT_SIZE_K(16)>;
+			read-only;
+		};
+
+		code_partition: partition@4000 {
+			label = "image-0";
+			reg = <0x00004000 DT_SIZE_K(120)>;
+		};
+
+		user_sketch: partition@22000 {
+			label = "user_sketch";
+			reg = <0x00022000 DT_SIZE_K(120)>;
+		};
+	};
+};
+
+&adc0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	a0: channel@9 {
+		reg = <9>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <14>;
+	};
+
+	a1: channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <14>;
+	};
+
+	a2: channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <14>;
+	};
+
+	a3: channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <14>;
+	};
+};
+
+/ {
+	zephyr,user {
+		/* D0..D15 then A0..A5 (header order). */
+		digital-pin-gpios = <&ioport3 1 GPIO_ACTIVE_HIGH>,	/* D0  RXD (P301) */
+				    <&ioport3 2 GPIO_ACTIVE_HIGH>,	/* D1  TXD (P302) */
+				    <&ioport1 4 GPIO_ACTIVE_HIGH>,	/* D2  (P104)     */
+				    <&ioport1 5 GPIO_ACTIVE_HIGH>,	/* D3  (P105)     */
+				    <&ioport1 6 GPIO_ACTIVE_HIGH>,	/* D4  (P106)     */
+				    <&ioport1 7 GPIO_ACTIVE_HIGH>,	/* D5  (P107)     */
+				    <&ioport1 11 GPIO_ACTIVE_HIGH>,	/* D6  (P111)     */
+				    <&ioport1 12 GPIO_ACTIVE_HIGH>,	/* D7  (P112)     */
+				    <&ioport3 4 GPIO_ACTIVE_HIGH>,	/* D8  (P304)     */
+				    <&ioport3 3 GPIO_ACTIVE_HIGH>,	/* D9  (P303)     */
+				    <&ioport1 3 GPIO_ACTIVE_HIGH>,	/* D10 (P103) CS  */
+				    <&ioport4 11 GPIO_ACTIVE_HIGH>,	/* D11 (P411) MOSI*/
+				    <&ioport4 10 GPIO_ACTIVE_HIGH>,	/* D12 (P410) MISO*/
+				    <&ioport1 2 GPIO_ACTIVE_HIGH>,	/* D13 (P102) SCK */
+				    <&ioport1 1 GPIO_ACTIVE_HIGH>,	/* D14 (P101) SDA */
+				    <&ioport1 0 GPIO_ACTIVE_HIGH>,	/* D15 (P100) SCL */
+
+				    <&ioport0 14 GPIO_ACTIVE_HIGH>,	/* A0  (P014) */
+				    <&ioport0 0 GPIO_ACTIVE_HIGH>,	/* A1  (P000) */
+				    <&ioport0 1 GPIO_ACTIVE_HIGH>,	/* A2  (P001) */
+				    <&ioport0 2 GPIO_ACTIVE_HIGH>,	/* A3  (P002) */
+				    <&ioport1 1 GPIO_ACTIVE_HIGH>,	/* A4  (P101) */
+				    <&ioport1 0 GPIO_ACTIVE_HIGH>;	/* A5  (P100) */
+
+		builtin-led-gpios = <&ioport1 2 GPIO_ACTIVE_HIGH>;	/* D13 LED */
+
+		pwm-pin-gpios = <&ioport3 4 0>,				/* D8 GPT7_A */
+				<&ioport3 3 0>;				/* D9 GPT7_B */
+
+		serials = <&uart2>;					/* Serial1 = D0/D1 (UART to ESP32-S3) */
+		i2cs = <&iic1>;						/* Wire = A4/A5 */
+		spis = <&spi0>;						/* SPI = D11/D12/D13 */
+
+		pwms = <&pwm7 0 PWM_HZ(490) PWM_POLARITY_NORMAL>,
+		       <&pwm7 1 PWM_HZ(490) PWM_POLARITY_NORMAL>;
+
+		io-channels = <&adc0 9>,
+			      <&adc0 0>,
+			      <&adc0 1>,
+			      <&adc0 2>;
+
+		adc-pin-gpios = <&ioport0 14 0>,			/* A0 */
+				<&ioport0 0 0>,				/* A1 */
+				<&ioport0 1 0>,				/* A2 */
+				<&ioport0 2 0>;				/* A3 */
+	};
+};
