@@ -71,6 +71,10 @@
 	zephyr,deferred-init;
 };
 
+&zephyr_lcd_controller {
+	zephyr,deferred-init;
+};
+
 &i2c1 {
 	status = "okay";
 	zephyr,deferred-init;
