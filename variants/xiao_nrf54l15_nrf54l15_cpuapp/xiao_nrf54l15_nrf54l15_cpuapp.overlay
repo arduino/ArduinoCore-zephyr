@@ -1,0 +1,193 @@
+/*
+ * Copyright (c) 2026 Seeed Technology Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Pin map (from boards/seeed/xiao_nrf54l15/seeed_xiao_connector.dtsi
+ * and the board pinctrl):
+ *   D0..D5  = P1.04 P1.05 P1.06 P1.07 P1.10 P1.11 (A0-A3, A4; D4/D5 = SDA/SCL)
+ *   D6..D10 = P2.08 P2.07 P2.01 P2.04 P2.02       (Serial1 TX/RX, SPI SCK/MISO/MOSI)
+ *   D11/D12 = P0.03/P0.04                         (back pads, Wire1 SCL/SDA)
+ *   D13..D15 = P2.10 P2.09 P2.06                  (back pads)
+ *   D16 = P2.00 user LED (active low), D17 = P0.00 user button,
+ *   D18 = P1.14 VBAT sense (A5 = AIN7)
+ * Hardware PWM: pwm20 ch0-3 = D0-D3, pwm21 ch0-1 = D4-D5. The P2 port
+ * has no PWM peripheral routing on nRF54L15, so D6+ have no hardware
+ * analogWrite() (matches the community core behaviour).
+ * Serial = uart20 console, bridged to the host USB by the onboard
+ * SAMD11; Serial1 = uart21 (D6/D7); Wire = i2c22 (D4/D5), Wire1 =
+ * i2c30 (D11/D12, Sense IMU on Wire1); SPI = spi00 (D8/D9/D10).
+ */
+
+/ {
+	chosen {
+		zephyr,code-partition = &code_partition;
+	};
+
+	zephyr,user {
+		digital-pin-gpios = <&gpio1 4 0>,			/* D0 */
+			<&gpio1 5 0>,			/* D1 */
+			<&gpio1 6 0>,			/* D2 */
+			<&gpio1 7 0>,			/* D3 */
+			<&gpio1 10 0>,			/* D4 / SDA */
+			<&gpio1 11 0>,			/* D5 / SCL */
+			<&gpio2 8 0>,			/* D6 / TX */
+			<&gpio2 7 0>,			/* D7 / RX */
+			<&gpio2 1 0>,			/* D8 / SCK */
+			<&gpio2 4 0>,			/* D9 / MISO */
+			<&gpio2 2 0>,			/* D10 / MOSI */
+			<&gpio0 3 0>,			/* D11 / Wire1 SCL */
+			<&gpio0 4 0>,			/* D12 / Wire1 SDA */
+			<&gpio2 10 0>,			/* D13 */
+			<&gpio2 9 0>,			/* D14 */
+			<&gpio2 6 0>,			/* D15 */
+			<&gpio2 0 GPIO_ACTIVE_LOW>,	/* D16 user LED */
+			<&gpio0 0 GPIO_ACTIVE_LOW>,	/* D17 user button */
+			<&gpio1 14 0>;			/* D18 VBAT sense */
+
+		adc-pin-gpios = <&gpio1 4 0>,			/* A0 = D0, AIN0 */
+			<&gpio1 5 0>,			/* A1 = D1, AIN1 */
+			<&gpio1 6 0>,			/* A2 = D2, AIN2 */
+			<&gpio1 7 0>,			/* A3 = D3, AIN3 */
+			<&gpio1 11 0>,			/* A4 = D5, AIN4 */
+			<&gpio1 14 0>;			/* A5 = D18 VBAT, AIN7 */
+
+		pwm-pin-gpios = <&gpio1 4 0>,			/* D0 */
+			<&gpio1 5 0>,			/* D1 */
+			<&gpio1 6 0>,			/* D2 */
+			<&gpio1 7 0>,			/* D3 */
+			<&gpio1 10 0>,			/* D4 */
+			<&gpio1 11 0>;			/* D5 */
+
+		builtin-led-gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;	/* D16 */
+
+		pwms = <&pwm20 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm20 3 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+			<&pwm21 1 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		io-channels = <&adc 0>,			/* A0 = AIN0 */
+			<&adc 1>,			/* A1 = AIN1 */
+			<&adc 2>,			/* A2 = AIN2 */
+			<&adc 3>,			/* A3 = AIN3 */
+			<&adc 4>,			/* A4 = AIN4 */
+			<&adc 7>;			/* A5 = AIN7 VBAT */
+
+		serials = <&uart20>,		/* Serial: console, bridged to USB */
+			<&uart21>;		/* Serial1: D6/D7 */
+		i2cs = <&i2c22>,		/* Wire: D4/D5 */
+			<&i2c30>;		/* Wire1: D11/D12 (Sense IMU) */
+		spis = <&spi00>;		/* SPI: D8/D9/D10 */
+	};
+};
+
+&pinctrl {
+	i2c22_arduino_default: i2c22_arduino_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 1, 10)>,
+				<NRF_PSEL(TWIM_SCL, 1, 11)>;
+			/* The XIAO connector has no I2C pull-ups and the nRF54 TWIM
+			 * stalls on a floating bus (unlike nRF52, which NACKs), so
+			 * enable the internal pull-ups to make Wire usable with
+			 * external devices. */
+			bias-pull-up;
+		};
+	};
+
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	pwm20_default: pwm20_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>,
+				<NRF_PSEL(PWM_OUT1, 1, 5)>,
+				<NRF_PSEL(PWM_OUT2, 1, 6)>,
+				<NRF_PSEL(PWM_OUT3, 1, 7)>;
+			nordic,invert;
+		};
+	};
+
+	pwm20_sleep: pwm20_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 4)>,
+				<NRF_PSEL(PWM_OUT1, 1, 5)>,
+				<NRF_PSEL(PWM_OUT2, 1, 6)>,
+				<NRF_PSEL(PWM_OUT3, 1, 7)>;
+			low-power-enable;
+		};
+	};
+
+	pwm21_default: pwm21_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 10)>,
+				<NRF_PSEL(PWM_OUT1, 1, 11)>;
+			nordic,invert;
+		};
+	};
+
+	pwm21_sleep: pwm21_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 1, 10)>,
+				<NRF_PSEL(PWM_OUT1, 1, 11)>;
+			low-power-enable;
+		};
+	};
+};
+
+&pwm20 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm20_sleep>;
+	pinctrl-2 = <&pwm20_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm21 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm21_sleep>;
+	pinctrl-2 = <&pwm21_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&i2c22 {
+	pinctrl-0 = <&i2c22_arduino_default>;
+};
+
+&cpuapp_rram {
+	partitions {
+		/* The SoC default layout reserves 62 KB at 0x0 for MCUboot
+		 * with two 712 KB image slots. This core has no MCUboot:
+		 * partition@0 (the MCUboot area) becomes the Arduino loader
+		 * holding the reset vector at 0x0, and the two image slots
+		 * are removed so the sketch can take the whole space above
+		 * the loader. */
+		/delete-node/ partition@10000;
+		/delete-node/ partition@c2000;
+
+		code_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "code";
+			reg = <0x00000000 0x00060000>;	/* loader: 384 KB */
+			read-only;
+		};
+
+		user_sketch: partition@60000 {
+			compatible = "zephyr,mapped-partition";
+			label = "user";
+			reg = <0x00060000 0x00114000>;	/* sketch: 1104 KB */
+		};
+
+		/* storage_partition (36 KB at 0x174000) is kept from the
+		 * SoC default layout. */
+	};
+};
