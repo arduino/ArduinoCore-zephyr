@@ -383,7 +383,7 @@
 		dac-channels = <1>, <2>;
 		dac-resolution = <12>;
 
-		cans = <&fdcan1>;
+		cans = <&fdcan1>, <&fdcan2>, <&fdcan3>;
 	};
 
 	gs_usb0: gs_usb0 {
