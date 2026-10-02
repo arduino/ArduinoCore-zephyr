@@ -366,31 +366,79 @@ __stm32_backup_sram_section struct backup_store backup;
 #if defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 
 #include <cannectivity/usb/class/gs_usb.h>
+#include <zephyr/drivers/pinctrl.h>
 
 int cannectivity_led_init(void);
 int cannectivity_timestamp_init(void);
+
+#define CANNECTIVITY_DT_NODE_ID DT_NODELABEL(cannectivity)
+#define CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(fn, sep)                                               \
+	DT_FOREACH_CHILD_STATUS_OKAY_SEP(CANNECTIVITY_DT_NODE_ID, fn, sep)
+#define CHANNEL_CAN_CONTROLLER_DT_GET(node_id) DEVICE_DT_GET(DT_PHANDLE(node_id, can_controller))
+
+static const struct device *channels[] = {
+	CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_CAN_CONTROLLER_DT_GET, (, ))};
+
+/* Pinctrl configuration for cannectivity deferred controllers. */
+#define CHANNEL_PINCTRL_SELECTED(node_id)                                                          \
+	DT_PROP(DT_PHANDLE(node_id, can_controller), zephyr_deferred_init)
+#define CHANNEL_PINCTRL_DECLARE(node_id)                                                           \
+	COND_CODE_1(CHANNEL_PINCTRL_SELECTED(node_id),                                               \
+		    (PINCTRL_DT_DEV_CONFIG_DECLARE(DT_PHANDLE(node_id, can_controller));), ())
+#define CHANNEL_PINCTRL_GET(node_id)                                                               \
+	COND_CODE_1(CHANNEL_PINCTRL_SELECTED(node_id),                                               \
+		    (PINCTRL_DT_DEV_CONFIG_GET(DT_PHANDLE(node_id, can_controller))), (NULL))
+
+DT_FOREACH_CHILD_STATUS_OKAY(CANNECTIVITY_DT_NODE_ID, CHANNEL_PINCTRL_DECLARE)
+
+static const struct pinctrl_dev_config *const channel_pinctrl[] = {
+	CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_PINCTRL_GET, (, ))};
+
+static int cannectivity_channel_event(const struct device *dev, uint16_t ch,
+									  enum gs_usb_event event, void *user_data) {
+	if (ch >= ARRAY_SIZE(channels)) {
+		return -EINVAL;
+	}
+
+	/* Reapply the Standard Arduino pinctrl state before starting the channel. */
+	if (event == GS_USB_EVENT_CHANNEL_STARTED && channel_pinctrl[ch] != NULL) {
+		int err = pinctrl_apply_state(channel_pinctrl[ch], PINCTRL_STATE_ARDUINO);
+		if (err != 0) {
+			return err;
+		}
+	}
+
+#ifdef CONFIG_CANNECTIVITY_LED
+	return cannectivity_led_event(dev, ch, event, user_data);
+#else
+	ARG_UNUSED(dev);
+	ARG_UNUSED(user_data);
+	return 0;
+#endif
+}
 
 static const struct gs_usb_ops gs_usb_ops = {
 #ifdef CONFIG_CANNECTIVITY_TIMESTAMP
 	.timestamp = cannectivity_timestamp_get,
 #endif
-#ifdef CONFIG_CANNECTIVITY_LED
-	.event = cannectivity_led_event,
-#endif
+	.event = cannectivity_channel_event,
 };
-
-#define CANNECTIVITY_DT_NODE_ID     DT_NODELABEL(cannectivity)
-#define CANNECTIVITY_DT_HAS_CHANNEL DT_HAS_COMPAT_STATUS_OKAY(cannectivity_channel)
-#define CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(fn, sep)                                               \
-	DT_FOREACH_CHILD_STATUS_OKAY_SEP(CANNECTIVITY_DT_NODE_ID, fn, sep)
-#define CHANNEL_CAN_CONTROLLER_DT_GET(node_id) DEVICE_DT_GET(DT_PHANDLE(node_id, can_controller))
 
 int enable_cannectivity() {
 
 	const struct device *gs_usb = DEVICE_DT_GET(DT_NODELABEL(gs_usb0));
-	const struct device *channels[] = {
-		CANNECTIVITY_DT_FOREACH_CHANNEL_SEP(CHANNEL_CAN_CONTROLLER_DT_GET, (, ))};
 	int err;
+
+	/* Initialize deferred controllers: if pinctrl-0 is empty,
+	 * they are initialized without acquiring any pins. */
+	for (size_t ch = 0; ch < ARRAY_SIZE(channels); ch++) {
+		if (!device_is_ready(channels[ch])) {
+			err = device_init(channels[ch]);
+			if (err != 0) {
+				return err;
+			}
+		}
+	}
 
 	if (IS_ENABLED(CONFIG_CANNECTIVITY_LED)) {
 		err = cannectivity_led_init();
