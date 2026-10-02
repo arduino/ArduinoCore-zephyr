@@ -16,6 +16,19 @@
 		uarts = <&uart0 &board_cdc_acm_uart>;
 	};
 
+	/*
+	 * RP2040 PIO-based PDM microphone
+	 * CLK -> GPIO23 (D23), DIN -> GPIO22 (D22)
+	 */
+	dmic_dev: pdm_pio {
+		compatible = "raspberrypi,rp2040-pdm";
+		status = "okay";
+		clk-pin = <23>;
+		din-pin = <22>;
+		pio-num = <0>;
+		gain = <16>;
+	};
+
 	zephyr,user {
 		/*
 		 * Arduino Nano RP2040 Connect pin mapping

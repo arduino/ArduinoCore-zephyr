@@ -40,6 +40,7 @@
 // ---------------
 #define PIN_PDM_CLK  (23)
 #define PIN_PDM_DIN  (22)
+#define PIN_PDM_PWR  (-1)  /* no dedicated power pin on this board */
 
 // IMU Interrupt
 #define INT_IMU      (21)
