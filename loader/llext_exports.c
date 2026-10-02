@@ -206,8 +206,10 @@ FORCE_EXPORT_SYM(net_mgmt_del_event_callback);
 #endif
 
 #if defined(CONFIG_MBEDTLS)
+#if defined(CONFIG_TLS_CREDENTIALS)
 FORCE_EXPORT_SYM(tls_credential_add);
 FORCE_EXPORT_SYM(tls_credential_get);
+#endif
 #if !defined(CONFIG_MBEDTLS_INIT)
 EXPORT_SYMBOL(mbedtls_memory_buffer_alloc_init);
 #endif
@@ -230,7 +232,7 @@ FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_DISCONNECT);
 FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_VERSION);
 #endif
 
-#if defined(CONFIG_BT)
+#if defined(CONFIG_BT_HCI_RAW)
 FORCE_EXPORT_SYM(bt_enable_raw);
 FORCE_EXPORT_SYM(bt_send);
 FORCE_EXPORT_SYM(bt_buf_get_tx);

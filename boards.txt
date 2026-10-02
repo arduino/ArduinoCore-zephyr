@@ -342,7 +342,7 @@ frdm_rw612.menu.link_mode.static.upload.extension=bin-zsk.bin
 
 frdm_rw612.build.zephyr_target=frdm_rw612
 frdm_rw612.build.zephyr_args=
-frdm_rw612.build.zephyr_hals=hal_stm32
+frdm_rw612.build.zephyr_hals=hal_nxp
 frdm_rw612.build.zephyr_toolchain=arm-zephyr-eabi
 frdm_rw612.build.variant=frdm_rw612_rw612
 
