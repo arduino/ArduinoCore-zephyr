@@ -27,3 +27,8 @@ updates:
     directory: "/tools/zephyr-sketch-tool"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/tools/mcumgr"
+    schedule:
+      interval: "weekly"

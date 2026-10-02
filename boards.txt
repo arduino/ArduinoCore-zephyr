@@ -19,6 +19,7 @@
 menu.debug=Debug
 menu.link_mode=Link mode
 menu.wait_linux_boot=Startup mode
+menu.baseboard=WisBlock Base
 
 ##########################################################################################
 
@@ -742,3 +743,55 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##########################################################################################
+
+rak4631.name=RAKwireless RAK4631
+rak4631.build.core=arduino
+rak4631.build.crossprefix=arm-zephyr-eabi-
+rak4631.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+rak4631.menu.debug.false=Standard
+rak4631.menu.debug.true=Debug
+rak4631.menu.debug.true.build.zsk_args.debug=-debug
+
+rak4631.menu.link_mode.dynamic=Dynamic
+rak4631.menu.link_mode.static=Static
+rak4631.menu.link_mode.static.build.link_mode=static
+rak4631.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+# Sketches select the pinout with the matching WISBLOCK_BASE_* macro.
+rak4631.menu.baseboard.none=None (no baseboard macro)
+rak4631.menu.baseboard.rak19007=RAK19007
+rak4631.menu.baseboard.rak19007.build.extra_flags=-DWISBLOCK_BASE_19007
+
+rak4631.build.zephyr_target=rak4631/nrf52840
+rak4631.build.zephyr_args=--sysbuild
+rak4631.build.zephyr_hals=hal_nordic
+rak4631.build.zephyr_toolchain=arm-zephyr-eabi
+rak4631.build.variant=rak4631_nrf52840
+
+rak4631.build.extra_flags=
+rak4631.build.postbuild.cmd="{tools.imgtool.path}/{tools.imgtool.cmd}" exit
+rak4631.build.board=RAK4631
+rak4631.vid.0=0x1209
+rak4631.pid.0=0x0003
+rak4631.upload_port.0.vid=0x1209
+rak4631.upload_port.0.pid=0x0003
+rak4631.upload_port.1.vid=0x1209
+rak4631.upload_port.1.pid=0x0004
+rak4631.upload.target=nrf52840
+
+rak4631.upload.tool=mcumgr
+rak4631.upload.tool.default=mcumgr
+rak4631.upload.protocol=
+rak4631.upload.transport=
+rak4631.upload.use_1200bps_touch=true
+rak4631.upload.wait_for_upload_port=true
+rak4631.upload.native_usb=true
+
+rak4631.bootloader.tool=mcumgr
+rak4631.bootloader.tool.default=mcumgr
+rak4631.bootloader.file=zephyr-{build.variant}.bin
+
+##########################################################################################
