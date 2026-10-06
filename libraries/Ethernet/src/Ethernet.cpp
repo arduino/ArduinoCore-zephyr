@@ -14,25 +14,68 @@
 #if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
 
 static inline int init_eth_clock() {
-	if (!DT_HAS_CHOSEN(arduino_eth_clock)) {
-		return 0;
-	}
-
-	int ret = 0;
+#if DT_HAS_CHOSEN(arduino_eth_clock)
+	static bool clock_enabled = false;
 	static const struct device *eth_clk_dev = DEVICE_DT_GET_OR_NULL(DT_CHOSEN(arduino_eth_clock));
 	static const struct pwm_dt_spec eth_pwm = PWM_DT_SPEC_GET_OR(DT_CHOSEN(arduino_eth_clock), {});
 
-	if (!device_is_ready(eth_clk_dev)) {
-		ret = zephyr::arduino::init_pwm_ref_clock(eth_clk_dev, eth_pwm);
+	if (clock_enabled) {
+		return 0;
 	}
 
-	return ret;
+	int ret = zephyr::arduino::init_dev_apply_pinctrl(eth_clk_dev);
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = zephyr::arduino::init_pwm_ref_clock(eth_clk_dev, eth_pwm);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// Keep the clock running across retries if Ethernet device initialization fails.
+	clock_enabled = true;
+#endif
+	return 0;
+}
+
+static int init_eth_hardware(struct net_if *&netif) {
+	static bool initialized = false;
+
+	if (netif == nullptr) {
+		netif = net_if_get_first_ethernet();
+	}
+	if (netif == nullptr) {
+		return -ENODEV;
+	}
+	if (initialized) {
+		return 0;
+	}
+
+	int ret = init_eth_clock();
+	if (ret < 0) {
+		return ret;
+	}
+
+	const struct device *dev = net_if_get_device(netif);
+	if (!device_is_ready(dev)) {
+		ret = zephyr::arduino::init_dev_apply_pinctrl(dev);
+		if (ret < 0) {
+			return ret;
+		}
+	}
+	if (!device_is_ready(dev)) {
+		return -ENODEV;
+	}
+
+	initialized = true;
+	return 0;
 }
 
 int EthernetClass::begin(uint8_t *mac, unsigned long timeout, unsigned long responseTimeout) {
 	(void)timeout;
 	(void)responseTimeout;
-	if (hardwareStatus() != EthernetOk) {
+	if (init_eth_hardware(netif) < 0) {
 		return 0;
 	}
 	setMACAddress(mac);
@@ -69,7 +112,7 @@ int EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 						 IPAddress subnet, unsigned long timeout, unsigned long responseTimeout) {
 	(void)timeout;
 	(void)responseTimeout;
-	if (hardwareStatus() != EthernetOk) {
+	if (init_eth_hardware(netif) < 0) {
 		return 0;
 	}
 	setMACAddress(mac);
@@ -78,7 +121,8 @@ int EthernetClass::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 }
 
 EthernetLinkStatus EthernetClass::linkStatus() {
-	if (hardwareStatus() != EthernetOk) {
+	// Initialize hardware on first use, then just read the carrier status at subsequent calls.
+	if (init_eth_hardware(netif) < 0) {
 		return LinkOFF;
 	}
 
@@ -90,32 +134,17 @@ EthernetLinkStatus EthernetClass::linkStatus() {
 }
 
 EthernetHardwareStatus EthernetClass::hardwareStatus() {
-	int ret = 0;
-
-	if (netif == nullptr) {
-		netif = net_if_get_first_ethernet();
-	}
-
-	if (netif == nullptr) {
+	// Check device readiness without initializing hardware.
+	struct net_if *iface = netif != nullptr ? netif : net_if_get_first_ethernet();
+	if (iface == nullptr || !device_is_ready(net_if_get_device(iface))) {
 		return EthernetNoHardware;
 	}
 
-	/* performing ethernet devices initialization here, because we need it to check the hw
-	 * presence and status of the link. Internally they are performed only once, if
-	 * device_is_ready returns false. NOTE, eth_clock device could be set as a dependency of
-	 * netif device
-	 * */
-	ret = init_eth_clock();
-	if (ret < 0) {
+#if DT_HAS_CHOSEN(arduino_eth_clock)
+	if (!device_is_ready(DEVICE_DT_GET_OR_NULL(DT_CHOSEN(arduino_eth_clock)))) {
 		return EthernetNoHardware;
 	}
-
-	if (!device_is_ready(net_if_get_device(netif))) {
-		ret = zephyr::arduino::init_dev_apply_pinctrl(net_if_get_device(netif));
-		if (ret < 0) {
-			return EthernetNoHardware;
-		}
-	}
+#endif
 
 	return EthernetOk;
 }
