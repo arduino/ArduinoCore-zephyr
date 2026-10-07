@@ -1,0 +1,16 @@
+#
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config HWINFO_ARDUINO
+	bool "Arduino hw info"
+	depends on HWINFO
+	select HWINFO_HAS_DRIVER
+	default y if BOARD_ARDUINO_PORTENTA_C33
+	default y if BOARD_ARDUINO_NANO_CONNECT
+	default y if SOC_SERIES_STM32H7X
+	depends on !HWINFO_RENESAS_RA && !HWINFO_STM32 && !HWINFO_RPI_PICO
+	help
+	  Enable Arduino hwinfo driver

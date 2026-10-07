@@ -25,3 +25,4 @@ config MAIN_STACK_REGION
 	  Specify the memory region for main stack.
 
 rsource "ota/Kconfig"
+rsource "hwinfo/Kconfig"

@@ -274,8 +274,9 @@ bootloader.dfuse=--dfuse-address={bootloader.address}
 
 tools.dfu-util.path={runtime.tools.dfu-util.path}
 tools.dfu-util.cmd=dfu-util
-tools.dfu-util.sketch.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{upload.interface} {upload.dfuse}{leave.dfuse}
-tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{bootloader.interface} {bootloader.dfuse}
+tools.dfu-util.upload.port.properties.serialNumber=,
+tools.dfu-util.sketch.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{upload.interface} {upload.dfuse}{leave.dfuse} --serial {upload.port.properties.serialNumber}
+tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{bootloader.interface} {bootloader.dfuse} --serial {upload.port.properties.serialNumber}
 tools.dfu-util.loader.args.without_sketch={leave.dfuse}
 
 tools.dfu-util.upload.params.verbose=-d
