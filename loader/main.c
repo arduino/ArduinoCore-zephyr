@@ -26,6 +26,8 @@ LOG_MODULE_REGISTER(sketch);
 #include "../cores/arduino/zephyr_sketch_header.h"
 #include "ota/ota_sketch_check.h"
 
+extern struct k_thread z_main_thread;
+
 #define SKETCH_RAM_BUFFER_LEN 131072
 
 /* Need to replicate logic from zephyrSerial.h to avoid C++ here */
@@ -45,6 +47,13 @@ static struct usbd_context *_usbd = NULL;
 int usbd_config_set(struct usbd_context *uds_ctx, uint8_t new_cfg);
 
 int loader_usb_disable() {
+	if (_usbd == NULL) {
+		// USB was never brought up (loader_usb_enable() not reached, or it
+		// failed). Without this guard usbd_shutdown() dereferences NULL and
+		// the loader takes a usage fault instead of simply skipping teardown.
+		return -ENODEV;
+	}
+
 	int err = usbd_disable(_usbd);
 	if (err) {
 		// at least reset the configuration
@@ -161,7 +170,11 @@ static int loader(const struct shell *sh) {
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
 #if CONFIG_SHELL
-	if (strcmp(k_thread_name_get(k_current_get()), "main") == 0) {
+	// Compare the thread object, not its name: k_thread_name_get() returns
+	// NULL when CONFIG_THREAD_NAME is disabled, making the strcmp() undefined
+	// behaviour and silently skipping USB setup on any board that does not
+	// happen to enable it.
+	if (k_current_get() == &z_main_thread) {
 		// disables default shell on UART
 		shell_uninit(shell_backend_uart_get_ptr(), NULL);
 		// enables USB and starts the shell
