@@ -14,6 +14,7 @@
 #define PDM_IS_NRF        DT_NODE_HAS_COMPAT(DT_NODELABEL(dmic_dev), nordic_nrf_pdm)
 #define PDM_IS_DFSDM      DT_NODE_HAS_COMPAT(DT_NODELABEL(dmic_dev), st_stm32_dfsdm_dmic)
 #define PDM_IS_RP2040_PIO DT_NODE_HAS_COMPAT(DT_NODELABEL(dmic_dev), raspberrypi_rp2040_pdm)
+#define PDM_IS_SAI        DT_NODE_HAS_COMPAT(DT_NODELABEL(dmic_dev), st_mpxxdtyy)
 
 /* The number of samples the user receive
  * For performance reason the user is strongly suggested to use this
@@ -96,6 +97,17 @@ typedef int16_t PDMSample;
 #define SLAB_ALIGN     4
 #if PDM_SAMPLE_BIT_WIDTH != 16
 #error "PDM_SAMPLE_BIT_WIDTH must be 16 for the RP2040 PIO PDM driver"
+#endif
+#define SLAB_BLOCK_SIZE (PDM_NUMBER_OF_SAMPLES * 2)
+#elif PDM_IS_SAI
+/* STM32 SAI/I2S PDM mic (st,mpxxdtyy): 16-bit samples only. Each sample is
+ * 16 bytes of raw PDM, which must fit the driver's fixed 512-byte slab block,
+ * so cap at 512 / 16 = 32 samples. */
+#define SLAB_ALIGN 32
+#undef PDM_NUMBER_OF_SAMPLES
+#define PDM_NUMBER_OF_SAMPLES 32
+#if PDM_SAMPLE_BIT_WIDTH != 16
+#error "PDM_SAMPLE_BIT_WIDTH must be 16 for the SAI PDM microphone"
 #endif
 #define SLAB_BLOCK_SIZE (PDM_NUMBER_OF_SAMPLES * 2)
 #else

@@ -115,8 +115,8 @@ static int pdm_configure(int channels, int sampleRate) {
 	cfg.io.min_pdm_clk_freq = 1200000;
 	cfg.io.max_pdm_clk_freq = 3250000;
 #else
-	cfg.io.min_pdm_clk_freq = 1000000;
-	cfg.io.max_pdm_clk_freq = 3500000;
+	cfg.io.min_pdm_clk_freq = 1200000;
+	cfg.io.max_pdm_clk_freq = 3250000;
 #endif
 	cfg.io.min_pdm_clk_dc = 40;
 	cfg.io.max_pdm_clk_dc = 60;

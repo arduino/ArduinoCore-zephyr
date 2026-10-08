@@ -176,6 +176,21 @@
 	status = "okay";
 };
 
+/* The BDMA driver expects the SRAM4 region
+ * to be non-cachable.
+ */
+&sram4 {
+	zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE)>;
+};
+
+&bdma1 {
+	status = "okay";
+};
+
+&dmamux2 {
+	status = "okay";
+};
+
 &dcmi {
 	status = "okay";
 	zephyr,deferred-init;
@@ -558,5 +573,30 @@ qspi_flash: &mx25l12833f {};
 		video-on-gpios = <&gpiok 2 GPIO_ACTIVE_HIGH>;
 		video-rst-gpios = <&gpioj 3 GPIO_ACTIVE_HIGH>;
 		otg-on-gpios = <&gpioj 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+};
+
+&sai4_a {
+	status = "okay";
+	pinctrl-0 = <&sai4_ck1_pe2 &sai4_d1_pb2>;
+	pinctrl-names = "default";
+
+	/* PLL3_P instead of default PLL2_P, so PLL2/SDMMC2 stays untouched */
+	clocks = <&rcc STM32_CLOCK(APB4, 21)>,
+		 <&rcc STM32_SRC_PLL3_P SAI4A_SEL(2)>;
+
+	dmic_dev: mp34dt05@0 {
+		compatible = "st,mpxxdtyy";
+		reg = <0>;
+	};
+
+	pdm-enable;
+	pdm-clock = <1>;
+	pdm-mic-pairs = <1>;
+};
+
+/ {
+	aliases {
+		i2s-rx = &sai4_a;
 	};
 };
