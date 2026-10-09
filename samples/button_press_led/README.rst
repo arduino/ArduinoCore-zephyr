@@ -22,7 +22,7 @@ Building and Running
 Build and flash as follows,
 
 ```sh
-$> west build  -p -b arduino_nano_33_ble samples/button_press_led -DZEPHYR_EXTRA_MODULES=/home/$USER/zephyrproject/modules/lib/Arduino-Core-Zephyr
+$> west build -p -S arduino-core -b arduino_nano_33_ble samples/button_press_led
 
 $> west flash --bossac=/home/$USER/.arduino15/packages/arduino/tools/bossac/1.9.1-arduino2/bossac
 ```

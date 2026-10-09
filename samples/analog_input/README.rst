@@ -18,7 +18,7 @@ Building and Running
 Build and flash analog_input sample as follows,
 
 ```sh
-$> west build -p -b arduino_nano_33_ble sample/analog_input/
+$> west build -p -S arduino-core -b arduino_nano_33_ble samples/analog_input/
 
 $> west flash --bossac=/home/$USER/.arduino15/packages/arduino/tools/bossac/1.9.1-arduino2/bossac
 ```
