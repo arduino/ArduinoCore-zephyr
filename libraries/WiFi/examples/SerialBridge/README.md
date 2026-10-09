@@ -1,4 +1,15 @@
-# Reflash the ESP32
+# Flash the Portenta C33 ESP32-C3 coprocessor
+
+This sketch turns the **Arduino Portenta C33** into a USB-to-UART bridge so a
+host flashing tool can put its onboard ESP32-C3 into the ROM bootloader and
+write new firmware. It is useful when updating or restoring the coprocessor
+firmware; it is not a Wi-Fi example. Keep the sketch running while `esptool` or
+`espflash` writes the image.
+
+The bridge currently applies to the Portenta C33, whose board configuration
+provides the USB serial, coprocessor UART, and boot/reset GPIOs used by the
+sketch. On boards without those device-tree properties, the sketch builds as a
+no-op and does not provide a flashing bridge.
 
 Pre-built firmware binaries for the ESP32 coprocessor can be found [here](https://github.com/arduino/esp-hosted-firmware/releases).
 

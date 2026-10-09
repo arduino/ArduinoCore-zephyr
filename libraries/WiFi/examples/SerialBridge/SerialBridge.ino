@@ -10,7 +10,9 @@
  *   DTR -> boot (strap)     RTS -> reset (enable)
  *
  * so the coprocessor can be flashed straight through the board's USB port with
- * the vendor's usual tool.
+ * the vendor's usual tool. The current board configuration that provides these
+ * connections is the Portenta C33 and its ESP32-C3 coprocessor; other boards
+ * without the required device-tree properties compile the sketch as a no-op.
  *
  * Note: do not use WiFi or BLE while this sketch runs; it drives the
  * coprocessor's control pins and holds its UART.
