@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Same flash layout as the loader.  */
+#include "../../../../variants/rak4631_nrf52840/rak4631_nrf52840_partitions.dtsi"
+/* Same boot-mode retention area as the loader. */
+#include "../../../../variants/rak4631_nrf52840/rak4631_nrf52840_bootmode.dtsi"
+
+/ {
+	aliases {
+		mcuboot-led0 = &blue_led;
+	};
+};
+
+/ {
+	chosen {
+		zephyr,code-partition = &boot_partition;
+		zephyr,uart-mcumgr = &board_cdc_acm_mcuboot;
+	};
+};
+
+&zephyr_udc0 {
+	board_cdc_acm_mcuboot: board_cdc_acm_mcuboot {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+};
+
+/*
+ * The RAK4631 LEDs are active high: green on P1.03 (D7),
+ * blue on P1.04 (D8). The base board declares them active low.
+ */
+&green_led {
+	gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+};
+
+&blue_led {
+	gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+};

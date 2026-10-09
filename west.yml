@@ -36,6 +36,8 @@ manifest:
           - nanopb
           - lvgl
           - fatfs
+          - loramac-node
+          - zcbor
         path-allowlist:
           - modules/hal/*
 
