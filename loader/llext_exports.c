@@ -180,6 +180,24 @@ FORCE_EXPORT_SYM(net_if_ipv4_set_netmask_by_addr);
 #endif
 FORCE_EXPORT_SYM(net_if_lookup_by_dev);
 FORCE_EXPORT_SYM(net_if_get_first_ethernet);
+FORCE_EXPORT_SYM(net_ipaddr_parse);
+FORCE_EXPORT_SYM(net_ipaddr_parse_mask);
+FORCE_EXPORT_SYM(net_mask_len_to_netmask);
+
+#if defined(CONFIG_NET_L2_VIRTUAL)
+FORCE_EXPORT_SYM(_net_l2_VIRTUAL);
+FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_VIRTUAL_INTERFACE_SET_PRIVATE_KEY);
+#endif
+
+#if defined(CONFIG_WIREGUARD)
+FORCE_EXPORT_SYM(wireguard_peer_add);
+FORCE_EXPORT_SYM(wireguard_peer_remove);
+FORCE_EXPORT_SYM(wireguard_peer_keepalive);
+#endif
+#endif
+
+#if defined(CONFIG_BASE64)
+FORCE_EXPORT_SYM(base64_decode);
 #endif
 
 #if defined(CONFIG_NET_L2_ETHERNET)
