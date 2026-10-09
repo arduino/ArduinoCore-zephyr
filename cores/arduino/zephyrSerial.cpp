@@ -79,9 +79,7 @@ void arduino::ZephyrSerial::IrqHandler() {
 	int length;
 	int ret = 0;
 
-	if (!uart_irq_update(uart)) {
-		return;
-	}
+	uart_irq_update(uart);
 
 	k_sem_take(&rx.sem, K_NO_WAIT);
 	while (uart_irq_rx_ready(uart) && ((length = uart_fifo_read(uart, buf, sizeof(buf))) > 0)) {
