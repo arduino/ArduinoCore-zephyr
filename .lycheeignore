@@ -1,0 +1,30 @@
+# These links are inherited verbatim from upstream arduino/ArduinoCore-zephyr
+# (main is an automatically synced mirror - see .github/workflows/sync_upstream_main.yml).
+# Do not "fix" them by editing the upstream-mirrored files directly; that would
+# create permanent merge conflicts on every nightly upstream sync/rebase.
+# Exclude them here instead, matched against lychee's resolved file:// URI,
+# so patterns are suffix-anchored (no leading ^) and not tied to one checkout path.
+
+# README.md: GitHub-specific repo-root-relative convention for issues/pulls
+# links (resolves correctly in GitHub's web UI, not on a local filesystem).
+/issues$
+/pulls$
+
+# README.md: paths to tools/scripts that were relocated upstream (extra/ ->
+# tools/) and a plural/singular mismatch (boards -> boards.txt, firmware ->
+# firmwares); fixing these belongs in an upstream PR, not here.
+/boards$
+/extra/zephyr-sketch-tool$
+/extra/sync-zephyr-artifacts$
+/firmware$
+
+# libraries/Camera/README.md: dead docs/ link, present upstream as well.
+/libraries/Camera/docs$
+
+# libraries/Ethernet/README.md: valid page, blocks automated/bot requests
+# with 403 but works for a real browser.
+http://www\.arduino\.cc/en/Reference/Ethernet
+
+# README.md: valid support article, blocks automated/bot requests with 403
+# but works for a real browser.
+https://support\.arduino\.cc/hc/en-us/articles/29180434600476-Install-the-Zephyr-loader-on-your-board

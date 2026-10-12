@@ -1,0 +1,22 @@
+name: Check links
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ifx-main
+      - edge-main
+      - control-main
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - ifx-main
+      - edge-main
+      - control-main
+  schedule:
+    - cron: '30 3 * * 4' # Run every Thursday at 3:30 AM UTC
+
+jobs:
+  linkChecker:
+    uses: Infineon/makers-devops/.github/workflows/check_links.yml@main
