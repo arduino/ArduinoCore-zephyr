@@ -131,10 +131,47 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 }
 #endif /* CONFIG_USERSPACE */
 
+#ifdef CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE
+/*
+ * The sketch is appended to the loader inside the MCUboot image in slot0, so
+ * its address moves with the loader size. zephyr-sketch-tool records the
+ * offset right after the 32-byte MCUboot header.
+ */
+#define SKETCH_PARTITION   slot0_partition
+#define SKETCH_INFO_OFFSET 0x20
+
+/* Export Flash parameters for use by core building scripts */
+__attribute__((retain)) const uintptr_t sketch_max_size =
+	DT_REG_SIZE(DT_NODELABEL(slot0_partition));
+#else
+#define SKETCH_PARTITION user_sketch
+
 /* Export Flash parameters for use by core building scripts */
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
+#endif
+
+/* Offset of the sketch in SKETCH_PARTITION, or a negative errno. */
+static int sketch_offset_get(uint32_t *offset) {
+#ifdef CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE
+	uint32_t value;
+
+	memcpy(&value, (const void *)(DT_PARTITION_ADDR(DT_NODELABEL(SKETCH_PARTITION)) +
+				      SKETCH_INFO_OFFSET),
+	       sizeof(value));
+
+	/* Past the header, inside the slot, and aligned like any ELF section. */
+	if (value < CONFIG_ROM_START_OFFSET ||
+	    value >= DT_REG_SIZE(DT_NODELABEL(SKETCH_PARTITION)) || (value & 0x3) != 0) {
+		return -ENOENT;
+	}
+	*offset = value;
+#else
+	*offset = 0;
+#endif
+	return 0;
+}
 
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
@@ -160,11 +197,19 @@ static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	#endif
 	int rc;
-	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
+	uint32_t sketch_offset = 0;
+	bool sketch_valid = true;
+
+	if (sketch_offset_get(&sketch_offset) != 0) {
+		printk("No sketch in the image\n");
+		sketch_valid = false;
+	}
+
+	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(SKETCH_PARTITION)) + sketch_offset;
 
 	#if defined(CONFIG_FLASH_MAP)
 	/* Test that attempting to open a disabled flash area fails */
-	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
+	rc = flash_area_open(PARTITION_ID(SKETCH_PARTITION), &fa);
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		return rc;
@@ -178,7 +223,7 @@ static int loader(const struct shell *sh) {
 
 	char header[SKETCH_HEADER_LEN];
 	#if defined(CONFIG_FLASH_MAP)
-	rc = flash_area_read(fa, 0, header, sizeof(header));
+	rc = flash_area_read(fa, sketch_offset, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		return rc;
@@ -187,9 +232,9 @@ static int loader(const struct shell *sh) {
 	memcpy(header, (const void *)base_addr, sizeof(header));
 	#endif
 
-	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
-	if (sketch_header_v1_verify(sketch_hdr) != 0) {
+	if (!sketch_valid || sketch_header_v1_verify(sketch_hdr) != 0 ||
+	    sketch_hdr->len > DT_REG_SIZE(DT_NODELABEL(SKETCH_PARTITION)) - sketch_offset) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
@@ -349,7 +394,7 @@ static int loader(const struct shell *sh) {
 	}
 
 	#if defined(CONFIG_FLASH_MAP)
-	rc = flash_area_read(fa, 0, sketch_buf, sketch_buf_len);
+	rc = flash_area_read(fa, sketch_offset, sketch_buf, sketch_buf_len);
 	if (rc) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		return rc;
