@@ -39,6 +39,14 @@ config CUSTOM_FLASH_ALIGN
 
 endmenu
 
+config LOADER_SKETCH_IN_MCUBOOT_IMAGE
+	bool "Sketch is appended to the loader in the MCUboot image"
+	depends on BOOTLOADER_MCUBOOT
+	help
+	  Load the sketch from slot0 at the offset zephyr-sketch-tool --squash
+	  stores after the MCUboot header, instead of from a user_sketch
+	  partition.
+
 config APP_WATCHDOG_ENFORCED
 	bool "Hardware watchdog enforced by sysbuild (MCUboot required)"
 	help
