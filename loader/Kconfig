@@ -39,6 +39,16 @@ config CUSTOM_FLASH_ALIGN
 
 endmenu
 
+config APP_WATCHDOG_ENFORCED
+	bool "Hardware watchdog enforced by sysbuild (MCUboot required)"
+	help
+	  Set by sysbuild when MCUboot starts the hardware watchdog; the loader
+	  then adopts the running timeout and keeps feeding it.
+
+config APP_WATCHDOG_TIMEOUT_MS
+	int "Watchdog timeout injected by sysbuild"
+	default 20000
+
 config LLEXT_HEAP_REGION
 	string "LLEXT heap memory region"
 	depends on CODE_DATA_RELOCATION
