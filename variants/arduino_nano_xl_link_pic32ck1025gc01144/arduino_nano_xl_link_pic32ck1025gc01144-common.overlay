@@ -234,32 +234,23 @@
 
 /*
  * PFM layout, for a board whose only bootloader is MCUboot living in BFM.
- * Upgrade-only (no swap): slot1 is a staging area for sketch deltas and
- * bootloader self-updates, not an A/B swap target.
  *
- *   0x0C000000  288K   slot0 (image-0)  loader
- *   0x0C048000  728K   slot2 (image-2)  sketch (raw zsk/ELF, no MCUboot header)
- *                     ----
- *                     1016K used; last 8K is dummy secondaries (MCUboot only)
+ *   0x0C000000  512K   slot0 (image-0)  loader + sketch, one signed image
+ *   0x0C080000  512K   slot1 (image-1)  DFU staging, copied over slot0
  *
  * MCUboot is NOT here: it occupies one of the SoC's two 64K BFM Dual-Boot
  * slots at 0x08000000 and is reached directly by the hardware reset vector.
- * See mcuboot.overlay in this directory, which expresses the same physical
- * layout as offsets under flash0 because MCUboot needs one flash device for
- * both itself and its slots.
+ * Its board overlay (bootloader/mcuboot/boot/zephyr/boards/) expresses the
+ * same physical layout as offsets under flash0.
  *
- * Multi-image MCUboot: loader and sketch are SEPARATE images. The loader is
- * image 0 (MCUboot-headered, chainloaded by MCUboot); the sketch is image 1
- * (raw zsk/ELF, found by the loader). Each is uploaded independently via SMP
- * in MCUboot serial recovery (1200-bps touch / double-tap).
+ * zephyr-sketch-tool --squash appends the sketch to the erase-block padded
+ * loader and signs both as a single ECDSA-P256 image; the loader finds the
+ * sketch at the offset stored after the MCUboot header
+ * (CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE). Uploads go to slot1 over USB DFU
+ * and MCUboot overwrites slot0 with them after verifying the signature.
  *
- * BOOT_VALIDATE_SLOT0=n: MCUboot does not check image hashes at boot.
- * Integrity is the host's responsibility — a corrupt upload is caught by the
- * loader's sketch header validation, not by MCUboot.
- *
- * The sketch ceiling is 728K. Measured sketches are ~24K. upload.maximum_size
- * follows automatically: extra/build.sh derives it from this table into
- * boards.local.txt, which is generated - do not edit it by hand.
+ * upload.maximum_size follows automatically: extra/build.sh derives it from
+ * this table and the signed loader size into boards.local.txt.
  */
 &flash1 {
 	/delete-node/ partitions;
@@ -271,16 +262,19 @@
 
 		slot0_partition: image_0: partition@0 {
 			label = "image-0";
-			reg = <0x0 DT_SIZE_K(288)>;
+			reg = <0x0 DT_SIZE_K(512)>;
 		};
 
-		/* Image 1: the sketch's own partition, no longer inside slot0. */
-		user_sketch: partition@48000 {
-			label = "user_sketch";
-			reg = <0x48000 DT_SIZE_K(728)>;
+		slot1_partition: image_1: partition@80000 {
+			label = "image-1";
+			reg = <0x80000 DT_SIZE_K(512)>;
 		};
-
 	};
+};
+
+/* Started by MCUboot, fed by the loader (CONFIG_APP_WATCHDOG_ENFORCED). */
+&wdt {
+	status = "okay";
 };
 
 / {

@@ -99,6 +99,10 @@ build.zsk_args.mode-static=-prelinked
 build.zsk_args.startup-mode-wait=
 build.zsk_args.startup-mode-app=-wait_for_app
 build.zsk_args.startup-mode-immediate=-immediate
+# Boards booting a single loader+sketch MCUboot image set these to squash and
+# sign the sketch with the loader (see zephyr-sketch-tool --squash).
+build.zsk_args.squash=
+build.zsk_args.squash_output=
 
 # ota_args are used to produce the .ota update files alongside the sketch.
 # Empty here so the hook below is a harmless no-op on every board that has not
@@ -174,7 +178,7 @@ recipe.objcopy.bin.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.hex.flags} {compiler.elf2hex.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.hex"
 
 ## Mangle the file
-recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.elf"
+recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} {build.zsk_args.squash} {build.zsk_args.squash_output} "{build.path}/{build.project_name}.elf"
 recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
 recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
 
