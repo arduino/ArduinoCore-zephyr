@@ -12,6 +12,33 @@ config USB_CONFIGURATION_STRING_DESC
 
 source "Kconfig.zephyr"
 
+menu "Flash Padding Options"
+
+choice FLASH_PADDING_STRATEGY
+    prompt "Flash padding strategy"
+    optional
+    depends on !LINKER_LAST_SECTION_ID
+	 depends on !MCUBOOT
+    help
+      Select how the firmware image is padded. Requires CONFIG_LINKER_LAST_SECTION_ID=n.
+
+config FLASH_ALIGN_BASED_ON_DT_ERASE_DIM
+    bool "Align based on Devicetree erase block size"
+
+config CUSTOM_FLASH_ALIGN_ACTIVE
+    bool "Align to a custom dimension"
+
+endchoice
+
+config CUSTOM_FLASH_ALIGN
+    int "Custom flash alignment boundary"
+    depends on CUSTOM_FLASH_ALIGN_ACTIVE
+    default 1024
+    help
+      The dimension to align the padding to, disregarding the Devicetree block size.
+
+endmenu
+
 config LLEXT_HEAP_REGION
 	string "LLEXT heap memory region"
 	depends on CODE_DATA_RELOCATION
