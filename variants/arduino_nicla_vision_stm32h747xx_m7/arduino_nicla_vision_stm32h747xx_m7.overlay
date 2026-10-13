@@ -128,14 +128,18 @@
     };
 };
 
+&adc12_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
+};
+
 &adc1 {
     zephyr,deferred-init;
     pinctrl-0 = <>;
     pinctrl-1 = <>;
     pinctrl-2 = <&adc1_inp4_pc4>;
     pinctrl-names = "default", "sleep", "arduino";
-    st,adc-clock-source = "SYNC";
-    st,adc-prescaler = <4>;
     status = "okay";
 
     #address-cells = <1>;
@@ -164,8 +168,6 @@
     pinctrl-1 = <>;
     pinctrl-2 = <&adc2_inp2_pf13>;
     pinctrl-names = "default", "sleep", "arduino";
-    st,adc-clock-source = "SYNC";
-    st,adc-prescaler = <4>;
     status = "okay";
 
     #address-cells = <1>;
@@ -180,14 +182,18 @@
     };
 };
 
+&adc3_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
+};
+
 &adc3 {
     zephyr,deferred-init;
     pinctrl-0 = <>;
     pinctrl-1 = <>;
     pinctrl-2 = <&adc3_inp5_pf3>;
     pinctrl-names = "default", "sleep", "arduino";
-    st,adc-clock-source = "SYNC";
-    st,adc-prescaler = <4>;
     status = "okay";
 
     #address-cells = <1>;
