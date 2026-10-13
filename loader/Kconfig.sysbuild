@@ -1,0 +1,19 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+source "share/sysbuild/Kconfig"
+
+config ENFORCE_SECURE_WATCHDOG
+	bool "Enforce hardware watchdog at boot"
+	default y
+	help
+	  MCUboot starts the hardware watchdog and the loader keeps feeding it.
+
+config SECURE_WATCHDOG_TIMEOUT_MS
+	int "Watchdog timeout in milliseconds"
+	default 20000
+
+config ARDUINO_MCUBOOT_HOOKS
+	bool "Build MCUboot with the Arduino hooks module"
+	help
+	  Adds bootloader/mcuboot/boot/arduino/hooks to the MCUboot image.

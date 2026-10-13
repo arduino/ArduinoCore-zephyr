@@ -432,6 +432,47 @@ static int loader(const struct shell *sh) {
 SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
+#ifdef CONFIG_APP_WATCHDOG_ENFORCED
+#include <zephyr/drivers/watchdog.h>
+
+/*
+ * MCUboot already started the hardware watchdog; adopt its timeout (no
+ * wdt_setup(), the counter is running) and keep it fed from the lowest
+ * application priority, so a sketch that never yields still resets the board.
+ */
+static void watchdog_feed_thread(void *p1, void *p2, void *p3) {
+	const struct device *const wdt_dev = DEVICE_DT_GET(DT_ALIAS(watchdog0));
+	const struct wdt_timeout_cfg wdt_config = {
+		.window = {.min = 0, .max = CONFIG_APP_WATCHDOG_TIMEOUT_MS},
+		.flags = WDT_FLAG_RESET_SOC,
+	};
+	int channel;
+
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
+	if (!device_is_ready(wdt_dev)) {
+		LOG_ERR("Watchdog device not ready");
+		return;
+	}
+
+	channel = wdt_install_timeout(wdt_dev, &wdt_config);
+	if (channel < 0) {
+		LOG_ERR("Watchdog install error %d", channel);
+		return;
+	}
+
+	while (1) {
+		wdt_feed(wdt_dev, channel);
+		k_msleep(CONFIG_APP_WATCHDOG_TIMEOUT_MS / 4);
+	}
+}
+
+K_THREAD_DEFINE(wdt_thread_id, 1024, watchdog_feed_thread, NULL, NULL, NULL,
+		K_LOWEST_APPLICATION_THREAD_PRIO, 0, 0);
+#endif /* CONFIG_APP_WATCHDOG_ENFORCED */
+
 int main(void) {
 	loader(NULL);
 	return 0;
