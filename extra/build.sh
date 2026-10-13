@@ -128,12 +128,24 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+
+# A variant shipping a sysbuild.conf boots through MCUboot built alongside the
+# loader. Under sysbuild the loader's tree is ${BUILD_DIR}/loader and the
+# llext-edk target is not part of 'all', so it is built separately.
+if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
+	IMAGE_DIR=${BUILD_DIR}/loader
+	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
+		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}"
+	cmake --build ${IMAGE_DIR} --target llext-edk
+else
+	IMAGE_DIR=${BUILD_DIR}
+	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
-(set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
-rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+(set -e ; cd ${IMAGE_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
+rsync -a --delete ${IMAGE_DIR}/llext-edk ${VARIANT_DIR}/
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -153,27 +165,39 @@ perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
+    if [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
+        cp ${IMAGE_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
+cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
+cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
-# On MCUboot boards the signed image is the bootable one, so publish it as
-# zephyr-$variant.* and keep the unsigned one as .raw.* for direct flashing.
-for ext in bin hex; do
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.signed.$ext ]; then
-        mv firmwares/zephyr-$variant.$ext firmwares/zephyr-$variant.raw.$ext
-        cp ${BUILD_DIR}/zephyr/zephyr.signed.$ext firmwares/zephyr-$variant.$ext
-    fi
-done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+# The MCUboot companion image, for burn-bootloader.
+rm -f firmwares/mcuboot-$variant.bin
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
+    cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
+fi
+
+# Boards that squash the sketch into the loader image get a signed
+# loader-only image too, built with the same arguments the IDE uses.
+SQUASH_ARGS=
+rm -f firmwares/zephyr-$variant.signed.bin
+if [ -n "$board" ] && [ -f firmwares/zephyr-$variant.bin ]; then
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py boards.txt "${board}" "$(pwd)" \
+        "$(pwd)/${VARIANT_DIR}" "zephyr-${variant}.bin" "${variant}")
+fi
+if [ -n "$SQUASH_ARGS" ]; then
+    SKETCH_TOOL=tools/zephyr-sketch-tool/zephyr-sketch-tool
+    (cd tools/zephyr-sketch-tool && go build -o zephyr-sketch-tool .)
+    $SKETCH_TOOL $SQUASH_ARGS --squash_output firmwares/zephyr-$variant.signed.bin
+    [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]] && FLASH_ERASE_DIM=${BASH_REMATCH[1]}
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
@@ -260,6 +284,12 @@ if [ ! -z "$board" ]; then
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	if [ -n "$SQUASH_ARGS" ]; then
+		# The sketch shares slot0 with the signed loader; MCUboot keeps its
+		# trailer in the last erase block.
+		LOADER_SIZE=$(stat -c%s firmwares/zephyr-$variant.signed.bin)
+		CODE_SIZE=$(( CODE_SIZE - LOADER_SIZE - ${FLASH_ERASE_DIM:-0} ))
+	fi
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
