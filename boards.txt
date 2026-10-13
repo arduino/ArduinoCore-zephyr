@@ -738,7 +738,6 @@ nanoxllink.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
 nanoxllink.menu.link_mode.dynamic=Dynamic
 nanoxllink.menu.link_mode.static=Static
 nanoxllink.menu.link_mode.static.build.link_mode=static
-nanoxllink.menu.link_mode.static.upload.extension=bin-zsk.bin
 
 nanoxllink.build.zephyr_target=arduino_nano_xl_link
 nanoxllink.build.zephyr_args=
@@ -749,15 +748,12 @@ nanoxllink.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
 nanoxllink.build.extra_flags=
 nanoxllink.build.board=NANO_XL_LINK
 
-# Multi-image MCUboot: loader and sketch are SEPARATE images uploaded
-# independently to slot0 and slot2. No combined bundle is produced.
-#
-# Multi-image MCUboot: no combined bundle, so build.ota.magic is unset and
-# postobjcopy.3/.4 (bundle/delta generation) are effectively no-ops.
-# build.ota.offset is kept for reference (sketch partition at 0x48000).
-nanoxllink.build.ota.magic=
-nanoxllink.build.ota.offset=0x48000
-nanoxllink.build.ota.mcuboot_args=
+# Loader and sketch are squashed into one ECDSA-P256 signed MCUboot image
+# (see the variant's -common.overlay). The sketch address depends on the
+# loader size, so only the dynamic link mode is offered.
+# 🔴 Development key: keep in step with SB_CONFIG_BOOT_SIGNATURE_KEY_FILE.
+nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.variant.path}/root-ec-p256.pem" --erase_flash_dim 4096 --image_version 1.0.0.0
+nanoxllink.build.zsk_args.squash_output=--squash_output "{build.path}/{build.project_name}.signed.bin"
 
 nanoxllink.vid.0=0x2341
 nanoxllink.pid.0=0x007e
@@ -777,32 +773,37 @@ nanoxllink.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mod
 # The sequence, all of it automatic: arduino-cli opens the port at 1200 baud,
 # the running loader sees the rate change and arms the shared cookie before
 # resetting (variants/.../variant.c:_on_1200_bps), MCUboot comes up, finds the
-# cookie and stays in recovery, and the board re-enumerates with the PID below.
+# cookie and stays in DFU, and the board re-enumerates with the PID below.
 # wait_for_upload_port makes arduino-cli wait for that second port and hand it
 # to the recipe. A physical double-tap of reset does the same thing by hand.
+#
+# Alt 0 is slot1: the signed loader+sketch image is staged there and MCUboot
+# copies it over slot0 once the download completes. The loader always travels
+# with the sketch, so there is no separate loader update step.
 nanoxllink.upload.tool=dfu-util
 nanoxllink.upload.tool.default=dfu-util
 nanoxllink.upload.protocol=
 nanoxllink.upload.transport=
 nanoxllink.upload.vid=0x2341
 nanoxllink.upload.pid=0x018e
-nanoxllink.upload.interface=1
+nanoxllink.upload.interface=0
 nanoxllink.upload.dfuse=
 nanoxllink.leave.dfuse=
 nanoxllink.bootloader.dfuse=
 nanoxllink.upload.use_1200bps_touch=true
 nanoxllink.upload.wait_for_upload_port=true
 nanoxllink.upload.native_usb=true
-nanoxllink.bootloader.file=zephyr-{build.variant}.bin
+nanoxllink.upload.artifacts.sketch={build.path}/{build.project_name}.signed.bin
+nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
+nanoxllink.bootloader.file=zephyr-{build.variant}.signed.bin
 nanoxllink.bootloader.pid=0x018e
 nanoxllink.bootloader.interface=0
 
-# burn-bootloader: MCUboot only, via DFU alt 2 (direct write to BFM spare
-# slot, promotes, auto-resets). The loader is independent and updated via
-# the normal upload path (DFU alt 0).
+# burn-bootloader: MCUboot only, via DFU alt 1 (direct write to the BFM spare
+# slot, promotes, auto-resets). Needs the board in DFU (double-tap) first.
 nanoxllink.bootloader.tool=dfu-util
 nanoxllink.bootloader.tool.default=dfu-util
-nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vid}:{bootloader.pid} -a 2 -D "{runtime.platform.path}/firmwares/mcuboot-bfm-{build.variant}.bin"
+nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vid}:{bootloader.pid} -a 1 -D "{runtime.platform.path}/firmwares/mcuboot-{build.variant}.bin"
 
 ##############################################################################################################
 
