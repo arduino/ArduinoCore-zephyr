@@ -378,8 +378,6 @@ EXPORT_SYMBOL(stderr);
 EXPORT_SYMBOL(ring_buf_get);
 EXPORT_SYMBOL(ring_buf_peek);
 EXPORT_SYMBOL(ring_buf_put);
-EXPORT_SYMBOL(ring_buf_area_claim);
-EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
 
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
