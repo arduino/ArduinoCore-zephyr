@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -31,8 +33,8 @@ const (
 	TlvKeyHash   uint8  = 0x01
 	TlvSha256    uint8  = 0x10
 	TlvRsa2048   uint8  = 0x20
+	TlvEcdsaSig  uint8  = 0x22
 	HeaderSize   uint16 = 0x400
-	SlotSize     int    = 1540096
 )
 
 type ImageVersion struct {
@@ -79,6 +81,7 @@ func main() {
 	var pem_file = flag.String("pem_file", "", "Path to the PEM file containing keys")
 	var erase_flash_dim = flag.Uint("erase_flash_dim", 0, "Minimum erasing flash sector dimension in bytes")
 	var image_version = flag.String("image_version", "1.0.0.0", "Image version for the header (default 1.0.0.0)")
+	var squash_output = flag.String("squash_output", "", "Output for the signed image (default: <loader_bin>.signed.bin)")
 
 	flag.Parse()
 
@@ -98,7 +101,7 @@ func main() {
 			return
 		}
 		fmt.Printf("Running squash process without a sketch file.\n")
-		signAndSquash(*loader_bin, "", *pem_file, *erase_flash_dim, *image_version)
+		signAndSquash(*loader_bin, "", *pem_file, *erase_flash_dim, *image_version, *squash_output)
 		return
 	}
 
@@ -198,7 +201,7 @@ func main() {
 			fmt.Printf("Error: --loader_bin is required when --squash is used.\n")
 			return
 		}
-		signAndSquash(*loader_bin, newFilename, *pem_file, *erase_flash_dim, *image_version)
+		signAndSquash(*loader_bin, newFilename, *pem_file, *erase_flash_dim, *image_version, *squash_output)
 	}
 }
 
@@ -218,7 +221,7 @@ func main() {
  *  Depending on CONFIG PARAMETER of the variants the padding is automatically
  *  added
  */
-func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, eraseFlashDim uint, versionStr string) {
+func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, eraseFlashDim uint, versionStr string, outputFile string) {
 	fmt.Printf("\n--- Starting Squash & Sign Process ---\n")
 	var config_file string = "undefined"
 	var dts_file string = "undefined"
@@ -243,6 +246,9 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	config_file = ConfigPathFromBin(loaderBinFile)
 	dts_file = DtsPathFromBin(loaderBinFile)
 	output_file = OutPathFromBin(loaderBinFile)
+	if outputFile != "" {
+		output_file = outputFile
+	}
 
 	/*
 	 * CALCULATING LOADER SIZE
@@ -361,9 +367,9 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		log.Fatalf("Failed to parse PEM block")
 	}
 
-	privKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	signer, err := parseSigningKey(block)
 	if err != nil {
-		log.Fatalf("Failed to parse RSA key: %v", err)
+		log.Fatalf("Failed to parse key: %v", err)
 	}
 
 	/* CONSTRUCT IMAGE HEADER */
@@ -407,27 +413,24 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	 */
 	imgHash := sha256.Sum256(image)
 
-	/* Calculate the KEYHASH (SHA-256 of the PKCS#1 DER-encoded Public Key) */
-	pubKeyBytes := x509.MarshalPKCS1PublicKey(&privKey.PublicKey)
-	keyHash := sha256.Sum256(pubKeyBytes)
-
-	/* Generate RSA-PSS Signature */
-	signature, err := rsa.SignPSS(rand.Reader, privKey, crypto.SHA256, imgHash[:], &rsa.PSSOptions{
-		SaltLength: rsa.PSSSaltLengthEqualsHash,
-	})
+	/* KEYHASH and signature, in the encoding imgtool uses for this key type */
+	pubKeyBytes, sigType, signature, err := signImage(signer, imgHash[:])
 	if err != nil {
 		log.Fatalf("Failed to sign payload: %v", err)
 	}
+	keyHash := sha256.Sum256(pubKeyBytes)
 
 	// Buffer for final output
 	var finalImg bytes.Buffer
 	finalImg.Write(image)
-	appendTLVs(&finalImg, keyHash[:], imgHash[:], signature)
+	appendTLVs(&finalImg, keyHash[:], imgHash[:], sigType, signature)
 
 	// Size Validation & Save
-	totalImageSize := finalImg.Len()
-	if totalImageSize > SlotSize {
-		log.Fatalf("Error: Final image size (%d) exceeds the defined slot size (%d)!", totalImageSize, SlotSize)
+	/* MCUboot keeps its trailer in the last erase block of the slot */
+	totalImageSize := uint32(finalImg.Len())
+	if slot0_dim > 0 && totalImageSize+uint32(eraseFlashDim) > slot0_dim {
+		log.Fatalf("Error: Final image size (%d) plus the trailer block (%d) exceeds the slot size (%d)!",
+			totalImageSize, eraseFlashDim, slot0_dim)
 	}
 
 	err = os.WriteFile(output_file, finalImg.Bytes(), 0644)
@@ -466,28 +469,78 @@ func parseVersionString(ver string) ImageVersion {
 	return iv
 }
 
+// parseSigningKey accepts the PEM encodings imgtool produces: PKCS#1 RSA,
+// SEC1 EC and PKCS#8 holding either.
+func parseSigningKey(block *pem.Block) (crypto.Signer, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParseECPrivateKey(block.Bytes); err == nil {
+		return key, nil
+	}
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, errors.New("unsupported PEM key encoding")
+	}
+	signer, ok := key.(crypto.Signer)
+	if !ok {
+		return nil, errors.New("PKCS#8 key cannot sign")
+	}
+	return signer, nil
+}
+
+// signImage returns the public key bytes MCUboot hashes for KEYHASH, the
+// signature TLV type and the signature itself.
+func signImage(signer crypto.Signer, imgHash []byte) ([]byte, uint8, []byte, error) {
+	switch key := signer.(type) {
+	case *rsa.PrivateKey:
+		if key.N.BitLen() != 2048 {
+			return nil, 0, nil, fmt.Errorf("RSA key is %d bits, only 2048 is supported", key.N.BitLen())
+		}
+		sig, err := rsa.SignPSS(rand.Reader, key, crypto.SHA256, imgHash, &rsa.PSSOptions{
+			SaltLength: rsa.PSSSaltLengthEqualsHash,
+		})
+		return x509.MarshalPKCS1PublicKey(&key.PublicKey), TlvRsa2048, sig, err
+	case *ecdsa.PrivateKey:
+		if key.Curve != elliptic.P256() {
+			return nil, 0, nil, errors.New("only P-256 ECDSA keys are supported")
+		}
+		pub, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+		if err != nil {
+			return nil, 0, nil, err
+		}
+		sig, err := ecdsa.SignASN1(rand.Reader, key, imgHash)
+		return pub, TlvEcdsaSig, sig, err
+	default:
+		return nil, 0, nil, errors.New("unsupported key type")
+	}
+}
+
 // appendTLVs handles the exact struct packing required by MCUboot
-func appendTLVs(img *bytes.Buffer, keyHash []byte, imgHash []byte, sig []byte) {
+func appendTLVs(img *bytes.Buffer, keyHash []byte, imgHash []byte, sigType uint8, sig []byte) {
+	tlvs := []struct {
+		kind uint8
+		data []byte
+	}{
+		{TlvSha256, imgHash},
+		{TlvKeyHash, keyHash},
+		{sigType, sig},
+	}
+
+	total := 4
+	for _, t := range tlvs {
+		total += 4 + len(t.data)
+	}
+
 	binary.Write(img, binary.LittleEndian, TlvInfoMagic)
-	binary.Write(img, binary.LittleEndian, uint16(336))
+	binary.Write(img, binary.LittleEndian, uint16(total))
 
-	// 1. Write SHA256 TLV (Type 0x10)
-	binary.Write(img, binary.LittleEndian, TlvSha256)
-	binary.Write(img, binary.LittleEndian, uint8(0))
-	binary.Write(img, binary.LittleEndian, uint16(len(imgHash)))
-	img.Write(imgHash)
-
-	// 2. Write KeyHash TLV (Type 0x01)
-	binary.Write(img, binary.LittleEndian, TlvKeyHash)
-	binary.Write(img, binary.LittleEndian, uint8(0))
-	binary.Write(img, binary.LittleEndian, uint16(len(keyHash)))
-	img.Write(keyHash)
-
-	// 3. Write RSA Signature TLV (Type 0x20)
-	binary.Write(img, binary.LittleEndian, TlvRsa2048)
-	binary.Write(img, binary.LittleEndian, uint8(0))
-	binary.Write(img, binary.LittleEndian, uint16(len(sig)))
-	img.Write(sig)
+	for _, t := range tlvs {
+		binary.Write(img, binary.LittleEndian, t.kind)
+		binary.Write(img, binary.LittleEndian, uint8(0))
+		binary.Write(img, binary.LittleEndian, uint16(len(t.data)))
+		img.Write(t.data)
+	}
 }
 
 func GetConfigValue(filePath string, configName string) (string, error) {
@@ -576,16 +629,14 @@ func extractNodeBlock(dtsContent, nodeName string) (string, error) {
 }
 
 func GetPartitionSizes(dtsContent string) (uint32, uint32, error) {
-	// 1. Verify boot_partition exists and has the correct label
-	bootBlock, err := extractNodeBlock(dtsContent, "boot_partition")
-	if err != nil {
-		return 0, 0, errors.New("boot_partition not found in DTS")
-	}
-
-	labelRegex := regexp.MustCompile(`label\s*=\s*"([^"]+)"`)
-	labelMatch := labelRegex.FindStringSubmatch(bootBlock)
-	if len(labelMatch) < 2 || labelMatch[1] != "mcuboot" {
-		return 0, 0, errors.New("boot_partition does not have the required 'mcuboot' label")
+	// 1. If the loader declares boot_partition, it must be MCUboot's. Boards
+	// running MCUboot from a separate flash (e.g. PIC32CK BFM) have none.
+	if bootBlock, err := extractNodeBlock(dtsContent, "boot_partition"); err == nil {
+		labelRegex := regexp.MustCompile(`label\s*=\s*"([^"]+)"`)
+		labelMatch := labelRegex.FindStringSubmatch(bootBlock)
+		if len(labelMatch) < 2 || labelMatch[1] != "mcuboot" {
+			return 0, 0, errors.New("boot_partition does not have the required 'mcuboot' label")
+		}
 	}
 
 	// 2. Extract and parse slot0_partition
