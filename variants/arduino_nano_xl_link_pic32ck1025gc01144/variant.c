@@ -7,7 +7,7 @@
 #include <zephyr/kernel.h>
 #include <cmsis_core.h>
 
-#include "recovery_cookie.h"
+#include <zephyr/retention/bootmode.h>
 #include "usb_soft_disconnect.h"
 
 /* Absolute slot addresses must agree with the MCUboot overlay; mismatches are
@@ -20,13 +20,10 @@ BUILD_ASSERT(SLOT_ABS(slot0_partition) == 0x0C000000,
 BUILD_ASSERT(SLOT_ABS(slot1_partition) == 0x0C080000,
 	     "slot1 moved: keep this overlay and the MCUboot board overlay in sync");
 
-/* Arm the MCUboot double-reset cookie and reset into USB DFU recovery.
+/* Ask MCUboot for USB DFU and reset into it.
  * Plain C so the loader can compile it (loader/CMakeLists.txt builds variant.c only). */
 void _on_1200_bps(void) {
-	RECOVERY_COOKIE = RECOVERY_DOUBLE_RESET_MAGIC;
-
-	/* Flush the write out of any store buffer before the core is reset. */
-	__DSB();
+	(void)bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
 
 	usb_soft_disconnect();
 

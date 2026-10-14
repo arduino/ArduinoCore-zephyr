@@ -16,6 +16,9 @@
 #include <time.h>
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+#include <zephyr/retention/bootmode.h>
+#endif
 #include <zephyr/device.h>
 #include <zephyr/posix/unistd.h>
 #include <zephyr/sys/reboot.h>
@@ -151,6 +154,11 @@ EXPORT_SYMBOL(k_sys_work_q);
 EXPORT_SYMBOL(k_mem_slab_init);
 EXPORT_SYMBOL(k_mem_slab_free);
 EXPORT_SYMBOL(k_mem_slab_alloc);
+
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+/* The sketch's 1200-bps touch handler (variants/<board>/variant.c). */
+EXPORT_SYMBOL(bootmode_set);
+#endif
 
 #if defined(CONFIG_PINCTRL)
 EXPORT_SYMBOL(pinctrl_lookup_state);
