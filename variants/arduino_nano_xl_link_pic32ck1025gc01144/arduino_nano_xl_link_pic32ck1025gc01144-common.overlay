@@ -240,8 +240,8 @@
  *
  * MCUboot is NOT here: it occupies one of the SoC's two 64K BFM Dual-Boot
  * slots at 0x08000000 and is reached directly by the hardware reset vector.
- * Its board overlay (bootloader/mcuboot/boot/zephyr/boards/) expresses the
- * same physical layout as offsets under flash0.
+ * mcuboot.overlay in this directory expresses the same physical layout as
+ * offsets under flash0.
  *
  * zephyr-sketch-tool --squash appends the sketch to the erase-block padded
  * loader and signs both as a single ECDSA-P256 image; the loader finds the

@@ -5,9 +5,8 @@
  */
 
 /*
- * Warm-reset retained RAM shared by MCUboot and the loader/sketch. Keep the
- * copies in bootloader/mcuboot/boot/zephyr/boards/ and in the ArduinoCore
- * variant identical: both images must agree on these addresses.
+ * Warm-reset retained RAM shared by MCUboot and the loader/sketch; both
+ * overlays in this directory include it, so the addresses cannot drift.
  *
  *   0x00  double-tap cookie, MCUboot only (boot/arduino/hooks/hooks.c)
  *   0x10  boot_mode, set by a double tap or the 1200-bps touch and consumed
