@@ -100,15 +100,6 @@ build.zsk_args.startup-mode-immediate=-immediate
 build.zsk_args.squash=
 build.zsk_args.squash_output=
 
-# ota_args are used to produce the .ota update files alongside the sketch.
-# Empty here so the hook below is a harmless no-op on every board that has not
-# opted in; a board enables OTA by setting build.ota.magic and build.ota.offset
-# in boards.txt. Boards that additionally boot through MCUboot set
-# build.ota.mcuboot_args so the bundle becomes a real MCUboot image.
-build.ota.magic=
-build.ota.offset=
-build.ota.mcuboot_args=
-
 # These can be overridden in platform.local.txt
 compiler.c.extra_flags=
 compiler.c.elf.extra_flags=
@@ -176,24 +167,6 @@ recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 ## Mangle the file
 recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} {build.zsk_args.squash} {build.zsk_args.squash_output} "{build.path}/{build.project_name}.elf"
 recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
-
-## Build the .ota update files. Runs for every board but exits immediately
-## unless build.ota.magic is set, so the recipe can stay uniform. Must come
-## after .1, which is what produces the mangled -zsk.bin this consumes.
-## Multi-image boards (nanoxllink) clear build.ota.magic; the sh guard
-## makes this a no-op when it is empty — zephyr-sketch-tool rejects an empty
-## -ota-magic flag.
-upload.artifacts.bundle={build.path}/{build.project_name}.bundle.bin
-upload.artifacts.delta={build.path}/{build.project_name}.delta.bin
-recipe.hooks.objcopy.postobjcopy.3.pattern=sh -c 'test -n "{build.ota.magic}" && "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset "{build.ota.offset}" -ota-magic "{build.ota.magic}" {build.ota.mcuboot_args} || true'
-# NOTE: keep the IF operands unquoted here. Arduino CLI escapes quotes around an
-# empty build.ota.magic on Windows, producing a malformed cmd.exe expression.
-recipe.hooks.objcopy.postobjcopy.3.pattern.windows=cmd /c if not x{build.ota.magic}==x "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset "{build.ota.offset}" -ota-magic "{build.ota.magic}" {build.ota.mcuboot_args}
-
-## Slice the sketch-only delta out of the bundle at build time, so upload does
-## not need zephyr-sketch-tool. Only runs when postobjcopy.3 produced a bundle.
-recipe.hooks.objcopy.postobjcopy.4.pattern=sh -c 'test -f "{upload.artifacts.bundle}" && "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -sketch-package "{upload.artifacts.delta}" -sketch-package-offset {build.ota.offset} "{upload.artifacts.bundle}" || true'
-recipe.hooks.objcopy.postobjcopy.4.pattern.windows=cmd /c if exist "{upload.artifacts.bundle}" "{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -sketch-package "{upload.artifacts.delta}" -sketch-package-offset {build.ota.offset} "{upload.artifacts.bundle}"
 
 ## Compute size
 recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"

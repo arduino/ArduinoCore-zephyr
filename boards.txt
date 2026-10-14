@@ -771,9 +771,9 @@ nanoxllink.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mod
 # Uploads use dfu-util against MCUboot's USB DFU recovery mode.
 #
 # The sequence, all of it automatic: arduino-cli opens the port at 1200 baud,
-# the running loader sees the rate change and arms the shared cookie before
-# resetting (variants/.../variant.c:_on_1200_bps), MCUboot comes up, finds the
-# cookie and stays in DFU, and the board re-enumerates with the PID below.
+# the running loader sees the rate change and sets the retention boot mode
+# before resetting (variants/.../variant.c:_on_1200_bps), MCUboot comes up and
+# stays in DFU, and the board re-enumerates with the PID below.
 # wait_for_upload_port makes arduino-cli wait for that second port and hand it
 # to the recipe. A physical double-tap of reset does the same thing by hand.
 #
@@ -795,15 +795,15 @@ nanoxllink.upload.wait_for_upload_port=true
 nanoxllink.upload.native_usb=true
 nanoxllink.upload.artifacts.sketch={build.path}/{build.project_name}.signed.bin
 nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
-nanoxllink.bootloader.file=zephyr-{build.variant}.signed.bin
-nanoxllink.bootloader.pid=0x018e
-nanoxllink.bootloader.interface=0
 
 # burn-bootloader: MCUboot only, via DFU alt 1 (direct write to the BFM spare
-# slot, promotes, auto-resets). Needs the board in DFU (double-tap) first.
+# slot, promoted on completion). Needs the board in DFU (double-tap) first.
 nanoxllink.bootloader.tool=dfu-util
 nanoxllink.bootloader.tool.default=dfu-util
-nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vid}:{bootloader.pid} -a 1 -D "{runtime.platform.path}/firmwares/mcuboot-{build.variant}.bin"
+nanoxllink.bootloader.file=mcuboot-{build.variant}.bin
+nanoxllink.bootloader.vid=0x2341
+nanoxllink.bootloader.pid=0x018e
+nanoxllink.bootloader.interface=1
 
 ##############################################################################################################
 

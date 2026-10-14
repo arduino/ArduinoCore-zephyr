@@ -19,8 +19,6 @@ manifest:
       url-base: https://github.com/pillo79
     - name: gibix
       url-base: https://github.com/gibix
-    - name: dani-clo
-      url-base: https://github.com/dani-clo
 
   projects:
     - name: zephyr
@@ -39,7 +37,6 @@ manifest:
           - nanopb
           - lvgl
           - fatfs
-          - zcbor
         path-allowlist:
           - modules/hal/*
 
