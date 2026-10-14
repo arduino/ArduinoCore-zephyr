@@ -21,3 +21,11 @@ openocd.protocol=SWD
 openocd.program.tool=openocd
 openocd.program.tool.default=openocd
 openocd.program.extra_params=
+
+dfu.name=DFU (USB)
+dfu.communication=USB
+dfu.protocol=
+dfu.program.protocol=
+dfu.program.tool=dfu-util
+dfu.program.tool.default=dfu-util
+dfu.program.extra_params=

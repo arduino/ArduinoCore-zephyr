@@ -18,7 +18,8 @@
 
 #ifdef CONFIG_USB_DEVICE_STACK_NEXT
 
-/* By default, do not register the USB DFU class DFU mode instance. */
+/* Blocklist DFU-mode ("dfu_dfu"): only the bootloader should accept downloads.
+ * The DFU run-time interface (CONFIG_USBD_DFU) is kept for DETACH → reboot. */
 static const char *const blocklist[] = {
 	"dfu_dfu",
 #if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)
