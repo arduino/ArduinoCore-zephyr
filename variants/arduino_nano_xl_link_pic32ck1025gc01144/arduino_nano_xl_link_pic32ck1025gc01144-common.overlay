@@ -244,10 +244,10 @@
  * offsets under flash0.
  *
  * zephyr-sketch-tool --squash appends the sketch to the erase-block padded
- * loader and signs both as a single ECDSA-P256 image; the loader finds the
+ * loader and hashes both as a single MCUboot image; the loader finds the
  * sketch at the offset stored after the MCUboot header
  * (CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE). Uploads go to slot1 over USB DFU
- * and MCUboot overwrites slot0 with them after verifying the signature.
+ * and MCUboot overwrites slot0 with them after checking the hash.
  *
  * upload.maximum_size follows automatically: extra/build.sh derives it from
  * this table and the signed loader size into boards.local.txt.

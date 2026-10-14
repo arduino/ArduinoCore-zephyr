@@ -41,7 +41,7 @@
 			reg = <0x0 DT_SIZE_K(64)>;
 		};
 
-		/* 0x4000000 == PFM 0x0C000000. Loader + sketch, one signed image. */
+		/* 0x4000000 == PFM 0x0C000000. Loader + sketch, one image. */
 		slot0_partition: image_0: partition@4000000 {
 			label = "image-0";
 			reg = <0x4000000 DT_SIZE_K(512)>;
