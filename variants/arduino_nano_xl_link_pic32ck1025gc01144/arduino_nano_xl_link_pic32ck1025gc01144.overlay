@@ -7,7 +7,7 @@
 #include <zephyr/dt-bindings/pwm/pwm.h>
 #include "arduino_nano_xl_link_pic32ck1025gc01144-common.overlay"
 
-#include "recovery_cookie.dtsi"
+#include "retained_mem.dtsi"
 
 &pinctrl {
 	tcc2_arduino_wo2: tcc2_arduino_wo2 {
