@@ -804,3 +804,85 @@ nanoxllink.bootloader.tool=dfu-util
 nanoxllink.bootloader.tool.default=dfu-util
 nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vid}:{bootloader.pid} -a 2 -D "{runtime.platform.path}/firmwares/mcuboot-bfm-{build.variant}.bin"
 
+##############################################################################################################
+
+# nanoxllink_monica.name=Arduino Nano XL Link Connector
+# nanoxllink_monica.build.core=arduino
+# nanoxllink_monica.build.crossprefix=arm-zephyr-eabi-
+# nanoxllink_monica.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+# 
+# nanoxllink_monica.menu.link_mode.dynamic=Dynamic
+# nanoxllink_monica.menu.link_mode.static=Static
+# nanoxllink_monica.menu.link_mode.static.build.link_mode=static
+# nanoxllink_monica.menu.link_mode.static.upload.extension=bin-zsk.bin
+# 
+# nanoxllink_monica.build.zephyr_target=arduino_nano_xl_link
+# # Monica has no Zephyr board variant of its own: it is the bare Nano XL Link
+# # board plus the "nanoxllink_monica" shield (which adds the ESP8266 node),
+# # plus a Kconfig/devicetree delta applied on top of the shared variant files.
+# # EXTRA_DTC_OVERLAY_FILE is applied after DTC_OVERLAY_FILE - and after the
+# # shield - so it is the only place the carrier can override the bare module.
+# # Paths are relative to the 'loader' application directory, like debug.conf.
+# nanoxllink_monica.build.zephyr_args=--shield nano_xl_link_monica -- -DEXTRA_CONF_FILE=../variants/arduino_nano_xl_link_pic32ck1025gc01144/monica.conf -DEXTRA_DTC_OVERLAY_FILE=../variants/arduino_nano_xl_link_pic32ck1025gc01144/monica.overlay
+# nanoxllink_monica.build.zephyr_hals=hal_microchip
+# nanoxllink_monica.build.zephyr_toolchain=arm-zephyr-eabi
+# nanoxllink_monica.build.artifact=zephyr_main
+# # Shared with the bare 'nanoxllink' board: the two differ only by shield.
+# # Whichever board is built last owns the shared artifacts under this directory
+# # (llext-edk/, syms-*.ld, tls-syms.S) and firmwares/zephyr-<variant>.*.
+# nanoxllink_monica.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
+# nanoxllink_monica.build.extra_flags=
+# nanoxllink_monica.build.board=NANO_XL_LINK_MONICA
+# 
+# # OTA: same layout as the bare module (they share the variant and its partition
+# # table), only the magic differs - it follows the carrier's own USB PID.
+# # Monica's loader is ~281K of the 288K available before the sketch offset,
+# # because it carries the WiFi stack too; if it grows past that, the sketch build
+# # fails with "loader exceeds offset".
+# nanoxllink_monica.build.ota.magic=
+# nanoxllink_monica.build.ota.offset=0x48000
+# nanoxllink_monica.build.ota.mcuboot_args=
+# 
+# nanoxllink_monica.vid.0=0x2341
+# nanoxllink_monica.pid.0=0x008e
+# nanoxllink_monica.upload_port.0.vid=0x2341
+# nanoxllink_monica.upload_port.0.pid=0x008e
+# nanoxllink_monica.upload.target=pic32ck1025sg01144
+# nanoxllink_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+# 
+# # Same upload path as the bare module - see the comment on nanoxllink above.
+# nanoxllink_monica.upload.tool=dfu-util
+# nanoxllink_monica.upload.tool.default=dfu-util
+# nanoxllink_monica.upload.protocol=
+# nanoxllink_monica.upload.transport=
+# nanoxllink_monica.upload.vid=0x2341
+# nanoxllink_monica.upload.pid=0x018e
+# nanoxllink_monica.upload.interface=1
+# nanoxllink_monica.upload.dfuse=
+# nanoxllink_monica.leave.dfuse=
+# nanoxllink_monica.upload.use_1200bps_touch=true
+# nanoxllink_monica.upload.wait_for_upload_port=true
+# nanoxllink_monica.upload.native_usb=true
+# nanoxllink_monica.bootloader.pid=0x018e
+# nanoxllink_monica.bootloader.interface=0
+# 
+# # burn-bootloader writes the LOADER into slot0 over SWD - the way back for a
+# # board whose PFM is empty or corrupt and which therefore cannot be reached over
+# # USB at all. It does not install MCUboot: that lives in BFM, whose write-protect
+# # bits re-arm at every reset and which the borrowed flash algorithm cannot
+# # program, so it stays tools/chandler_flasher/chandler_flasher.py's job.
+# #
+# # `pyocd load` does write PFM correctly - verified byte-for-byte 2026-08-18,
+# # against an earlier claim in this tree that it hangs. What it does need is the
+# # user script in pyocd.extra_flags above, which normalises SWAP.PFSWAP before
+# # the first flash access; without it, on a board whose BFM slot has been
+# # promoted, the image lands in the other panel and the read-back agrees with it.
+# nanoxllink_monica.bootloader.tool=pyocd
+# nanoxllink_monica.bootloader.tool.default=pyocd
+# nanoxllink_monica.bootloader.file=zephyr-{build.variant}.bin
+# nanoxllink_monica.bootloader.target={upload.target}
+# nanoxllink_monica.bootloader.address=0x0C000000
+# # The artifact is the MCUboot-headered image, a raw binary, so pyocd needs the
+# # address (see bootloader.load_at in platform.txt).
+# nanoxllink_monica.bootloader.load_at=@{bootloader.address}
+
