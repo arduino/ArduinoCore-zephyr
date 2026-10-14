@@ -748,11 +748,11 @@ nanoxllink.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
 nanoxllink.build.extra_flags=
 nanoxllink.build.board=NANO_XL_LINK
 
-# Loader and sketch are squashed into one ECDSA-P256 signed MCUboot image
+# Loader and sketch are squashed into one MCUboot image carrying a SHA-256
 # (see the variant's -common.overlay). The sketch address depends on the
-# loader size, so only the dynamic link mode is offered.
-# 🔴 Development key: keep in step with SB_CONFIG_BOOT_SIGNATURE_KEY_FILE.
-nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.variant.path}/root-ec-p256.pem" --erase_flash_dim 4096 --image_version 1.0.0.0
+# loader size, so only the dynamic link mode is offered. To sign it, add
+# --pem_file "<key>.pem" in step with the variant's sysbuild.conf.
+nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --erase_flash_dim 4096 --image_version 1.0.0.0
 nanoxllink.build.zsk_args.squash_output=--squash_output "{build.path}/{build.project_name}.signed.bin"
 
 nanoxllink.vid.0=0x2341
