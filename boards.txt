@@ -727,3 +727,80 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##############################################################################################################
+
+nanoxllink.name=Arduino Nano XL Link
+nanoxllink.build.core=arduino
+nanoxllink.build.crossprefix=arm-zephyr-eabi-
+nanoxllink.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nanoxllink.menu.link_mode.dynamic=Dynamic
+nanoxllink.menu.link_mode.static=Static
+nanoxllink.menu.link_mode.static.build.link_mode=static
+nanoxllink.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+nanoxllink.build.zephyr_target=arduino_nano_xl_link
+nanoxllink.build.zephyr_args=
+nanoxllink.build.zephyr_hals=hal_microchip
+nanoxllink.build.zephyr_toolchain=arm-zephyr-eabi
+nanoxllink.build.artifact=zephyr_main
+nanoxllink.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
+nanoxllink.build.extra_flags=
+nanoxllink.build.board=NANO_XL_LINK
+
+# Multi-image MCUboot: loader and sketch are SEPARATE images uploaded
+# independently to slot0 and slot2. No combined bundle is produced.
+#
+# Multi-image MCUboot: no combined bundle, so build.ota.magic is unset and
+# postobjcopy.3/.4 (bundle/delta generation) are effectively no-ops.
+# build.ota.offset is kept for reference (sketch partition at 0x48000).
+nanoxllink.build.ota.magic=
+nanoxllink.build.ota.offset=0x48000
+nanoxllink.build.ota.mcuboot_args=
+
+nanoxllink.vid.0=0x2341
+nanoxllink.pid.0=0x007e
+nanoxllink.upload_port.0.vid=0x2341
+nanoxllink.upload_port.0.pid=0x007e
+nanoxllink.upload.target=pic32ck1025sg01144
+# The GC01144 has no CMSIS-Pack; the pin/die-compatible SG part is the stand-in.
+# pack.debug_sequences.enable=false is required to connect at all (pyOCD's
+# J-Link backend can't issue the raw DAP_SWJ_Sequence the pack's DebugPortSetup
+# needs); connect_mode=halt because under-reset makes flash erase time out; and
+# reset_type=sw_sysresetreq because disabling debug sequences also disables this
+# chip's pack-defined ResetSystem.
+nanoxllink.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
+
+# Uploads use dfu-util against MCUboot's USB DFU recovery mode.
+#
+# The sequence, all of it automatic: arduino-cli opens the port at 1200 baud,
+# the running loader sees the rate change and arms the shared cookie before
+# resetting (variants/.../variant.c:_on_1200_bps), MCUboot comes up, finds the
+# cookie and stays in recovery, and the board re-enumerates with the PID below.
+# wait_for_upload_port makes arduino-cli wait for that second port and hand it
+# to the recipe. A physical double-tap of reset does the same thing by hand.
+nanoxllink.upload.tool=dfu-util
+nanoxllink.upload.tool.default=dfu-util
+nanoxllink.upload.protocol=
+nanoxllink.upload.transport=
+nanoxllink.upload.vid=0x2341
+nanoxllink.upload.pid=0x018e
+nanoxllink.upload.interface=1
+nanoxllink.upload.dfuse=
+nanoxllink.leave.dfuse=
+nanoxllink.bootloader.dfuse=
+nanoxllink.upload.use_1200bps_touch=true
+nanoxllink.upload.wait_for_upload_port=true
+nanoxllink.upload.native_usb=true
+nanoxllink.bootloader.file=zephyr-{build.variant}.bin
+nanoxllink.bootloader.pid=0x018e
+nanoxllink.bootloader.interface=0
+
+# burn-bootloader: MCUboot only, via DFU alt 2 (direct write to BFM spare
+# slot, promotes, auto-resets). The loader is independent and updated via
+# the normal upload path (DFU alt 0).
+nanoxllink.bootloader.tool=dfu-util
+nanoxllink.bootloader.tool.default=dfu-util
+nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vid}:{bootloader.pid} -a 2 -D "{runtime.platform.path}/firmwares/mcuboot-bfm-{build.variant}.bin"
+
