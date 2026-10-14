@@ -52,7 +52,7 @@ set(variant_c ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/v
 if(EXISTS ${variant_c})
     target_sources(app PRIVATE ${variant_c})
 endif()
-# Variant headers (usb_soft_disconnect.h, pfswap.h) shared with the bootloader.
+# Variant headers (usb_soft_disconnect.h).
 target_include_directories(app PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}
 )
