@@ -4,7 +4,7 @@
 # pyOCD user script for Nano XL Link (PIC32CK1025GC01144).
 # Normalises PFSWAP (Boot ROM flips it alongside BFSWAP after a Dual-Boot
 # promotion) and clears PWP0..7 so pyocd load can write PFM.
-# BFM needs tools/chandler_flasher/chandler_flasher.py (LBWP/UBWP re-arm at reset).
+# BFM needs tools/nano_xl_link_flasher/nano_xl_link_flasher.py (LBWP/UBWP re-arm at reset).
 
 FCW = 0x4400_4000
 CTRLA = FCW + 0x00

@@ -871,7 +871,7 @@ nanoxllink.tools.dfu-util.bootloader.pattern="{path}/{cmd}" --device ,{upload.vi
 # # board whose PFM is empty or corrupt and which therefore cannot be reached over
 # # USB at all. It does not install MCUboot: that lives in BFM, whose write-protect
 # # bits re-arm at every reset and which the borrowed flash algorithm cannot
-# # program, so it stays tools/chandler_flasher/chandler_flasher.py's job.
+# # program, so it stays tools/nano_xl_link_flasher/nano_xl_link_flasher.py's job.
 # #
 # # `pyocd load` does write PFM correctly - verified byte-for-byte 2026-08-18,
 # # against an earlier claim in this tree that it hangs. What it does need is the
