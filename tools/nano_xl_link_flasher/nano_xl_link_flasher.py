@@ -16,19 +16,19 @@ Usage:
     source venv/bin/activate
 
     # BFM (MCUboot) - ELF auto-detects load address:
-    ./tools/chandler_flasher.py build/mcuboot_.../zephyr/zephyr.elf
+    ./tools/nano_xl_link_flasher/nano_xl_link_flasher.py build/mcuboot_.../zephyr/zephyr.elf
 
     # BFM (MCUboot) - raw binary:
-    ./tools/chandler_flasher.py build/mcuboot_.../zephyr/zephyr.bin --base 0x08000000
+    ./tools/nano_xl_link_flasher/nano_xl_link_flasher.py build/mcuboot_.../zephyr/zephyr.bin --base 0x08000000
 
     # PFM (loader) - always a raw binary, always needs --base:
-    ./tools/chandler_flasher.py build/.../zephyr.signed.bin --base 0x0C000000
+    ./tools/nano_xl_link_flasher/nano_xl_link_flasher.py build/.../zephyr.signed.bin --base 0x0C000000
 
     # Verify only:
-    ./tools/chandler_flasher.py --verify-only build/.../zephyr.bin --base 0x08000000
+    ./tools/nano_xl_link_flasher/nano_xl_link_flasher.py --verify-only build/.../zephyr.bin --base 0x08000000
 
     # Erase entire BFM (no image needed):
-    ./tools/chandler_flasher.py --erase-only --base 0x08000000
+    ./tools/nano_xl_link_flasher/nano_xl_link_flasher.py --erase-only --base 0x08000000
 """
 
 import argparse
