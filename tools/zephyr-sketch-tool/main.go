@@ -78,7 +78,7 @@ func main() {
 	// Squash / Sign flags
 	var squash = flag.Bool("squash", false, "Squash the loader and sketch, then sign the image")
 	var loader_bin = flag.String("loader_bin", "", "Path to the binary loader to be used")
-	var pem_file = flag.String("pem_file", "", "Path to the PEM file containing keys")
+	var pem_file = flag.String("pem_file", "", "Path to the PEM file containing keys (none: hash-only image)")
 	var erase_flash_dim = flag.Uint("erase_flash_dim", 0, "Minimum erasing flash sector dimension in bytes")
 	var image_version = flag.String("image_version", "1.0.0.0", "Image version for the header (default 1.0.0.0)")
 	var squash_output = flag.String("squash_output", "", "Output for the signed image (default: <loader_bin>.signed.bin)")
@@ -353,23 +353,23 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		pos += copy(image[pos:], sketch_bin)
 	}
 
-	/* LOAD AND PARSE THE PRIVATE KEY */
-	if pemFile == "" {
-		log.Fatalf("Failed to read key: PEM file path is empty")
-	}
-	keyFile, err := os.ReadFile(pemFile)
-	if err != nil {
-		log.Fatalf("Failed to read key: %v", err)
-	}
+	/* LOAD AND PARSE THE PRIVATE KEY (none: hash-only image) */
+	var signer crypto.Signer
+	if pemFile != "" {
+		keyFile, err := os.ReadFile(pemFile)
+		if err != nil {
+			log.Fatalf("Failed to read key: %v", err)
+		}
 
-	block, _ := pem.Decode(keyFile)
-	if block == nil {
-		log.Fatalf("Failed to parse PEM block")
-	}
+		block, _ := pem.Decode(keyFile)
+		if block == nil {
+			log.Fatalf("Failed to parse PEM block")
+		}
 
-	signer, err := parseSigningKey(block)
-	if err != nil {
-		log.Fatalf("Failed to parse key: %v", err)
+		signer, err = parseSigningKey(block)
+		if err != nil {
+			log.Fatalf("Failed to parse key: %v", err)
+		}
 	}
 
 	/* CONSTRUCT IMAGE HEADER */
@@ -413,17 +413,23 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	 */
 	imgHash := sha256.Sum256(image)
 
-	/* KEYHASH and signature, in the encoding imgtool uses for this key type */
-	pubKeyBytes, sigType, signature, err := signImage(signer, imgHash[:])
-	if err != nil {
-		log.Fatalf("Failed to sign payload: %v", err)
+	/* SHA-256 always; KEYHASH and signature only with a key, in the encoding
+	 * imgtool uses for its type (MCUboot built with BOOT_SIGNATURE_TYPE_NONE
+	 * checks the hash alone). */
+	tlvs := []tlv{{TlvSha256, imgHash[:]}}
+	if signer != nil {
+		pubKeyBytes, sigType, signature, err := signImage(signer, imgHash[:])
+		if err != nil {
+			log.Fatalf("Failed to sign payload: %v", err)
+		}
+		keyHash := sha256.Sum256(pubKeyBytes)
+		tlvs = append(tlvs, tlv{TlvKeyHash, keyHash[:]}, tlv{sigType, signature})
 	}
-	keyHash := sha256.Sum256(pubKeyBytes)
 
 	// Buffer for final output
 	var finalImg bytes.Buffer
 	finalImg.Write(image)
-	appendTLVs(&finalImg, keyHash[:], imgHash[:], sigType, signature)
+	appendTLVs(&finalImg, tlvs)
 
 	// Size Validation & Save
 	/* MCUboot keeps its trailer in the last erase block of the slot */
@@ -517,15 +523,12 @@ func signImage(signer crypto.Signer, imgHash []byte) ([]byte, uint8, []byte, err
 }
 
 // appendTLVs handles the exact struct packing required by MCUboot
-func appendTLVs(img *bytes.Buffer, keyHash []byte, imgHash []byte, sigType uint8, sig []byte) {
-	tlvs := []struct {
-		kind uint8
-		data []byte
-	}{
-		{TlvSha256, imgHash},
-		{TlvKeyHash, keyHash},
-		{sigType, sig},
-	}
+type tlv struct {
+	kind uint8
+	data []byte
+}
+
+func appendTLVs(img *bytes.Buffer, tlvs []tlv) {
 
 	total := 4
 	for _, t := range tlvs {
