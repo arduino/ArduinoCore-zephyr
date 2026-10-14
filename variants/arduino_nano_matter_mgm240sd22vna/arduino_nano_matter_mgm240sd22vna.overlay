@@ -124,3 +124,12 @@ user_sketch: &slot1_partition {};
 &sysrtc0 {
 	status = "okay";
 };
+
+&timer1 {
+	status = "okay";
+
+	counter_servo: counter {
+		status = "okay";
+		label = "SERVO_COUNTER";
+	};
+};

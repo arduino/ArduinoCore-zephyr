@@ -311,3 +311,6 @@
 	zephyr,deferred-init;
 };
 
+counter_servo: &timer2 {
+	status = "okay";
+};

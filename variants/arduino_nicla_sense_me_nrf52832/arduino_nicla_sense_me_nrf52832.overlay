@@ -194,3 +194,7 @@
 		// spis = <&spi0>; // conflicts with uart0 (same peripheral)
 	};
 };
+
+counter_servo: &timer2 {
+	status = "okay";
+};

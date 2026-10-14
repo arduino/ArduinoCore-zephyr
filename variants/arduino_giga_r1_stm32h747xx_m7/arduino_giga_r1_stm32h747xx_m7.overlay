@@ -179,6 +179,16 @@
 	};
 };
 
+&timers16 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_servo: counter {
+		status = "okay";
+		label = "SERVO_COUNTER";
+	};
+};
+
 &pwm1 {
 	/* Use the pwmclock node to start the clock generation */
 	pwmclock: pwmclock {

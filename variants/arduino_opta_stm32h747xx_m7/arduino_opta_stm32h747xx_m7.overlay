@@ -151,3 +151,13 @@
 
 /* Include common flash filesystem configuration */
 #include "../common/arduino_flash_fs.dtsi"
+
+&timers16 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_servo: counter {
+		status = "okay";
+		label = "SERVO_COUNTER";
+	};
+};
