@@ -344,3 +344,13 @@ dmic_dev: &pdm0 {
 /* Include common flash filesystem configuration */
 qspi_flash: &n25q128a1 {};
 #include "../common/arduino_flash_fs.dtsi"
+
+&timers16 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_servo: counter {
+		status = "okay";
+		label = "SERVO_COUNTER";
+	};
+};

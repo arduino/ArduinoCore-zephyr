@@ -302,3 +302,7 @@ uart2: &uart1 {
 &dmic_dev {
 	status = "okay";
 };
+
+counter_servo: &timer {
+	status = "okay";
+};

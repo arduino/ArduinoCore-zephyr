@@ -549,3 +549,15 @@ qspi_flash: &at25sf128a {};
 	interrupts = <36 12>;
 	status = "okay";
 };
+
+&agt0 {
+	status = "okay";
+	interrupts = <85 1>, <86 1>;
+	interrupt-names = "agti", "agtcmai";
+	renesas,count-source = "AGT_CLOCK_PCLKB";
+	renesas,prescaler = <0>;
+
+	counter_servo: counter {
+		status = "okay";
+	};
+};

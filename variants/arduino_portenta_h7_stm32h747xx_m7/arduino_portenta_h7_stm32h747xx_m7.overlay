@@ -649,3 +649,13 @@ qspi_flash: &mx25l12833f {};
 		i2s-rx = &sai4_a;
 	};
 };
+
+&timers16 {
+	status = "okay";
+	st,prescaler = <4>;
+
+	counter_servo: counter {
+		status = "okay";
+		label = "SERVO_COUNTER";
+	};
+};
