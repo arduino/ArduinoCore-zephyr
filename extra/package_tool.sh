@@ -22,8 +22,8 @@ hash_file() {
 	plat=$1
 	file=$2
 	name=$(basename $file)
-	hash=$(sha256sum $file | cut -d ' ' -f 1)
-	len=$(stat -c %s $file)
+	hash=$(shasum -a 256 $file | cut -d ' ' -f 1)
+	len=$(wc -c < $file | tr -d ' ')
 	cat << EOF
 {
   "host": "$plat",
@@ -55,9 +55,14 @@ build_for_arch() {
 	local build_file="$TOOL_NAME$app_ext"
 	local package_file="$tool_stem-$plat$pkg_ext"
 
+	# The macOS binaries of MCUmgr need cgo, which Go only enables for the
+	# native target: force it on for both macOS targets when the host is a Mac
+	local cgo_env=""
+	[ "$os" == "darwin" ] && [ "$(uname)" == "Darwin" ] && cgo_env="CGO_ENABLED=1"
+
 	echo "Building $TOOL_NAME for $os/$arch ($plat)"
 	mkdir -p "$build_dir"
-	(cd $TOOL_DIR && GOOS="$os" GOARCH="$arch" go build -o "$build_dir/$build_file")
+	(cd $TOOL_DIR && env $cgo_env GOOS="$os" GOARCH="$arch" go build -o "$build_dir/$build_file")
 	(cd "$tool_stem" && $pkg_cmd "$package_file" $plat/)
 	hash_file $plat "$package_file" > $build_dir.json
 }

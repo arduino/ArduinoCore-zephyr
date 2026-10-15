@@ -50,12 +50,29 @@ if ! [ -z "$chosen_board" ]; then
 	# the args field is a single string; split it on unquoted whitespace,
 	# keeping quotes so a quoted value with spaces stays one array element
 	arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
-	mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+	if [[ "$OSTYPE" == darwin* ]]; then
+		args=()
+		while IFS= read -r tok; do
+			args+=("$tok")
+		done < <(jq -cr '.args' <<< "$chosen_board" | perl -nle "print \$& while /${arg_token}/g")
+	else
+		mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+	fi
 	upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
+
+	# Boards with '--sysbuild' in their zephyr_args boot the loader through MCUboot
+	conf=""
+	if [[ " ${args[*]} " == *" --sysbuild "* ]]; then
+		mcuboot=1
+		conf="overlay_mcuboot.conf"
+	fi
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		conf="${conf:+$conf;}../extra/debug.conf"
+	fi
+	if [ -n "$conf" ]; then
+		args+=(-- "-DEXTRA_CONF_FILE=$conf")
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -93,12 +110,17 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+west build -d ${BUILD_DIR} -b ${target} loader "${args[@]}"
+
+# With sysbuild the loader is one image among several and has its own build
+# directory as loader; the EDK target only exists there.
+LOADER_DIR=${BUILD_DIR}${mcuboot:+/loader}
+west build -d ${LOADER_DIR} -t llext-edk
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
-(set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
-rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+(set -e ; cd ${LOADER_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
+rsync -a --delete ${LOADER_DIR}/llext-edk ${VARIANT_DIR}/
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -116,20 +138,40 @@ edk_funcs='int32_t k_sleep\(k_timeout_t timeout\)|void k_busy_wait\(uint32_t use
 perl -0pi -e "s/__pinned_func\nstatic inline ($edk_funcs)/$edk_qual \$1/g" "$syscalls_hdr"
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
 
+IMG=${LOADER_DIR}/zephyr/zephyr
+# a signed build that produced no signed bin/hex would brick the board, so bail
+# out before touching firmwares/
+if [ -n "$mcuboot" ]; then
+	for ext in bin hex; do
+		if [ ! -f $IMG.signed.$ext ]; then
+			echo "error: MCUboot build produced no $IMG.signed.$ext" >&2
+			exit 1
+		fi
+	done
+fi
 for ext in elf bin hex uf2; do
-    rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
-    fi
+	rm -f firmwares/zephyr-$variant.$ext
+	# under MCUboot only the signed image boots, so prefer it when it exists
+	for src in $IMG.signed.$ext $IMG.$ext; do
+		if [ -f $src ]; then
+			cp $src firmwares/zephyr-$variant.$ext
+			break
+		fi
+	done
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+# named zephyr-$variant.* so that package_core.sh ships it with the core
+rm -f firmwares/zephyr-$variant.mcuboot.hex
+if [ -n "$mcuboot" ]; then
+	cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.hex firmwares/zephyr-$variant.mcuboot.hex
+fi
+cp ${LOADER_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
+cp ${LOADER_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \

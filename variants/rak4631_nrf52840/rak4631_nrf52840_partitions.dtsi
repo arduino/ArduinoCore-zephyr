@@ -1,0 +1,56 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * RAK4631 flash layout, shared by the loader and the MCUboot image.
+ *
+ * MCUboot and the mcumgr image group address the slots through the
+ * slot0_partition / slot1_partition labels; the loader addresses the same
+ * partitions as code_partition / user_sketch.
+ */
+
+/delete-node/ &boot_partition;
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00010000>;
+			read-only;
+		};
+
+		/* Loader; the MCUboot image header takes its first 0x200 bytes. */
+		slot0_partition: code_partition: partition@10000 {
+			label = "image-0";
+			reg = <0x00010000 0x00070000>;
+			read-only;
+		};
+
+		/*
+		 * Sketch: a zsk blob, not an MCUboot image. The slot1 label only
+		 * makes it "image 2" for mcumgr direct uploads.
+		 */
+		slot1_partition: user_sketch: partition@80000 {
+			label = "image-1";
+			reg = <0x00080000 0x00078000>;
+		};
+
+		/*
+		 * Storage partition will be used by FCB/LittleFS/NVS
+		 * if enabled.
+		 */
+		storage_partition: partition@f8000 {
+			label = "storage";
+			reg = <0x000f8000 0x00008000>;
+		};
+	};
+};

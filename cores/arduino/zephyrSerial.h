@@ -111,7 +111,7 @@ protected:
 
 } // namespace arduino
 
-/* Return the index of it if matched, oterwise return an empty string. */
+/* Return the index of it if matched, otherwise return an empty string. */
 #define ZARD_SERIAL_MATCH(n, p, i, node)                                                           \
 	COND_CODE_1(DT_SAME_NODE(DT_PHANDLE_BY_IDX(n, p, i), node), (i), ())
 
@@ -126,9 +126,9 @@ protected:
  */
 #define ZARD_SERIAL_NAME_BY_NODE(node)                                                             \
 	COND_CODE_0(IS_EMPTY(ZARD_SERIAL_INDEXOF(node)),                                           \
-                    (ZARD_SERIAL_NAME(ZARD_SERIAL_INDEXOF(node))),			           \
-                    (COND_CODE_1(DT_SAME_NODE(node, ZARD_SERIALUSB_PHANDLE),                       \
-                                 (SerialUSB), (unkown Serial object))))
+					(ZARD_SERIAL_NAME(ZARD_SERIAL_INDEXOF(node))),           \
+					(COND_CODE_1(DT_SAME_NODE(node, ZARD_SERIALUSB_PHANDLE),                       \
+								 (SerialUSB), (unknown Serial object))))
 
 /* Serial object associated with the Zephyr console. */
 #define ARDUINO_CONSOLE_SERIAL ZARD_SERIAL_NAME_BY_NODE(DT_CHOSEN(zephyr_console))

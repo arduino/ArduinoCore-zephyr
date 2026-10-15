@@ -1,0 +1,101 @@
+### RAK4631 Arduino pin map
+
+The RAK4631 features a 40-pin header with various I/O interfaces for the WisBlock
+ecosystem. The pinout is as follows:
+
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| Used                        | Name     | Pin | Pin | Name     | Used                        |
++=============================+==========+=====+=====+==========+=============================+
+| NC                          | VBAT     | 1   | 2   | VBAT     | NC                          |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| GND                         | GND      | 3   | 4   | GND      | GND                         |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| 3V3                         | 3V3      | 5   | 6   | 3V3      | 3V3                         |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| USB_P                       | USB_P    | 7   | 8   | USB_N    | USB_N                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| NC                          | VBUS     | 9   | 10  | SW1      | P1.01                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.20 / UART0_TX            | TXD0     | 11  | 12  | RXD0     | P0.19 / UART0_RX            |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| RESET                       | RESET    | 13  | 14  | LED1     | P1.03                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P1.04                       | LED2     | 15  | 16  | LED3     | P0.02                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| 3V3                         | VDD      | 17  | 18  | VDD      | 3V3                         |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.13 / I2C0_SDA            | I2C1_SDA | 19  | 20  | I2C1_SCL | P0.14 / I2C0_SCL            |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.05 / ADC_VBAT            | AIN0     | 21  | 22  | AIN1     | P0.31 / ADC                 |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| BOOT                        | BOOT0    | 23  | 24  | IO7      | P0.28                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.26 / SPI2_CS             | SPI_CS   | 25  | 26  | SPI_CLK  | P0.03 / SPI2_SCK            |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.29 / SPI2_MISO           | SPI_MISO | 27  | 28  | SPI_MOSI | P0.30 / SPI2_MOSI           |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.17                       | IO1      | 29  | 30  | IO2      | P1.02                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.21                       | IO3      | 31  | 32  | IO4      | P0.04                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.16 / UART1_TX            | TXD1     | 33  | 34  | RXD1     | P0.15 / UART1_RX            |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.24 / I2C1_SDA            | I2C2_SDA | 35  | 36  | I2C2_SCL | P0.25 / I2C1_SCL            |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| P0.09                       | IO5      | 37  | 38  | IO6      | P0.10                       |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+| GND                         | GND      | 39  | 40  | GND      | GND                         |
++-----------------------------+----------+-----+-----+----------+-----------------------------+
+
+Signal names follow the WisBlock connector specification (see the WisBlock Technical
+Specification v1.0).
+
+| Arduino pin | WisBlock signal | nRF52840 pin | Notes                                    |
+|-------------|-----------------|--------------|------------------------------------------|
+| D0          | IO1             | P0.17        | PWM                                      |
+| D1          | IO2             | P1.02        | PWM; 3V3_S sensor-slot power enable      |
+| D2          | IO3             | P0.21        | PWM                                      |
+| D3          | IO4             | P0.04        | PWM, also A2                             |
+| D4          | IO5             | P0.09        | PWM (NFC pin, used as GPIO)              |
+| D5          | IO6             | P0.10        | PWM (NFC pin, used as GPIO)              |
+| D6          | IO7             | P0.28        | PWM, also A3                             |
+| D7          | LED1 (green)    | P1.03        | PWM, `LED_BUILTIN`                       |
+| D8          | LED2 (blue)     | P1.04        | PWM                                      |
+| D9          | AIN0            | P0.05        | Also A0                                  |
+| D10         | AIN1            | P0.31        | Also A1                                  |
+| D11         | SPI_CS          | P0.26        | SPI chip select                          |
+| D12         | SW1             | P1.01        | WisBlock connector pin 10                |
+| D13         | LED3            | P0.02        | Connector pin 16; shared with QSPI DIO3  |
+
+Buses:
+  - `Serial` is the USB CDC sketch port
+  - `Serial1` is UART0 (TXD0 P0.20 / RXD0 P0.19)
+  - `Serial2` is UART1 (TXD1 P0.16 / RXD1 P0.15)
+  - `Wire` is I2C0, the WisBlock I2C1 bus (SDA P0.13 / SCL P0.14)
+  - `SPI` is the WisBlock header SPI (SCK P0.03 / MOSI P0.30 / MISO P0.29)
+
+On the RAK19007 base board:
+
+- Sensor slots A-D get their switched 3V3_S rail through WB_IO2 (D1):
+  IO2=1 on, IO2=0 off. The loader drives it low at boot, so the rail is off until a
+  sketch enables it. Modules that only use VDD, such as the RAK1901, are unaffected.
+- A0 is also wired to the battery voltage divider
+  (1.5 MOhm / 2.5 MOhm), so `VBAT = analogRead(A0)` scaled by 5/3
+  (and by the ADC reference); IO-slot modules driving AIN0 conflict
+  with it.
+
+How to use MCUboot bootloader with arduino-cli:
+
+Requirement: arduino-cli uploads through MCUboot's serial recovery (mcumgr over
+USB), so MCUboot must already be on the board. Before the first arduino-cli
+upload, flash the MCUboot hex over SWD with a J-Link or a RAKDAP1 probe. The
+core ships it as `firmwares/zephyr-rak4631_nrf52840.mcuboot.hex`, and
+`extra/build.sh rak4631` writes it to the same path. arduino-cli cannot install
+MCUboot itself. Images are signed with `key/arduino_key_ecdsa-p256.pem`,
+which is public in this repository, so this does not provide secure boot.
+
+Entering serial recovery: `arduino-cli upload` first sends a 1200-bps touch to
+the board's USB port. A running sketch handles it (the core opens `Serial`
+before `setup()`); with no sketch on the board (or with a `--debug` loader) the
+loader handles it. A sketch that crashes before USB comes up leaves no port for
+the touch; recover the board over SWD.
