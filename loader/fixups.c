@@ -679,3 +679,30 @@ int system_utilities(void) {
 SYS_INIT(system_utilities, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
 #endif
+
+#if defined(CONFIG_BOARD_ARDUINO_NICLA_VISION)
+#include <zephyr/drivers/gpio.h>
+#if DT_NODE_EXISTS(DT_NODELABEL(vl53l1x)) && DT_NODE_HAS_PROP(DT_NODELABEL(vl53l1x), xshut_gpios)
+/*
+ * Release the on-board VL53L1CB time-of-flight sensor from hardware shutdown.
+ *
+ * The part is held in reset by XSHUT until something drives it. Normally that
+ * is Zephyr's st,vl53l1x driver, but this loader does not build CONFIG_SENSOR -
+ * there is no flash headroom for it and no exported sensor API - so a sketch
+ * talking to the sensor over Wire1 would find the bus silent forever. XSHUT is
+ * not on the Arduino digital pin map, so a sketch cannot release it either.
+ */
+static const struct gpio_dt_spec tof_xshut =
+	GPIO_DT_SPEC_GET(DT_NODELABEL(vl53l1x), xshut_gpios);
+
+static int release_tof_from_shutdown(void)
+{
+	if (!gpio_is_ready_dt(&tof_xshut)) {
+		return -ENODEV;
+	}
+
+	return gpio_pin_configure_dt(&tof_xshut, GPIO_OUTPUT_ACTIVE);
+}
+SYS_INIT(release_tof_from_shutdown, POST_KERNEL, CONFIG_GPIO_INIT_PRIORITY);
+#endif
+#endif
