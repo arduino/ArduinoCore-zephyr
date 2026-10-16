@@ -36,21 +36,6 @@ int disable_mpu_rasr_xn(void) {
 	return 0;
 }
 
-#if defined(CONFIG_BOARD_ARDUINO_NANO_33_BLE)
-int disable_bootloader_mpu() {
-	// MPU was previously enabled in the bootloader
-	// https://github.com/bcmi-labs/zephyr/blob/31cb7dd00fd5bce4c69896b3b2ddf6259d0c0f2b/boards/arm/arduino_nano_33_ble/arduino_nano_33_ble_defconfig#L10C1-L10C15
-	__disable_irq();
-	disable_mpu_rasr_xn();
-	__DMB();
-	MPU->CTRL = 0;
-	__enable_irq();
-	return 0;
-}
-
-SYS_INIT(disable_bootloader_mpu, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
-#endif
-
 #if defined(CONFIG_ARM_MPU)
 SYS_INIT(disable_mpu_rasr_xn, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #endif
@@ -264,7 +249,8 @@ SYS_INIT(internal_flash_clean_regs, APPLICATION, CONFIG_APPLICATION_INIT_PRIORIT
 #include <zephyr/storage/flash_map.h>
 
 int maybe_flash_bootloader(void) {
-	// memcmp the first 256bytes of "embedded bootloader" and address 0x0
+	// memcmp 256bytes of "embedded bootloader" and address 0x400
+	// to avoid the DWT null-pointer detection region.
 	// if they are different, flash the bootloader
 	const uint8_t embedded_bootloader[] = {
 #include "c33_bl_patch/c33_bl.bin.inc"
@@ -280,16 +266,17 @@ int maybe_flash_bootloader(void) {
 	}
 
 	uint8_t flash_bootloader[256];
-	flash_area_read(fa, 0, flash_bootloader, 256);
+	flash_area_read(fa, 0x400, flash_bootloader, 256);
 
-	if (memcmp(embedded_bootloader, flash_bootloader, 256) != 0) {
+	if (memcmp(&embedded_bootloader[0x400], flash_bootloader, 256) != 0) {
 		// flash the bootloader
 		rc = flash_area_erase(fa, 0, fa->fa_size);
 		if (rc) {
 			printk("Failed to erase flash area, rc %d\n", rc);
 			return rc;
 		}
-		flash_area_write(fa, 0, embedded_bootloader, sizeof(embedded_bootloader));
+		rc = flash_area_write(fa, 0, embedded_bootloader,
+							  ROUND_UP(sizeof(embedded_bootloader), 128));
 		if (rc) {
 			printk("Failed to write flash area, rc %d\n", rc);
 			return rc;

@@ -282,17 +282,6 @@ static int loader(const struct shell *sh) {
 	size_t sketch_buf_len = sketch_hdr->len;
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
-#ifdef CONFIG_BOARD_ARDUINO_PORTENTA_C33
-#if CONFIG_MPU
-		barrier_dmem_fence_full();
-#endif
-#if CONFIG_DCACHE
-		barrier_dsync_fence_full();
-#endif
-#if CONFIG_ICACHE
-		barrier_isync_fence_full();
-#endif
-#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 		if (debug) {
