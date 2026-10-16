@@ -6,6 +6,7 @@
 /platform.local.txt
 /loader/VERSION
 /cores/arduino/api/
+/variants/include/
 
 __pycache__/
 

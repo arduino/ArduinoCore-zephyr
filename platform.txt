@@ -40,7 +40,7 @@ compiler.zephyr.includes_file={build.variant.path}/includes.txt
 compiler.zephyr.machine_flags_file={build.variant.path}/machine_flags.txt
 compiler.zephyr.cflags_file={build.variant.path}/cflags.txt
 compiler.zephyr.cxxflags_file={build.variant.path}/cxxflags.txt
-compiler.zephyr.macros="-imacros{build.variant.path}/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h" "-imacros{build.variant.path}/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h"
+compiler.zephyr.macros=-imacroszephyr/autoconf.h -imacroszephyr/toolchain/zephyr_stdint.h
 # NOTE: -fno-extern-tls-init prevents the C++ frontend from emitting guarded
 # references to the thread-local init function (e.g. _ZTH5errno) for extern
 # thread_local variables such as picolibc's `errno`. These variables are

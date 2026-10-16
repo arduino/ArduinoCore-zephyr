@@ -185,8 +185,9 @@ func main() {
 		_ = cmd.Run() // no error check, the api symlink may be gone in the future
 	}
 
-	// Remove old firmwares and variants/*/llext-edk files
+	// Remove old firmwares, variants/*/llext-edk files and shared variant headers
 	os.RemoveAll(filepath.Join(gitCorePath, "firmwares"))
+	os.RemoveAll(filepath.Join(gitCorePath, "variants", "include"))
 	filepath.WalkDir(filepath.Join(gitCorePath, "variants"), func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			fmt.Println("Error:", err)
