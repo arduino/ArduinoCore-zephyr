@@ -1,0 +1,189 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/drivers/hwinfo.h>
+#include <zephyr/sys/byteorder.h>
+
+#include <stm32_ll_utils.h>
+#include <stm32_ll_rcc.h>
+#include <stm32_ll_pwr.h>
+#include <stm32_bitops.h>
+
+
+#define STM32_UID_WORD_2 LL_GetUID_Word2()
+#define STM32_UID_WORD_1 LL_GetUID_Word1()
+#define STM32_UID_WORD_0 LL_GetUID_Word0()
+
+ssize_t z_impl_hwinfo_get_device_id(uint8_t *buffer, size_t length)
+{
+	uint32_t id[3];
+
+	id[0] = sys_cpu_to_be32(STM32_UID_WORD_0);
+	id[1] = sys_cpu_to_be32(STM32_UID_WORD_1);
+	id[2] = sys_cpu_to_be32(STM32_UID_WORD_2);
+
+	if (length > sizeof(id)) {
+		length = sizeof(id);
+	}
+
+	memcpy(buffer, id, length);
+
+	return length;
+}
+
+static void ll_hwinfo_force_clear_reset_flags(void)
+{
+#ifdef CONFIG_STM32_HAL2
+	LL_RCC_ForceClearResetFlags();
+#else /* CONFIG_STM32_HAL2 */
+	LL_RCC_ClearResetFlags();
+#endif /* CONFIG_STM32_HAL2 */
+}
+
+int z_impl_hwinfo_get_reset_cause(uint32_t *cause)
+{
+	uint32_t flags = 0;
+
+#if defined(RCC_FLAG_SFTRST) || defined(RCC_RSR_SFTRSTF)
+	if (LL_RCC_IsActiveFlag_SFTRST()) {
+		flags |= RESET_SOFTWARE;
+	}
+#endif
+#if defined(RCC_FLAG_PINRST) || defined(RCC_RSR_PINRSTF)
+	if (LL_RCC_IsActiveFlag_PINRST()) {
+		flags |= RESET_PIN;
+	}
+#endif
+#if defined(RCC_FLAG_IWDGRST) || (defined(RCC_RSR_IWDGRSTF) && !defined(CONFIG_SOC_SERIES_STM32H7X))
+	if (LL_RCC_IsActiveFlag_IWDGRST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_RSR_IWDG1RSTF)
+	if (LL_RCC_IsActiveFlag_IWDG1RST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_RSR_IWDG2RSTF)
+	if (LL_RCC_IsActiveFlag_IWDG2RST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_FLAG_WWDGRST) || (defined(RCC_RSR_WWDGRSTF) && !defined(CONFIG_SOC_SERIES_STM32H7X))
+	if (LL_RCC_IsActiveFlag_WWDGRST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_RSR_WWDG1RSTF)
+	if (LL_RCC_IsActiveFlag_WWDG1RST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_RSR_WWDG2RSTF)
+	if (LL_RCC_IsActiveFlag_WWDG2RST()) {
+		flags |= RESET_WATCHDOG;
+	}
+#endif
+#if defined(RCC_FLAG_FWRST)
+	if (LL_RCC_IsActiveFlag_FWRST()) {
+		flags |= RESET_SECURITY;
+	}
+#endif
+#if defined(RCC_FLAG_BORRST) || defined(RCC_RSR_BORRSTF)
+	if (LL_RCC_IsActiveFlag_BORRST()) {
+		flags |= RESET_BROWNOUT;
+	}
+#endif
+#if defined(RCC_FLAG_PWRRST)
+	if (LL_RCC_IsActiveFlag_PWRRST()) {
+		flags |= RESET_POR;
+	}
+#endif
+#if defined(RCC_FLAG_PORRST)
+	if (LL_RCC_IsActiveFlag_PORRST()) {
+		flags |= RESET_POR;
+	}
+#endif
+#if defined(RCC_FLAG_LPWRRST) || defined(RCC_CSR_LPWRRSTF)
+	if (LL_RCC_IsActiveFlag_LPWRRST()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#endif
+
+#if defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM4)
+	if (LL_PWR_CPU2_IsActiveFlag_SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM7)
+	if (LL_PWR_CPU_IsActiveFlag_SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(CONFIG_SOC_SERIES_STM32MP1X)
+	if (LL_PWR_MCU_IsActiveFlag_SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(CONFIG_SOC_SERIES_STM32MP13X)
+	if (LL_PWR_MPU_IsActiveFlag_SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(CONFIG_SOC_SERIES_STM32MP2X) && defined(PWR_FLAG_SB)
+	if (LL_PWR_HasSystemBeenInStandby()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(CONFIG_SOC_SERIES_STM32WLX) || defined(CONFIG_SOC_SERIES_STM32WBX)
+	if (LL_PWR_IsActiveFlag_C1SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#elif defined(PWR_FLAG_SB) || defined(PWR_FLAG_SBF) || defined(PWR_PMSR_SBF)
+	if (LL_PWR_IsActiveFlag_SB()) {
+		flags |= RESET_LOW_POWER_WAKE;
+	}
+#endif /* PWR_FLAG_SB */
+
+	*cause = flags;
+
+	return 0;
+}
+
+int z_impl_hwinfo_clear_reset_cause(void)
+{
+	ll_hwinfo_force_clear_reset_flags();
+
+#if defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM4)
+	LL_PWR_ClearFlag_CPU2();
+#elif defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM7)
+	LL_PWR_ClearFlag_CPU();
+#elif defined(CONFIG_SOC_SERIES_STM32H7RSX)
+	LL_PWR_ClearFlag_STOP_SB();
+#elif defined(CONFIG_SOC_SERIES_STM32MP1X)
+	LL_PWR_ClearFlag_MCU();
+#elif defined(CONFIG_SOC_SERIES_STM32MP13X)
+	LL_PWR_ClearFlag_MPU();
+#elif defined(CONFIG_SOC_SERIES_STM32MP2X) && defined(PWR_FLAG_SB)
+	__HAL_PWR_CLEAR_FLAG(PWR_FLAG_SB);
+#elif defined(CONFIG_SOC_SERIES_STM32WLX) || defined(CONFIG_SOC_SERIES_STM32WBX)
+	LL_PWR_ClearFlag_C1STOP_C1STB();
+#elif defined(CONFIG_SOC_SERIES_STM32U0X) && defined(PWR_FLAG_SB)
+	LL_PWR_ClearFlag_CSB();
+#elif defined(PWR_FLAG_SB) || defined(PWR_PMSR_SBF)
+	LL_PWR_ClearFlag_SB();
+#endif /* PWR_FLAG_SB */
+
+	return 0;
+}
+
+int z_impl_hwinfo_get_supported_reset_cause(uint32_t *supported)
+{
+	*supported = (RESET_PIN
+		      | RESET_WATCHDOG
+		      | RESET_SOFTWARE
+		      | RESET_SECURITY
+		      | RESET_LOW_POWER_WAKE
+		      | RESET_POR
+		      | RESET_BROWNOUT);
+
+	return 0;
+}

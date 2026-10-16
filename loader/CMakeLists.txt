@@ -39,6 +39,8 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/../cores/arduino/usb_device_descriptor.c
 )
 
+add_subdirectory_ifdef(CONFIG_HWINFO_ARDUINO ${CMAKE_CURRENT_SOURCE_DIR}/hwinfo)
+
 FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
@@ -46,3 +48,4 @@ target_compile_definitions(app PUBLIC _GNU_SOURCE)
 
 target_link_libraries(app PUBLIC blobs)
 target_link_libraries_ifdef(CONFIG_OTA app PUBLIC ota)
+target_link_libraries_ifdef(CONFIG_HWINFO_ARDUINO app PUBLIC hwinfo)
