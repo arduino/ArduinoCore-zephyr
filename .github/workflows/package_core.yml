@@ -74,10 +74,15 @@ jobs:
 
       - name: Identify current version and board set
         run: |
+          # Forks may omit upstream tags even when they contain the full history.
+          if ! git describe --tags --exclude '*/*' >/dev/null 2>&1; then
+            git fetch --tags https://github.com/arduino/ArduinoCore-zephyr.git
+          fi
           # Set up basic environment for later steps
           echo "CORE_HASH=$(git describe --always $HEAD_REF)" >> "$GITHUB_ENV"
           echo "ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')" >> "$GITHUB_ENV"
-          echo "CORE_VER=$(extra/get_core_version.sh)" >> "$GITHUB_ENV"
+          CORE_VER=$(extra/get_core_version.sh)
+          echo "CORE_VER=$CORE_VER" >> "$GITHUB_ENV"
 
       - name: Map output packages
         # needs the above env vars
@@ -290,6 +295,7 @@ jobs:
     env:
       ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
       CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+      PINNED_CORE_VERSION: ${{ needs.build-env.outputs.CORE_VER }}
       CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
     strategy:
       matrix:
@@ -736,6 +742,7 @@ jobs:
       - package-core
       - verify-core
     env:
+      PINNED_CORE_VERSION: ${{ needs.build-env.outputs.CORE_VER }}
       CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
       CORE_HASH: ${{ needs.build-env.outputs.CORE_HASH }}
       ARTIFACTS: ${{ needs.build-env.outputs.ARTIFACTS }}
