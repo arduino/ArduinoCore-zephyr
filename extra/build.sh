@@ -5,9 +5,10 @@
 
 set -e
 
-source venv/bin/activate
+PYTHON_VENV_PATH=${PYTHON_VENV_PATH:-"./venv"}
+[[ -z "${DISABLE_VENV:-}" ]] && { source ${PYTHON_VENV_PATH}/bin/activate; }
 
-ZEPHYR_BASE=$(west topdir)/zephyr
+ZEPHYR_BASE=${ZEPHYR_BASE:-"$(west topdir)/zephyr"}
 
 if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 	SDK_PATH=$(west sdk list | grep path | tail -n 1 | cut -d ':' -f 2 | tr -d ' ')
