@@ -263,7 +263,7 @@ exit:
 #endif
 
 int ZephyrSocketWrapper::available() {
-	if (sock_fd == nullptr || *sock_fd == -1) {
+	if (sock_fd == nullptr || *sock_fd < 0) {
 		return 0;
 	}
 
@@ -283,8 +283,8 @@ int ZephyrSocketWrapper::available() {
 	} else {
 		zsock_ioctl(*sock_fd, ZFD_IOCTL_FIONREAD, &count);
 	}
-	if (count <= 0) {
-		delay(1);
+
+	if (count < 0) {
 		count = 0;
 	}
 	return count;
