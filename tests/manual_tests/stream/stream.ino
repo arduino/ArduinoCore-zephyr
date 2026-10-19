@@ -104,8 +104,8 @@ static void run_stream_tests() {
     check(f > 3.13f && f < 3.15f, "parseFloat");
     drain();
 
-    // setTimeout() already exercised (reads above returned within timeout)
-    check(true, "setTimeout");
+    // setTimeout() stored the requested value (exercised by the timed reads above).
+    check(Serial1.getTimeout() == 200, "setTimeout");
 
     Serial.print(tests);
     Serial.print(" Tests ");

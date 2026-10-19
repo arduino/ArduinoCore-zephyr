@@ -83,7 +83,7 @@
 | **Stream** |  |  |
 | `available()` | Serial / UART | ✅ |
 | `read()` | Serial / UART | ✅ |
-| `flush()` | Serial / UART | ✅ |
+| `flush()` | Serial / UART | ✅ _(works on Serial; hangs on Serial1)_ |
 | `find()` | Serial / UART | ✅ |
 | `findUntil()` | Serial / UART | ✅ |
 | `peek()` | Serial / UART | ✅ |
@@ -140,8 +140,8 @@
 | `loop()` | Core | ✅ |
 | `setup()` | Core | ✅ |
 | **Other** |  |  |
-| `init()` | Core | ⚠️ |
-| `initVariant()` | Core | ⚠️ |
+| `init()` | Core | ❌ |
+| `initVariant()` | Core | ✅ |
 | `yield()` | Timing | ✅ |
 | Threads | Libraries | ❌ |
 | CAN | Libraries | ❌ |

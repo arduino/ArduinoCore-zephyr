@@ -54,10 +54,16 @@ void loop() {
     check((bool)Serial, "if(Serial)");
     check(Serial.availableForWrite() > 0, "availableForWrite");
     check(Serial.write('.') == 1, "write");
+
+    // flush() must drain the TX buffer back to its idle capacity and return.
     Serial.flush();
-    check(true, "flush");
+    int txFull = Serial.availableForWrite();
+    for (int i = 0; i < 64; i++) Serial.write('.');
+    Serial.flush();
+    check(Serial.availableForWrite() == txFull, "flush");
+
     Serial.setTimeout(300);
-    check(true, "setTimeout");
+    check(Serial.getTimeout() == 300, "setTimeout");
 
     // --- input methods: require host to send a line ---
     // Expected line from host: "Hello,World;-42 3.14\n"
@@ -118,11 +124,11 @@ void loop() {
         check(false, "available (no host input received)");
     }
 
-    // Serial.end() then re-begin; if console still prints after, it works.
+    // Serial.end() then re-begin; the port must be writable again afterwards.
     Serial.end();
     Serial.begin(115200);
     delay(50);
-    check(true, "end");
+    check(Serial.write('.') == 1 && Serial.availableForWrite() > 0, "end");
 
     Serial.print(tests);
     Serial.print(" Tests ");
