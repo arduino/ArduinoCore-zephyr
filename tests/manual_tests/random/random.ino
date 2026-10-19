@@ -1,13 +1,15 @@
 /*
  * Manual Random Numbers API test for KIT-PSE84-AI (PSOC Edge E84)
  *
- * Verifies: random(), randomSeed()
- * Results print on Serial as PASS/FAIL lines, repeating in loop().
+ * Verifies random-number ranges, variation between calls, and whether
+ * randomSeed() reproduces a sequence. No external hardware is required;
+ * results print on Serial every three seconds.
  */
 
 static int tests = 0;
 static int failures = 0;
 
+// Count and print the result of one random-number assertion.
 static void check(bool cond, const char *name) {
     tests++;
     if (!cond) failures++;
@@ -16,6 +18,7 @@ static void check(bool cond, const char *name) {
     Serial.flush();
 }
 
+// Test result ranges, varying values, and seeded reproducibility.
 static void run_random_tests() {
     tests = 0;
     failures = 0;
@@ -64,11 +67,13 @@ static void run_random_tests() {
     Serial.flush();
 }
 
+// Start the serial console for test results.
 void setup() {
     Serial.begin(115200);
     delay(500);
 }
 
+// Repeat the random-number checks every three seconds.
 void loop() {
     run_random_tests();
     delay(3000);

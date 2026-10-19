@@ -4,12 +4,13 @@
  * Verifies: interrupts(), noInterrupts()
  * These globally enable/disable IRQs. The test confirms the calls execute,
  * a critical section runs, and the system keeps running afterwards.
- * Results print on Serial as PASS/FAIL lines, repeating in loop().
+ * No external wiring is required; results print on Serial every three seconds.
  */
 
 static int tests = 0;
 static int failures = 0;
 
+// Count and print the result of one interrupt assertion.
 static void check(bool cond, const char *name) {
     tests++;
     if (!cond) failures++;
@@ -18,6 +19,7 @@ static void check(bool cond, const char *name) {
     Serial.flush();
 }
 
+// Exercise interrupt disable/enable behavior and verify timekeeping recovers.
 static void run_interrupts_tests() {
     tests = 0;
     failures = 0;
@@ -52,11 +54,13 @@ static void run_interrupts_tests() {
     Serial.flush();
 }
 
+// Start the serial console for test results.
 void setup() {
     Serial.begin(115200);
     delay(500);
 }
 
+// Repeat the interrupt checks every three seconds.
 void loop() {
     run_interrupts_tests();
     delay(3000);

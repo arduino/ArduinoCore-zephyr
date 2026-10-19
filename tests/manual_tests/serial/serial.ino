@@ -11,6 +11,7 @@
 static int tests = 0;
 static int failures = 0;
 
+// Count and print the result of one Serial API assertion.
 static void check(bool cond, const char *name) {
     tests++;
     if (!cond) failures++;
@@ -20,7 +21,7 @@ static void check(bool cond, const char *name) {
 }
 
 // Discard bytes up to and including the next newline so the following read
-// starts at the beginning of a fresh host-sent line.
+// starts at the beginning of a fresh host-sent line; stop waiting on timeout.
 static void sync_to_line_start() {
     unsigned long t0 = millis();
     // wait for some data
@@ -37,11 +38,13 @@ static void sync_to_line_start() {
     while (Serial.available() == 0 && millis() - t0 < 2000) { }
 }
 
+// Start the console used for both the test output and host-fed input.
 void setup() {
     Serial.begin(115200);
     delay(500);
 }
 
+// Test output methods, prompt for host input, exercise read methods, and report results.
 void loop() {
     tests = 0;
     failures = 0;

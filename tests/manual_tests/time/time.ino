@@ -1,13 +1,15 @@
 /*
  * Manual Time API test for KIT-PSE84-AI (PSOC Edge E84)
  *
- * Verifies: millis(), micros(), delay(), delayMicroseconds()
- * Results print on Serial as PASS/FAIL lines.
+ * Measures elapsed time around delays and compares it with expected ranges.
+ * Verifies millis(), micros(), delay(), and delayMicroseconds(); no external
+ * hardware is required. Results print on Serial every three seconds.
  */
 
 static int tests = 0;
 static int failures = 0;
 
+// Count and print the result of one timing assertion.
 static void check(bool cond, const char *name) {
     tests++;
     if (!cond) failures++;
@@ -53,6 +55,7 @@ void setup() {
     delay(500);
 }
 
+// Run all timing checks and print their combined result.
 void loop() {
     tests = 0;
     failures = 0;

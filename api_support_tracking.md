@@ -24,12 +24,12 @@
 | `analogWrite()` | Analog | ❌ |
 | `analogWriteResolution()` | Analog | ❌ |
 | **Advanced I/O** |  |  |
-| `tone()` | Digital GPIO | ⚠️ |
-| `noTone()` | Digital GPIO | ⚠️ |
-| `pulseIn()` | Digital GPIO | ⚠️ |
-| `pulseInLong()` | Digital GPIO | ⚠️ |
-| `shiftIn()` | Digital GPIO | ⚠️ |
-| `shiftOut()` | Digital GPIO | ⚠️ |
+| `tone()` | Digital GPIO | ✅ |
+| `noTone()` | Digital GPIO | ✅ |
+| `pulseIn()` | Digital GPIO | ✅ |
+| `pulseInLong()` | Digital GPIO | ❌ |
+| `shiftIn()` | Digital GPIO | ✅ |
+| `shiftOut()` | Digital GPIO | ✅ |
 | **Time** |  |  |
 | `delay()` | Timing | ✅ |
 | `delayMicroseconds()` | Timing | ✅ |

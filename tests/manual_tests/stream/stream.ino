@@ -14,6 +14,7 @@
 static int tests = 0;
 static int failures = 0;
 
+// Count and print the result of one Stream assertion on the console.
 static void check(bool cond, const char *name) {
     tests++;
     if (!cond) failures++;
@@ -22,7 +23,7 @@ static void check(bool cond, const char *name) {
     Serial.flush();
 }
 
-// Clear any pending RX bytes.
+// Clear pending loopback input so each operation starts with fresh data.
 static void drain() {
     unsigned long t = millis();
     while (Serial1.available()) {
@@ -31,7 +32,7 @@ static void drain() {
     }
 }
 
-// Send a string over the loopback and wait for it to arrive.
+// Send test data over Serial1's loopback and allow it time to arrive.
 // NOTE: Serial1.flush() hangs on this core, so we use a delay instead.
 static void loop_send(const char *s) {
     drain();
@@ -39,6 +40,7 @@ static void loop_send(const char *s) {
     delay(80);
 }
 
+// Exercise Stream read, search, parse, and timeout methods over Serial1.
 static void run_stream_tests() {
     tests = 0;
     failures = 0;
@@ -113,12 +115,14 @@ static void run_stream_tests() {
     Serial.flush();
 }
 
+// Start the console and loopback UART used by the test.
 void setup() {
     Serial.begin(115200);
     Serial1.begin(115200);
     delay(500);
 }
 
+// Repeat all Stream checks every three seconds.
 void loop() {
     run_stream_tests();
     delay(3000);
