@@ -1,3 +1,7 @@
+# Hardware programmers: "Burn Bootloader" writes the board's real bootloader
+# (bootloader.burn_image) via SWD, "Upload Using Programmer" writes the Zephyr
+# loader and the sketch via SWD.
+
 cmsis-dap.name=ARM CMSIS-DAP compatible
 cmsis-dap.communication=USB
 cmsis-dap.protocol=
@@ -5,22 +9,34 @@ cmsis-dap.program.protocol=
 cmsis-dap.program.tool=openocd
 cmsis-dap.program.tool.default=openocd
 cmsis-dap.program.extra_params=
+cmsis-dap.bootloader.tool=openocd
+cmsis-dap.bootloader.tool.default=openocd
 cmsis-dap.programmer.protocol=cmsis-dap
+cmsis-dap.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
+
+stlink.name=STMicroelectronics STLINK
+stlink.communication=USB
+stlink.protocol=
+stlink.program.protocol=
+stlink.program.tool=openocd
+stlink.program.tool.default=openocd
+stlink.program.extra_params=
+stlink.bootloader.tool=openocd
+stlink.bootloader.tool.default=openocd
+stlink.programmer.protocol=stlink
+stlink.programmer.transport_script={runtime.platform.path}/debugger/select_hla.cfg
 
 jlink.name=JLink
 jlink.communication=USB
 jlink.protocol=
 jlink.program.protocol=
-jlink.program.tool=pyocd
-jlink.program.tool.default=pyocd
+jlink.program.tool=openocd
+jlink.program.tool.default=openocd
 jlink.program.extra_params=
+jlink.bootloader.tool=openocd
+jlink.bootloader.tool.default=openocd
 jlink.programmer.protocol=jlink
-
-openocd.name=OpenOCD
-openocd.protocol=SWD
-openocd.program.tool=openocd
-openocd.program.tool.default=openocd
-openocd.program.extra_params=
+jlink.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
 
 # Fake programmer: does not override the board's bootloader tool, so "Burn
 # Bootloader" uploads the precompiled Zephyr loader with the board's own upload
