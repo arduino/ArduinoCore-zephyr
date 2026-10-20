@@ -212,6 +212,7 @@ upload.offset=0
 bootloader.burn_image={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
 bootloader.config=
 bootloader.extra_action.preflash=
+bootloader.dir={runtime.platform.path}/bootloaders/{build.variant}
 
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
 # section. The loader is flashed if it does not match the current (maybe
