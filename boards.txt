@@ -67,6 +67,7 @@ giga.bootloader.address=0x08040000
 giga.bootloader.config=-f target/stm32h7x_dual_bank.cfg
 giga.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 giga.bootloader.burn_image={bootloader.dir}/bootloader.hex
+giga.bootloader.updater={bootloader.dir}/updater.bin
 
 giga.debug.tool=gdb
 giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -122,6 +123,7 @@ nano33ble.bootloader.file=zephyr-{build.variant}.bin
 nano33ble.bootloader.address=0x0000
 nano33ble.bootloader.config=-f target/nrf52.cfg
 nano33ble.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nano33ble.bootloader.updater={bootloader.dir}/updater.bin
 
 nano33ble.debug.tool=gdb
 nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -266,6 +268,7 @@ portentah7.bootloader.address=0x08040000
 portentah7.bootloader.config=-f target/stm32h7x_dual_bank.cfg
 portentah7.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 portentah7.bootloader.burn_image={bootloader.dir}/bootloader.hex
+portentah7.bootloader.updater={bootloader.dir}/updater.bin
 
 portentah7.build.ota.magic=0x2341025B
 portentah7.build.ota.sketch_offset={bootloader.maximum_size}
@@ -324,6 +327,7 @@ nicla_vision.bootloader.address=0x08040000
 nicla_vision.bootloader.config=-f target/stm32h7x_dual_bank.cfg
 nicla_vision.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 nicla_vision.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nicla_vision.bootloader.updater={bootloader.dir}/updater.bin
 
 nicla_vision.build.ota.magic=0x2341025F
 nicla_vision.build.ota.sketch_offset={bootloader.maximum_size}
@@ -479,6 +483,7 @@ portentac33.bootloader.pid=0x0368
 portentac33.bootloader.dfuse=
 portentac33.bootloader.target=r7fa6m5bh
 portentac33.bootloader.burn_image={bootloader.dir}/bootloader.hex
+portentac33.bootloader.updater={bootloader.dir}/updater.bin
 portentac33.bootloader.burn_pattern={tools.pyocd.burn.pattern}
 
 # the space before the extra arguments is important
@@ -536,6 +541,7 @@ opta.bootloader.address=0x08040000
 opta.bootloader.config=-f target/stm32h7x_dual_bank.cfg
 opta.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 opta.bootloader.burn_image={bootloader.dir}/bootloader.hex
+opta.bootloader.updater={bootloader.dir}/updater.bin
 
 opta.debug.tool=gdb
 opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
