@@ -52,6 +52,12 @@ To manually force a loader update, follow these steps:
 > Selecting a hardware programmer (CMSIS-DAP, STLINK, J-Link) instead makes
 > `Burn Bootloader` restore the board's original bootloader via SWD, as in the
 > Mbed core, while `Upload Using Programmer` flashes loader and sketch via SWD.
+>
+> On boards with a separate bootloader (Giga, Portenta, Nicla Vision, Opta,
+> Nano 33 BLE), `Burn Bootloader` with the `Zephyr loader` programmer uploads a
+> *bootloader updater* instead, which rewrites the original bootloader without a
+> hardware programmer. The LED blinks slowly on success, fast on failure; the
+> loader is then installed by the next sketch upload.
 
 > [!NOTE]
 > After the initial setup, future sketches will be loaded automatically without
@@ -260,6 +266,18 @@ west flash -d build/arduino_portenta_h7_stm32h747xx_m7
 ```
 
 This can also be performed via the "Burn bootloader" action in the IDE, with the `Zephyr loader` programmer selected, if the core is properly installed, as detailed below.
+
+### Build the Bootloader Updater
+
+For boards with a separate bootloader, the firmware uploaded by the `Zephyr loader`
+programmer is built from [bootloader_updater](/bootloader_updater) with:
+
+```bash
+./extra/build_updater.sh giga
+```
+
+The bootloader image is taken from `bootloader.burn_image` and the result is
+saved to `bootloader.updater`, as defined for the board in `boards.txt`.
 
 ### Using the Core in Arduino IDE/CLI
 

@@ -214,6 +214,9 @@ bootloader.config=
 bootloader.extra_action.preflash=
 # Boards whose MCU is not supported by openocd can point this to another tool
 bootloader.burn_pattern={burn.pattern}
+# Uploaded by the zephyr_loader programmer; boards with a separate bootloader
+# point this to their bootloader updater (see extra/build_updater.sh)
+bootloader.updater={runtime.platform.path}/firmwares/{bootloader.file}
 
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
 # section. The loader is flashed if it does not match the current (maybe

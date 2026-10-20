@@ -44,3 +44,4 @@ jlink.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cf
 zephyr_loader.name=Zephyr loader (in-application, no programmer needed)
 zephyr_loader.communication=USB
 zephyr_loader.protocol=
+zephyr_loader.upload.artifacts.loader={bootloader.updater}
