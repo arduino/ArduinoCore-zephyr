@@ -10,14 +10,8 @@
 
 / {
 	chosen {
+		/* Link MCUboot in BFM; the board's zephyr,flash is PFM. */
 		zephyr,flash = &flash0;
-		/* Applied after MCUboot's app.overlay, so this choice wins. */
-		zephyr,code-partition = &boot_partition;
-	};
-
-	aliases {
-		/* On while waiting in USB DFU (CONFIG_MCUBOOT_INDICATION_LED). */
-		mcuboot-led0 = &led_builtin;
 	};
 };
 
