@@ -21,9 +21,13 @@
 		compatible = "zephyr,log-uart";
 		uarts = <&uart9 &board_cdc_acm_uart>;
 	};
+
+	aliases {
+		flash0 = &code_flash;
+	};
 };
 
-&flash0 {
+&code_flash {
 	partitions {
 		mcuboot: partition@0 {
 			compatible = "zephyr,mapped-partition";
@@ -43,7 +47,7 @@
 	};
 };
 
-&flash1 {
+&data_flash {
     // Conflicts with "storage" partition
 	/delete-node/ partitions;
 };
