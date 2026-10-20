@@ -44,9 +44,14 @@ loader will be installed automatically when you upload your first sketch.
 To manually force a loader update, follow these steps:
 
 * Put the board in bootloader mode by double-clicking the RESET button.
+* Select `Zephyr loader (in-application, no programmer needed)` from the `Programmers` menu.
 * Run the `Burn Bootloader` option from the IDE/CLI.
-  * Note that due to limitations in the Arduino IDE, you may need to select any programmer from the `Programmers` menu.
-* Once the bootloader is installed, you can load your first sketch by placing the board into bootloader mode again.
+* Once the loader is installed, you can load your first sketch by placing the board into bootloader mode again.
+
+> [!NOTE]
+> Selecting a hardware programmer (CMSIS-DAP, STLINK, J-Link) instead makes
+> `Burn Bootloader` restore the board's original bootloader via SWD, as in the
+> Mbed core, while `Upload Using Programmer` flashes loader and sketch via SWD.
 
 > [!NOTE]
 > After the initial setup, future sketches will be loaded automatically without
@@ -254,7 +259,7 @@ In this case, you would flash with:
 west flash -d build/arduino_portenta_h7_stm32h747xx_m7
 ```
 
-This can also be performed via the "Burn bootloader" action in the IDE if the core is properly installed, as detailed below.
+This can also be performed via the "Burn bootloader" action in the IDE, with the `Zephyr loader` programmer selected, if the core is properly installed, as detailed below.
 
 ### Using the Core in Arduino IDE/CLI
 
@@ -304,7 +309,7 @@ Place your custom core in the following path:
 Build and flash the loader from your custom core to overwrite the release version.
 For example, on UNO Q:
 ```bash
-arduino-cli burn-bootloader -b arduino:zephyr:unoq -P jlink
+arduino-cli burn-bootloader -b arduino:zephyr:unoq -P zephyr_loader
 ```
 
 #### Revert to release core
