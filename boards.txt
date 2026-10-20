@@ -111,7 +111,8 @@ nano33ble.upload.transport=
 nano33ble.upload.use_1200bps_touch=true
 nano33ble.upload.wait_for_upload_port=true
 nano33ble.upload.native_usb=true
-nano33ble.upload.offset=0x10000 # bootloader skips its own partition
+# bootloader skips its own partition
+nano33ble.upload.offset=0x10000
 
 nano33ble.bootloader.tool=bossac
 nano33ble.bootloader.tool.default=bossac
