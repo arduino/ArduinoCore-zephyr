@@ -233,15 +233,15 @@
 };
 
 /*
- * PFM layout, for a board whose only bootloader is MCUboot living in BFM.
+ * Flash layout, defined once in the board devicetree so the loader and
+ * MCUboot cannot disagree. BFM and PFM are separate flash devices:
  *
- *   0x0C000000  512K   slot0 (image-0)  loader + sketch, one signed image
- *   0x0C080000  512K   slot1 (image-1)  DFU staging, copied over slot0
+ *   flash0 0x08000000  64K  boot_partition  MCUboot, active BFM Dual-Boot slot
+ *   flash1 0x0C000000   1M  slot0 (image-0) loader + sketch, one image
+ *   flash1 0x0C100000   1M  slot1 (image-1) DFU staging, copied over slot0
  *
- * MCUboot is NOT here: it occupies one of the SoC's two 64K BFM Dual-Boot
- * slots at 0x08000000 and is reached directly by the hardware reset vector.
- * mcuboot.overlay in this directory expresses the same physical layout as
- * offsets under flash0.
+ * Each slot is one 1 MB PFM panel. MCUboot is reached directly by the
+ * hardware reset vector; the spare 64K BFM slot is not declared.
  *
  * zephyr-sketch-tool --squash appends the sketch to the erase-block padded
  * loader and hashes both as a single MCUboot image; the loader finds the
@@ -252,25 +252,6 @@
  * upload.maximum_size follows automatically: extra/build.sh derives it from
  * this table and the signed loader size into boards.local.txt.
  */
-&flash1 {
-	/delete-node/ partitions;
-
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		slot0_partition: image_0: partition@0 {
-			label = "image-0";
-			reg = <0x0 DT_SIZE_K(512)>;
-		};
-
-		slot1_partition: image_1: partition@80000 {
-			label = "image-1";
-			reg = <0x80000 DT_SIZE_K(512)>;
-		};
-	};
-};
 
 /* Started by MCUboot, fed by the loader (CONFIG_APP_WATCHDOG_ENFORCED). */
 &wdt {

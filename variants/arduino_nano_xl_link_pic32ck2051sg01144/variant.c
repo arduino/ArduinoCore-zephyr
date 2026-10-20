@@ -17,7 +17,7 @@
 
 BUILD_ASSERT(SLOT_ABS(slot0_partition) == 0x0C000000,
 	     "slot0 moved: keep this overlay and mcuboot.overlay in sync");
-BUILD_ASSERT(SLOT_ABS(slot1_partition) == 0x0C080000,
+BUILD_ASSERT(SLOT_ABS(slot1_partition) == 0x0C100000,
 	     "slot1 moved: keep this overlay and mcuboot.overlay in sync");
 
 /* Ask MCUboot for USB DFU and reset into it.

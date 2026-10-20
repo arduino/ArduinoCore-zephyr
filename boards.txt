@@ -755,7 +755,7 @@ nanoxllink.build.zephyr_args=
 nanoxllink.build.zephyr_hals=hal_microchip
 nanoxllink.build.zephyr_toolchain=arm-zephyr-eabi
 nanoxllink.build.artifact=zephyr_main
-nanoxllink.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
+nanoxllink.build.variant=arduino_nano_xl_link_pic32ck2051sg01144
 nanoxllink.build.extra_flags=
 nanoxllink.build.board=NANO_XL_LINK
 
@@ -770,8 +770,7 @@ nanoxllink.vid.0=0x2341
 nanoxllink.pid.0=0x007e
 nanoxllink.upload_port.0.vid=0x2341
 nanoxllink.upload_port.0.pid=0x007e
-nanoxllink.upload.target=pic32ck1025sg01144
-# The GC01144 has no CMSIS-Pack; the pin/die-compatible SG part is the stand-in.
+nanoxllink.upload.target=pic32ck2051sg01144
 # pack.debug_sequences.enable=false is required to connect at all (pyOCD's
 # J-Link backend can't issue the raw DAP_SWJ_Sequence the pack's DebugPortSetup
 # needs); connect_mode=halt because under-reset makes flash erase time out; and
@@ -835,14 +834,14 @@ nanoxllink.bootloader.interface=1
 # # EXTRA_DTC_OVERLAY_FILE is applied after DTC_OVERLAY_FILE - and after the
 # # shield - so it is the only place the carrier can override the bare module.
 # # Paths are relative to the 'loader' application directory, like debug.conf.
-# nanoxllink_monica.build.zephyr_args=--shield nano_xl_link_monica -- -DEXTRA_CONF_FILE=../variants/arduino_nano_xl_link_pic32ck1025gc01144/monica.conf -DEXTRA_DTC_OVERLAY_FILE=../variants/arduino_nano_xl_link_pic32ck1025gc01144/monica.overlay
+# nanoxllink_monica.build.zephyr_args=--shield nano_xl_link_monica -- -DEXTRA_CONF_FILE=../variants/arduino_nano_xl_link_pic32ck2051sg01144/monica.conf -DEXTRA_DTC_OVERLAY_FILE=../variants/arduino_nano_xl_link_pic32ck2051sg01144/monica.overlay
 # nanoxllink_monica.build.zephyr_hals=hal_microchip
 # nanoxllink_monica.build.zephyr_toolchain=arm-zephyr-eabi
 # nanoxllink_monica.build.artifact=zephyr_main
 # # Shared with the bare 'nanoxllink' board: the two differ only by shield.
 # # Whichever board is built last owns the shared artifacts under this directory
 # # (llext-edk/, syms-*.ld, tls-syms.S) and firmwares/zephyr-<variant>.*.
-# nanoxllink_monica.build.variant=arduino_nano_xl_link_pic32ck1025gc01144
+# nanoxllink_monica.build.variant=arduino_nano_xl_link_pic32ck2051sg01144
 # nanoxllink_monica.build.extra_flags=
 # nanoxllink_monica.build.board=NANO_XL_LINK_MONICA
 # 
@@ -859,7 +858,7 @@ nanoxllink.bootloader.interface=1
 # nanoxllink_monica.pid.0=0x008e
 # nanoxllink_monica.upload_port.0.vid=0x2341
 # nanoxllink_monica.upload_port.0.pid=0x008e
-# nanoxllink_monica.upload.target=pic32ck1025sg01144
+# nanoxllink_monica.upload.target=pic32ck2051sg01144
 # nanoxllink_monica.pyocd.extra_flags=-O pack.debug_sequences.enable=false -O connect_mode=halt -O reset_type=sw_sysresetreq --script "{build.variant.path}/pyocd_user.py"
 # 
 # # Same upload path as the bare module - see the comment on nanoxllink above.

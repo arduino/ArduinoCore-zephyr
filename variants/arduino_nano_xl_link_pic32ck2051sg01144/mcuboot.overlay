@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * MCUboot overlay: MCUboot in BFM, USB DFU recovery. Self-contained (no
+ * variant overlay, no --shield). The partitions are the board's: MCUboot
+ * runs from boot_partition in flash0 (BFM) and boots slot0 in flash1 (PFM);
+ * its chainload base comes from the slot's own flash device.
+ */
+
+/ {
+	chosen {
+		zephyr,flash = &flash0;
+		/* Applied after MCUboot's app.overlay, so this choice wins. */
+		zephyr,code-partition = &boot_partition;
+	};
+
+	aliases {
+		/* On while waiting in USB DFU (CONFIG_MCUBOOT_INDICATION_LED). */
+		mcuboot-led0 = &led_builtin;
+	};
+};
+
+/* Retained RAM for double tap and boot mode, shared with the loader/sketch. */
+#include "retained_mem.dtsi"
+
+&wdt {
+	status = "okay";
+};
+
+/* SERCOM UARTs unused (no console). Disabled here because the
+ * Kconfig is promptless. Re-enable sercom6 if turning on CONSOLE for debug. */
+&sercom0 { status = "disabled"; };
+&sercom1 { status = "disabled"; };
+&sercom6 { status = "disabled"; };

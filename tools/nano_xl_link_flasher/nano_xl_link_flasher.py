@@ -81,7 +81,7 @@ SWAP_PFSLOCK = 1 << 9
 BFM_BASE = 0x0800_0000
 BFM_SIZE = 128 * 1024    # two 64K panels
 PFM_BASE = 0x0C00_0000
-PFM_SIZE = 1024 * 1024
+PFM_SIZE = 2 * 1024 * 1024
 PAGE_SIZE = 4096
 ROW_SIZE = 1024
 PWP_COUNT = 8
@@ -92,7 +92,7 @@ PWP_COUNT = 8
 STAGE_ADDR = 0x2000_1000
 assert STAGE_ADDR % 16 == 0, "STAGE_ADDR must be 16-byte aligned (FCW SRCADDR trap)"
 
-TARGET_TYPE = "pic32ck1025sg01144"
+TARGET_TYPE = "pic32ck2051sg01144"
 TARGET_OPTIONS = {
     "pack.debug_sequences.enable": False,
     "connect_mode": "halt",

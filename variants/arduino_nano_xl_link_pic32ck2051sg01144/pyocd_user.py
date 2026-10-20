@@ -1,7 +1,7 @@
 # Copyright (c) Arduino s.r.l. and/or its affiliated companies
 # SPDX-License-Identifier: Apache-2.0
 #
-# pyOCD user script for Nano XL Link (PIC32CK1025GC01144).
+# pyOCD user script for Nano XL Link (PIC32CK2051SG01144).
 # Normalises PFSWAP (Boot ROM flips it alongside BFSWAP after a Dual-Boot
 # promotion) and clears PWP0..7 so pyocd load can write PFM.
 # BFM needs tools/nano_xl_link_flasher/nano_xl_link_flasher.py (LBWP/UBWP re-arm at reset).

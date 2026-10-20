@@ -16,7 +16,7 @@
  * into it; outside .bss and .data it survives a warm reset.
  */
 &sram0 {
-	reg = <0x20000000 (DT_SIZE_K(256) - 32)>;
+	reg = <0x20000000 (DT_SIZE_K(512) - 32)>;
 };
 
 / {
@@ -29,8 +29,8 @@
 		#size-cells = <1>;
 		ranges;
 
-		memory@2003ffe0 {
-			reg = <0x2003ffe0 32>;
+		memory@2007ffe0 {
+			reg = <0x2007ffe0 32>;
 
 			retained_ram: retainedmem {
 				compatible = "zephyr,retained-ram";

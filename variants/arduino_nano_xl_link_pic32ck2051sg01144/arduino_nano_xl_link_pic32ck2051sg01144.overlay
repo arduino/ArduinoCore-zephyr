@@ -5,7 +5,7 @@
  */
 
 #include <zephyr/dt-bindings/pwm/pwm.h>
-#include "arduino_nano_xl_link_pic32ck1025gc01144-common.overlay"
+#include "arduino_nano_xl_link_pic32ck2051sg01144-common.overlay"
 
 #include "retained_mem.dtsi"
 
