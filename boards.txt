@@ -60,10 +60,10 @@ giga.upload.use_1200bps_touch=true
 giga.upload.wait_for_upload_port=true
 giga.upload.native_usb=true
 
-giga.bootloader.tool=dfu-util
-giga.bootloader.tool.default=dfu-util
 giga.bootloader.pid=0x0366
 giga.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
+giga.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+giga.swd_flash.pattern={tools.patterns.swd_flash}
 
 giga.debug.tool=gdb
 giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -113,9 +113,8 @@ nano33ble.upload.wait_for_upload_port=true
 nano33ble.upload.native_usb=true
 nano33ble.upload.offset=0x10000 # bootloader skips its own partition
 
-nano33ble.bootloader.tool=bossac
-nano33ble.bootloader.tool.default=bossac
 nano33ble.swd_flash.config=-f target/nrf52.cfg
+nano33ble.swd_flash.pattern={tools.patterns.swd_flash}
 
 nano33ble.debug.tool=gdb
 nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -164,8 +163,6 @@ ek_ra8d1.upload.wait_for_upload_port=false
 ek_ra8d1.upload.native_usb=true
 ek_ra8d1.upload.target=R7FA8D1AH
 
-ek_ra8d1.bootloader.tool=pyocd
-ek_ra8d1.bootloader.tool.default=pyocd
 ek_ra8d1.bootloader.target=R7FA8D1AH
 
 
@@ -206,8 +203,6 @@ frdm_mcxn947.upload.use_1200bps_touch=false
 frdm_mcxn947.upload.wait_for_upload_port=false
 frdm_mcxn947.upload.native_usb=true
 
-frdm_mcxn947.bootloader.tool=pyocd
-frdm_mcxn947.bootloader.tool.default=pyocd
 frdm_mcxn947.bootloader.target=mcxn947vdf
 
 
@@ -249,10 +244,10 @@ portentah7.upload.use_1200bps_touch=true
 portentah7.upload.wait_for_upload_port=true
 portentah7.upload.native_usb=true
 
-portentah7.bootloader.tool=dfu-util
-portentah7.bootloader.tool.default=dfu-util
 portentah7.bootloader.pid=0x035b
 portentah7.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
+portentah7.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+portentah7.swd_flash.pattern={tools.patterns.swd_flash}
 
 portentah7.build.ota.magic=0x2341025B
 portentah7.build.ota.sketch_offset={loader.maximum_size}
@@ -302,10 +297,10 @@ nicla_vision.upload.use_1200bps_touch=true
 nicla_vision.upload.wait_for_upload_port=true
 nicla_vision.upload.native_usb=true
 
-nicla_vision.bootloader.tool=dfu-util
-nicla_vision.bootloader.tool.default=dfu-util
 nicla_vision.bootloader.pid=0x035f
 nicla_vision.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
+nicla_vision.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+nicla_vision.swd_flash.pattern={tools.patterns.swd_flash}
 
 nicla_vision.build.ota.magic=0x2341025F
 nicla_vision.build.ota.sketch_offset={loader.maximum_size}
@@ -354,8 +349,6 @@ frdm_rw612.upload.use_1200bps_touch=false
 frdm_rw612.upload.wait_for_upload_port=false
 frdm_rw612.upload.native_usb=true
 
-frdm_rw612.bootloader.tool=pyocd
-frdm_rw612.bootloader.tool.default=pyocd
 frdm_rw612.bootloader.target=rw612
 
 ##########################################################################################
@@ -394,8 +387,6 @@ nicla_sense.upload.wait_for_upload_port=false
 nicla_sense.upload.native_usb=false
 nicla_sense.upload.target=nrf52
 
-nicla_sense.bootloader.tool=openocd
-nicla_sense.bootloader.tool.default=openocd
 nicla_sense.bootloader.target=nrf52
 nicla_sense.swd_flash.config=-f target/nrf52.cfg
 
@@ -450,10 +441,12 @@ portentac33.upload.wait_for_upload_port=false
 portentac33.upload.native_usb=true
 portentac33.upload.dfuse=
 
-portentac33.bootloader.tool=dfu-util
-portentac33.bootloader.tool.default=dfu-util
 portentac33.bootloader.pid=0x0368
 portentac33.loader.dfuse=
+portentac33.bootloader.target=r7fa6m5bh
+# OpenOCD has no RA6M5 flash support: burn the bootloader with pyOCD
+portentac33.swd_flash.tool=pyocd
+portentac33.swd_flash.pattern={tools.patterns.swd_flash}
 
 # the space before the extra arguments is important
 portentac33.leave.dfuse={empty} -Q
@@ -501,10 +494,10 @@ opta.upload.use_1200bps_touch=true
 opta.upload.wait_for_upload_port=true
 opta.upload.native_usb=true
 
-opta.bootloader.tool=dfu-util
-opta.bootloader.tool.default=dfu-util
 opta.bootloader.pid=0x0364
 opta.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
+opta.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+opta.swd_flash.pattern={tools.patterns.swd_flash}
 
 opta.debug.tool=gdb
 opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -552,8 +545,6 @@ nano_matter.upload.use_1200bps_touch=false
 nano_matter.upload.wait_for_upload_port=false
 nano_matter.upload.native_usb=false
 
-nano_matter.bootloader.tool=openocd
-nano_matter.bootloader.tool.default=openocd
 nano_matter.bootloader.target=arduino_nano_matter
 nano_matter.swd_flash.config=-f target/efm32s2_g23.cfg
 
@@ -617,8 +608,6 @@ unoq.upload.use_1200bps_touch=false
 unoq.upload.wait_for_upload_port=false
 unoq.upload.native_usb=true
 
-unoq.bootloader.tool=remoteocd
-unoq.bootloader.tool.default=remoteocd
 unoq.bootloader.target=stm32u585zitxq
 
 ##############################################################################################################
@@ -662,8 +651,6 @@ nano_connect.upload.native_usb=true
 
 nano_connect.upload.familyid=0xe48bff56
 
-nano_connect.bootloader.tool=picotool
-nano_connect.bootloader.tool.default=picotool
 nano_connect.swd_flash.config=-f target/rp2040.cfg
 
 nano_connect.debug.tool=gdb
@@ -732,6 +719,4 @@ ventunoq.upload.native_usb=true
 ventunoq.upload.maximum_size=1966080
 ventunoq.upload.maximum_data_size=523624
 
-ventunoq.bootloader.tool=remoteocd
-ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.target=stm32h5f5xx

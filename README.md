@@ -41,13 +41,6 @@ loader will be installed automatically when you upload your first sketch.
 > article](https://support.arduino.cc/hc/en-us/articles/29180434600476-Install-the-Zephyr-loader-on-your-board)
 > to properly update the bootloader on your Portenta C33.
 
-To manually force a loader update, follow these steps:
-
-* Put the board in bootloader mode by double-clicking the RESET button.
-* Run the `Burn Bootloader` option from the IDE/CLI.
-  * Note that due to limitations in the Arduino IDE, you may need to select any programmer from the `Programmers` menu.
-* Once the bootloader is installed, you can load your first sketch by placing the board into bootloader mode again.
-
 > [!NOTE]
 > After the initial setup, future sketches will be loaded automatically without
 > needing to reset the board. Each sketch update will also reflash the loader
@@ -254,7 +247,9 @@ In this case, you would flash with:
 west flash -d build/arduino_portenta_h7_stm32h747xx_m7
 ```
 
-This can also be performed via the "Burn bootloader" action in the IDE if the core is properly installed, as detailed below.
+With the core properly installed, as detailed below, uploading any sketch from
+the IDE/CLI also flashes the new loader, since its version differs from the one
+on the board.
 
 ### Using the Core in Arduino IDE/CLI
 
@@ -301,10 +296,11 @@ Place your custom core in the following path:
 
 3. Flash the new loader
 
-Build and flash the loader from your custom core to overwrite the release version.
-For example, on UNO Q:
+Build the loader from your custom core, then upload any sketch: the loader
+version differs from the release one, so it is flashed together with the
+sketch. For example, on UNO Q:
 ```bash
-arduino-cli burn-bootloader -b arduino:zephyr:unoq -P jlink
+arduino-cli compile -u -b arduino:zephyr:unoq -p <port> <sketch>
 ```
 
 #### Revert to release core
