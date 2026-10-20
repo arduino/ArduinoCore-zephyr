@@ -2,22 +2,25 @@ cmsis-dap.name=ARM CMSIS-DAP compatible
 cmsis-dap.communication=USB
 cmsis-dap.protocol=
 cmsis-dap.program.protocol=
-cmsis-dap.program.tool=openocd
 cmsis-dap.program.tool.default=openocd
 cmsis-dap.program.extra_params=
 cmsis-dap.programmer.protocol=cmsis-dap
+cmsis-dap.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
+
+stlink.name=STMicroelectronics STLINK
+stlink.communication=USB
+stlink.protocol=
+stlink.program.protocol=
+stlink.program.tool.default=openocd
+stlink.program.extra_params=
+stlink.programmer.protocol=stlink
+stlink.programmer.transport_script={runtime.platform.path}/debugger/select_hla.cfg
 
 jlink.name=JLink
 jlink.communication=USB
 jlink.protocol=
 jlink.program.protocol=
-jlink.program.tool=pyocd
-jlink.program.tool.default=pyocd
+jlink.program.tool.default=openocd
 jlink.program.extra_params=
 jlink.programmer.protocol=jlink
-
-openocd.name=OpenOCD
-openocd.protocol=SWD
-openocd.program.tool=openocd
-openocd.program.tool.default=openocd
-openocd.program.extra_params=
+jlink.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg

@@ -203,6 +203,13 @@ erase.pattern=
 upload.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/loader.{loader.format}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
+# Files used by "Upload Using Programmer" (SWD, absolute addresses)
+program.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/loader.hex
+program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
+upload.offset=0
+
+swd_flash.config=
+
 # Shared flash recipes, built from the pieces in each tool's section:
 # - {loader.cmd} and {sketch.cmd} flash the loader and the sketch, with extra
 #   arguments ({loader.args.*}, {sketch.args.*}) that depend on whether the
@@ -242,7 +249,7 @@ tools.openocd.upload.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {
 
 tools.openocd.program.params.verbose=-d2
 tools.openocd.program.params.quiet=-d0
-tools.openocd.program.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -c "set filename1 "{upload.artifacts.sketch}"" -c "set offset {upload.address}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}"
+tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {swd_flash.config} -c "set filename0 "{program.artifacts.loader}"" -c "set filename1 "{program.artifacts.sketch}"" -c "set offset [expr {upload.address} + {upload.offset}]" -f "{runtime.platform.path}/debugger/flash_sketch.cfg"
 
 tools.openocd.bootloader.params.verbose=-d2
 tools.openocd.bootloader.params.quiet=-d0
