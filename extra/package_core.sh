@@ -74,6 +74,11 @@ for variant in $INCLUDED_VARIANTS ; do
 		log_msg error "No firmware for '${variant}' found."
 		RET=3
 	fi
+	# boards with a separate bootloader also need the bootloader updater
+	if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ] ; then
+		log_msg error "No bootloader updater for '${variant}' found."
+		RET=3
+	fi
 done
 
 # deduplicate llext-edk headers shared by all included variants

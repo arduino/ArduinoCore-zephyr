@@ -208,10 +208,11 @@ program.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/loade
 program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 upload.offset=0
 
-# "Burn Bootloader" needs a programmer that sets its bootloader tool and
-# pattern, like the SWD programmers (openocd, swd_flash.pattern). With any
-# other programmer the placeholders below are not commands, so the action
-# fails showing their name.
+# "Burn Bootloader" needs a bootloader tool and pattern: the SWD programmers
+# set openocd and swd_flash.pattern; the burner app sets iap_flash.pattern
+# and runs the board's bootloader.tool (its upload tool, set on
+# boards with a bootloader image). Otherwise the placeholders below are not
+# commands, so the action fails showing their name.
 bootloader.tool.default=no-bootloader-available
 bootloader.pattern=no-bootloader-available
 
@@ -226,6 +227,12 @@ swd_flash.preflash=
 swd_flash.tool={bootloader.tool.default}
 swd_flash.pattern=no-bootloader-available
 swd_flash.image={runtime.platform.path}/firmwares/{build.variant}/bootloader.hex
+# "Burn Bootloader" with the burner programmer runs this pattern. Boards
+# that ship a bootloader point it to tools.patterns.iap_flash, which
+# uploads firmwares/{build.variant}/burner.bin (built by extra/build.sh)
+# with their upload tool.
+# The placeholder below is not a command, so the action fails showing its name.
+iap_flash.pattern=no-bootloader-available
 
 # Shared flash recipes, built from the pieces in each tool's section:
 # - {loader.cmd} and {sketch.cmd} flash the loader and the sketch, with extra

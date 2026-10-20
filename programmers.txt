@@ -32,3 +32,13 @@ jlink.bootloader.tool.default=openocd
 jlink.bootloader.pattern={swd_flash.pattern}
 jlink.programmer.protocol=jlink
 jlink.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
+
+# Fake programmer: does not override the board's bootloader tool, so "Burn
+# Bootloader" uploads the bootloader updater with the board's own upload tool,
+# through the bootloader already on the board (in-application programming).
+# Boards that do not ship a bootloader fail, see iap_flash.pattern.
+burner_app.name=Zephyr burner app (no programmer needed)
+burner_app.communication=USB
+burner_app.protocol=
+burner_app.bootloader.pattern={iap_flash.pattern}
+burner_app.upload.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/burner.bin

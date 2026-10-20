@@ -26,7 +26,7 @@ Install the core and its toolchains via Board Manager:
 * Download and install the latest [Arduino IDE](https://www.arduino.cc/en/software) (only versions `2.x.x` are supported).
 * Open the *'Settings / Preferences'* window.
 * Open the *'Boards Manager'* from the side menu and search for *'Zephyr'*.
-* Install the *'Arduino Zephyr Boards'* platform (or the *'Arduino Uno Q Board'* platform if you have an Arduino UNO Q).
+* Install the *'Arduino Zephyr Boards'* platform (or the *'Arduino Uno Q Boards'* platform if you have an Arduino UNO Q).
 
 ## 🏗️ First Use
 
@@ -45,6 +45,25 @@ loader will be installed automatically when you upload your first sketch.
 > After the initial setup, future sketches will be loaded automatically without
 > needing to reset the board. Each sketch update will also reflash the loader
 > if a different version is detected.
+
+### Update the board bootloader
+
+The board bootloader can be restored or updated as follows:
+
+* Put the board in bootloader mode by double-clicking the RESET button.
+* Select `Zephyr burner app (no programmer needed)` from the `Programmers` menu.
+* Run the `Burn Bootloader` option from the IDE/CLI.
+
+This uploads a *bootloader updater* ("burner app"), which rewrites the original
+bootloader without the need for a hardware programmer. The LED blinks slowly on
+success, fast on failure; the loader is then installed by the next sketch
+upload. For more information, see the
+[Bootloader Updater README](burner/README.md).
+
+> [!NOTE]
+> Selecting a hardware programmer (CMSIS-DAP, STLINK, J-Link) instead makes
+> `Burn Bootloader` restore the board's original bootloader via SWD, as in the
+> Mbed core.
 
 ## 🔧 Troubleshooting
 
@@ -250,6 +269,13 @@ west flash -d build/arduino_portenta_h7_stm32h747xx_m7
 With the core properly installed, as detailed below, uploading any sketch from
 the IDE/CLI also flashes the new loader, since its version differs from the one
 on the board.
+
+### Build the Bootloader Updater
+
+For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`),
+`./extra/build.sh` also builds the firmware uploaded by the `Zephyr burner app`
+programmer from [burner](/burner), as the `burner` sysbuild image
+in `build/<variant>/burner`, and saves it as `firmwares/<variant>/burner.bin`.
 
 ### Using the Core in Arduino IDE/CLI
 

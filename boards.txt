@@ -60,10 +60,12 @@ giga.upload.use_1200bps_touch=true
 giga.upload.wait_for_upload_port=true
 giga.upload.native_usb=true
 
+giga.bootloader.tool.default=dfu-util
 giga.bootloader.pid=0x0366
 giga.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
 giga.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 giga.swd_flash.pattern={tools.patterns.swd_flash}
+giga.iap_flash.pattern={tools.patterns.iap_flash}
 
 giga.debug.tool=gdb
 giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -113,8 +115,10 @@ nano33ble.upload.wait_for_upload_port=true
 nano33ble.upload.native_usb=true
 nano33ble.upload.offset=0x10000 # bootloader skips its own partition
 
+nano33ble.bootloader.tool.default=bossac
 nano33ble.swd_flash.config=-f target/nrf52.cfg
 nano33ble.swd_flash.pattern={tools.patterns.swd_flash}
+nano33ble.iap_flash.pattern={tools.patterns.iap_flash}
 
 nano33ble.debug.tool=gdb
 nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -244,10 +248,12 @@ portentah7.upload.use_1200bps_touch=true
 portentah7.upload.wait_for_upload_port=true
 portentah7.upload.native_usb=true
 
+portentah7.bootloader.tool.default=dfu-util
 portentah7.bootloader.pid=0x035b
 portentah7.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
 portentah7.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 portentah7.swd_flash.pattern={tools.patterns.swd_flash}
+portentah7.iap_flash.pattern={tools.patterns.iap_flash}
 
 portentah7.build.ota.magic=0x2341025B
 portentah7.build.ota.sketch_offset={loader.maximum_size}
@@ -297,10 +303,12 @@ nicla_vision.upload.use_1200bps_touch=true
 nicla_vision.upload.wait_for_upload_port=true
 nicla_vision.upload.native_usb=true
 
+nicla_vision.bootloader.tool.default=dfu-util
 nicla_vision.bootloader.pid=0x035f
 nicla_vision.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
 nicla_vision.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 nicla_vision.swd_flash.pattern={tools.patterns.swd_flash}
+nicla_vision.iap_flash.pattern={tools.patterns.iap_flash}
 
 nicla_vision.build.ota.magic=0x2341025F
 nicla_vision.build.ota.sketch_offset={loader.maximum_size}
@@ -441,9 +449,11 @@ portentac33.upload.wait_for_upload_port=false
 portentac33.upload.native_usb=true
 portentac33.upload.dfuse=
 
+portentac33.bootloader.tool.default=dfu-util
 portentac33.bootloader.pid=0x0368
 portentac33.loader.dfuse=
 portentac33.bootloader.target=r7fa6m5bh
+portentac33.iap_flash.pattern={tools.patterns.iap_flash}
 # OpenOCD has no RA6M5 flash support: burn the bootloader with pyOCD
 portentac33.swd_flash.tool=pyocd
 portentac33.swd_flash.pattern={tools.patterns.swd_flash}
@@ -494,10 +504,12 @@ opta.upload.use_1200bps_touch=true
 opta.upload.wait_for_upload_port=true
 opta.upload.native_usb=true
 
+opta.bootloader.tool.default=dfu-util
 opta.bootloader.pid=0x0364
 opta.swd_flash.config=-f target/stm32h7x_dual_bank.cfg
 opta.swd_flash.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
 opta.swd_flash.pattern={tools.patterns.swd_flash}
+opta.iap_flash.pattern={tools.patterns.iap_flash}
 
 opta.debug.tool=gdb
 opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg

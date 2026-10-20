@@ -43,7 +43,8 @@ EOF
 	exit 0
 fi
 
-debug=false
+# extra CMake arguments for the loader build only
+debug_args=()
 # try to find the board in boards.txt
 chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
 if ! [ -z "$chosen_board" ]; then
@@ -58,7 +59,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		debug=true
+		debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -81,13 +82,10 @@ build_version=$(extra/get_core_version.sh loader/VERSION)
 # CMake arguments go after a '--' separator, which args may already contain
 [[ " ${args[*]} " == *" -- "* ]] || args+=(--)
 args+=(-DAPP_BUILD_VERSION=${build_version})
-if ${debug} ; then
-	args+=(-DEXTRA_CONF_FILE=../extra/debug.conf)
-fi
 
 echo
 echo "Build version: $build_version"
-echo "Build target: $target ${args[*]}"
+echo "Build target: $target ${args[*]} ${debug_args[*]}"
 
 # Get the variant name (NORMALIZED_BOARD_TARGET in Zephyr)
 variant=$(extra/get_variant_name.sh $target)
@@ -111,7 +109,7 @@ sysbuild_args=()
 if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	sysbuild_args=(-DSB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf))
 fi
-west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}"
+west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}" "${debug_args[@]}"
 
 # The images built by sysbuild, as "<name> <build_dir>" lines from domains.yaml,
 # the default (loader) image first. LOADER_DIR is the loader's own build tree.
@@ -164,6 +162,13 @@ for domain in "${domains[@]}"; do
 	cp "$image_dir/zephyr.dts" firmwares/$variant/$name.dts
 	cp "$image_dir/.config" firmwares/$variant/$name.config
 done
+
+# Boards with a separate bootloader also build the bootloader updater as the
+# burner sysbuild image (see loader/sysbuild.cmake)
+if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ]; then
+	log_msg error "Bootloader updater for '${variant}' not built" >&2
+	exit 1
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
