@@ -419,7 +419,6 @@ nicla_sense.bootloader.tool.default=openocd
 nicla_sense.bootloader.file=zephyr-{build.variant}.hex
 nicla_sense.bootloader.target=nrf52
 nicla_sense.bootloader.config=-f target/nrf52.cfg
-nicla_sense.bootloader.burn_image={runtime.platform.path}/bootloaders/NICLA/bootloader.hex
 
 # onboard probe, used when no hardware programmer is selected
 nicla_sense.programmer.protocol=cmsis-dap
@@ -587,7 +586,6 @@ nano_matter.bootloader.tool.default=openocd
 nano_matter.bootloader.file=zephyr-{build.variant}.hex
 nano_matter.bootloader.target=arduino_nano_matter
 nano_matter.bootloader.config=-f target/efm32s2_g23.cfg
-nano_matter.bootloader.burn_image={runtime.platform.path}/bootloaders/NANO_MATTER/arduino-nano-matter-bootloader-storage-internal-single-512k.hex
 
 # onboard probe, used when no hardware programmer is selected
 nano_matter.programmer.protocol=cmsis-dap
