@@ -57,7 +57,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		debug_args=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -95,7 +95,7 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
@@ -126,6 +126,15 @@ for ext in elf bin hex uf2; do
 done
 cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# Build the bootloader updater for boards with a separate bootloader
+BOOTLOADER_DIR=bootloaders/${variant}
+if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
+	UPDATER_BUILD_DIR=build/updater-${variant}
+	rm -rf ${UPDATER_BUILD_DIR}
+	west build -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}"
+	cp ${UPDATER_BUILD_DIR}/zephyr/zephyr.bin ${BOOTLOADER_DIR}/updater.bin
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
@@ -238,9 +247,4 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
-
-	# boards with a separate bootloader also ship a bootloader updater
-	if grep -qE "^${board}\.bootloader\.updater=" boards.txt; then
-		extra/build_updater.sh $board
-	fi
 fi

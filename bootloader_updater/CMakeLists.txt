@@ -16,8 +16,9 @@ project(bootloader_updater LANGUAGES C)
 # custom pinctrl state used by the variant overlays, see the core CMakeLists.txt
 zephyr_compile_options(-DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
 
-if(NOT DEFINED BOOTLOADER_HEX)
-	message(FATAL_ERROR "Set BOOTLOADER_HEX to the bootloader image to embed")
+set(BOOTLOADER_HEX ${CMAKE_CURRENT_LIST_DIR}/../bootloaders/${NORMALIZED_BOARD_TARGET}/bootloader.hex)
+if(NOT EXISTS ${BOOTLOADER_HEX})
+	message(FATAL_ERROR "No bootloader image for ${NORMALIZED_BOARD_TARGET}: ${BOOTLOADER_HEX}")
 endif()
 
 dt_nodelabel(boot_partition NODELABEL boot_partition REQUIRED)

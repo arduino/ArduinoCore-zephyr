@@ -269,15 +269,10 @@ This can also be performed via the "Burn bootloader" action in the IDE, with the
 
 ### Build the Bootloader Updater
 
-For boards with a separate bootloader, the firmware uploaded by the `Zephyr loader`
-programmer is built from [bootloader_updater](/bootloader_updater) with:
-
-```bash
-./extra/build_updater.sh giga
-```
-
-The bootloader image is taken from `bootloader.burn_image` and the result is
-saved to `bootloader.updater`, as defined for the board in `boards.txt`.
+For boards with a separate bootloader (`bootloaders/<variant>/bootloader.hex`),
+`./extra/build.sh` also builds the firmware uploaded by the `Zephyr loader`
+programmer from [bootloader_updater](/bootloader_updater), and saves it as
+`bootloaders/<variant>/updater.bin`.
 
 ### Using the Core in Arduino IDE/CLI
 
