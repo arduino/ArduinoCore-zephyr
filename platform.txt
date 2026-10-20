@@ -202,6 +202,17 @@ erase.pattern=
 upload.artifacts.loader={runtime.platform.path}/firmwares/{bootloader.file}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
+# Files used by "Upload Using Programmer" (SWD, absolute addresses)
+program.artifacts.loader={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
+program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
+upload.offset=0
+
+# Image written by "Burn Bootloader" with a hardware programmer. Boards with a
+# separate bootloader override it; on the others the loader is the base image.
+bootloader.burn_image={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
+bootloader.config=
+bootloader.extra_action.preflash=
+
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
 # section. The loader is flashed if it does not match the current (maybe
 # board-specific) core version. The sketch is then flashed in any case.
@@ -235,11 +246,11 @@ tools.openocd.upload.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {
 
 tools.openocd.program.params.verbose=-d2
 tools.openocd.program.params.quiet=-d0
-tools.openocd.program.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -c "set filename1 "{upload.artifacts.sketch}"" -c "set offset {upload.address}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}"
+tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "set filename0 "{program.artifacts.loader}"" -c "set filename1 "{program.artifacts.sketch}"" -c "set offset [expr {upload.address} + {upload.offset}]" -f "{runtime.platform.path}/debugger/flash_sketch.cfg"
 
 tools.openocd.bootloader.params.verbose=-d2
 tools.openocd.bootloader.params.quiet=-d0
-tools.openocd.bootloader.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -f "{build.variant.path}/flash_bootloader.cfg" "{upload.verbose}"
+tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; {bootloader.extra_action.preflash}; program {{bootloader.burn_image}}; reset run; shutdown"
 
 
 #
