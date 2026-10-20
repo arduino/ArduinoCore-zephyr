@@ -285,14 +285,12 @@ jobs:
           fi
           echo "BINARIES_FILE=${BINARIES_FILE}" >> $GITHUB_ENV
           sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
-          UPDATER=$(grep -E '^${{ matrix.board }}\.bootloader\.updater=' boards.txt | cut -d '=' -f 2- | sed -e 's|{runtime.platform.path}/||')
-          [ -n "$UPDATER" ] && [ -f "$UPDATER" ] || UPDATER=
           tar chf - \
             firmwares/*${{ matrix.variant }}* \
             variants/${{ matrix.variant }}/ \
             boards.local_${{ matrix.variant }}.txt \
             cores/arduino/api/ \
-            ${UPDATER} \
+            $(ls bootloaders/${{ matrix.variant }}/updater.bin 2>/dev/null) \
             ${FULL_BUILD_DIR} \
           | zstd > ${BINARIES_FILE}
 

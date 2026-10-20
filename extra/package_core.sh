@@ -80,11 +80,9 @@ for variant in $INCLUDED_VARIANTS ; do
 		log_msg error "No firmware for '${variant}' found."
 		RET=3
 	fi
-done
-# bootloader updaters are shipped in 'bootloaders/', notify at end if missing
-for updater in $(grep -oP '^[^#]*\.bootloader\.updater=\{runtime\.platform\.path\}/\K.*' ${TEMP_BOARDS}) ; do
-	if [ ! -f "$updater" ] ; then
-		log_msg error "No bootloader updater '$updater' found."
+	# boards with a separate bootloader also need the bootloader updater
+	if [ -f bootloaders/${variant}/bootloader.hex ] && [ ! -f bootloaders/${variant}/updater.bin ] ; then
+		log_msg error "No bootloader updater for '${variant}' found."
 		RET=3
 	fi
 done
