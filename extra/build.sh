@@ -238,4 +238,9 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
+
+	# boards with a separate bootloader also ship a bootloader updater
+	if grep -qE "^${board}\.bootloader\.updater=" boards.txt; then
+		extra/build_updater.sh $board
+	fi
 fi
