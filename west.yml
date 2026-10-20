@@ -52,7 +52,7 @@ manifest:
 
     - name: mcuboot
       remote: gibix
-      revision: nano-chandler
+      revision: nano-xl-link-4.5
       path: bootloader/mcuboot
 
     - name: hal_microchip
