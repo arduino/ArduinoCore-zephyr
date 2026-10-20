@@ -212,6 +212,8 @@ upload.offset=0
 bootloader.burn_image={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
 bootloader.config=
 bootloader.extra_action.preflash=
+# Boards whose MCU is not supported by openocd can point this to another tool
+bootloader.burn_pattern={burn.pattern}
 
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
 # section. The loader is flashed if it does not match the current (maybe
@@ -250,7 +252,8 @@ tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/share/
 
 tools.openocd.bootloader.params.verbose=-d2
 tools.openocd.bootloader.params.quiet=-d0
-tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; {bootloader.extra_action.preflash}; program {{bootloader.burn_image}}; reset run; shutdown"
+tools.openocd.bootloader.pattern={bootloader.burn_pattern}
+tools.openocd.burn.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; {bootloader.extra_action.preflash}; program {{bootloader.burn_image}}; reset run; shutdown"
 
 
 #
@@ -369,6 +372,7 @@ tools.pyocd.upload.pattern="{cmd}" load --target {upload.target} {upload.artifac
 tools.pyocd.bootloader.params.verbose=
 tools.pyocd.bootloader.params.quiet=
 tools.pyocd.bootloader.pattern="{cmd}" load --target {bootloader.target} "{upload.artifacts.loader}"
+tools.pyocd.burn.pattern="{tools.pyocd.cmd}" load --target {bootloader.target} "{bootloader.burn_image}"
 
 
 #

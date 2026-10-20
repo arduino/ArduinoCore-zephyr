@@ -478,6 +478,9 @@ portentac33.bootloader.interface=0
 portentac33.bootloader.address=0x10000
 portentac33.bootloader.pid=0x0368
 portentac33.bootloader.dfuse=
+portentac33.bootloader.target=r7fa6m5bh
+portentac33.bootloader.burn_image={runtime.platform.path}/bootloaders/PORTENTA_C33/dfu_c33.hex
+portentac33.bootloader.burn_pattern={tools.pyocd.burn.pattern}
 
 # the space before the extra arguments is important
 portentac33.leave.dfuse={empty} -Q
