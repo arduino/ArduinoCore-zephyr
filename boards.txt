@@ -65,6 +65,8 @@ giga.bootloader.interface=0
 giga.bootloader.file=zephyr-{build.variant}.bin
 giga.bootloader.address=0x08040000
 giga.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+giga.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+giga.bootloader.burn_image={runtime.platform.path}/bootloaders/GIGA/bootloader.hex
 
 giga.debug.tool=gdb
 giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -120,6 +122,7 @@ nano33ble.bootloader.tool.default=bossac
 nano33ble.bootloader.file=zephyr-{build.variant}.bin
 nano33ble.bootloader.address=0x0000
 nano33ble.bootloader.config=-f target/nrf52.cfg
+nano33ble.bootloader.burn_image={runtime.platform.path}/bootloaders/NANO33BLE/bootloader.hex
 
 nano33ble.debug.tool=gdb
 nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -262,6 +265,8 @@ portentah7.bootloader.interface=0
 portentah7.bootloader.file=zephyr-{build.variant}.bin
 portentah7.bootloader.address=0x08040000
 portentah7.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+portentah7.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+portentah7.bootloader.burn_image={runtime.platform.path}/bootloaders/PORTENTA_H7/portentah7_bootloader_mbed_hs_v2.hex
 
 portentah7.build.ota.magic=0x2341025B
 portentah7.build.ota.sketch_offset={bootloader.maximum_size}
@@ -318,6 +323,8 @@ nicla_vision.bootloader.interface=0
 nicla_vision.bootloader.file=zephyr-{build.variant}.bin
 nicla_vision.bootloader.address=0x08040000
 nicla_vision.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+nicla_vision.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+nicla_vision.bootloader.burn_image={runtime.platform.path}/bootloaders/NICLA_VISION/bootloader.hex
 
 nicla_vision.build.ota.magic=0x2341025F
 nicla_vision.build.ota.sketch_offset={bootloader.maximum_size}
@@ -525,6 +532,8 @@ opta.bootloader.interface=0
 opta.bootloader.file=zephyr-{build.variant}.bin
 opta.bootloader.address=0x08040000
 opta.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+opta.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+opta.bootloader.burn_image={runtime.platform.path}/bootloaders/OPTA/bootloader.hex
 
 opta.debug.tool=gdb
 opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg

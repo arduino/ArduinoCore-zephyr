@@ -12,6 +12,7 @@
 programmers.txt
 LICENSE
 README.md
+bootloaders/
 debugger/
 doc/
 cores/
