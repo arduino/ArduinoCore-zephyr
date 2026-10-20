@@ -21,3 +21,10 @@ openocd.protocol=SWD
 openocd.program.tool=openocd
 openocd.program.tool.default=openocd
 openocd.program.extra_params=
+
+# Fake programmer: does not override the board's bootloader tool, so "Burn
+# Bootloader" uploads the precompiled Zephyr loader with the board's own upload
+# tool, through the bootloader already on the board (in-application programming).
+zephyr_loader.name=Zephyr loader (in-application, no programmer needed)
+zephyr_loader.communication=USB
+zephyr_loader.protocol=
