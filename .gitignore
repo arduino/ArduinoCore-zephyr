@@ -1,6 +1,7 @@
 /build/
 /distrib/
 /firmwares/*
+/bootloaders/*/updater.bin
 /venv/
 /boards.local.txt
 /platform.local.txt

@@ -84,7 +84,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		debug=true
+		debug_args=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -182,6 +182,7 @@ else
 	IMAGE_DIR=${BUILD_DIR}
 	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
 fi
+west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
@@ -234,6 +235,14 @@ if [[ ! -z $SQUASH_ARGS ]]; then
 	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]]; then
 		FLASH_ERASE_DIM="${BASH_REMATCH[1]}"
 	fi
+fi
+
+# Build the bootloader updater for boards with a separate bootloader
+BOOTLOADER_DIR=bootloaders/${variant}
+if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
+	UPDATER_BUILD_DIR=build/updater-${variant}
+	west build -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}"
+	cp ${UPDATER_BUILD_DIR}/zephyr/zephyr.bin ${BOOTLOADER_DIR}/updater.bin
 fi
 
 # Generate the provides.ld file for linked builds
