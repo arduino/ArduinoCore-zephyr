@@ -81,6 +81,13 @@ for variant in $INCLUDED_VARIANTS ; do
 		RET=3
 	fi
 done
+# bootloader updaters are shipped in 'bootloaders/', notify at end if missing
+for updater in $(grep -oP '^[^#]*\.bootloader\.updater=\{runtime\.platform\.path\}/\K.*' ${TEMP_BOARDS}) ; do
+	if [ ! -f "$updater" ] ; then
+		log_msg error "No bootloader updater '$updater' found."
+		RET=3
+	fi
+done
 
 # deduplicate llext-edk headers shared by all included variants
 # (CI only: this modifies the working tree)
