@@ -68,11 +68,11 @@ else
 fi
 west config manifest.project-filter -- "$HAL_FILTER"
 west update $WEST_MODULES_CACHE "$@"
-west zephyr-export
 pip3 install -r ../zephyr/scripts/requirements-base.txt
 # imgtool imports 'cryptography' unconditionally, even with no signing key.
 [ -f ../bootloader/mcuboot/scripts/requirements.txt ] && pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt
 log_msg "endgroup"
+west zephyr-export
 
 TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do
   version=$(jq -r --arg name "$tc" '.toolsDependencies[] | select(.name == $name) | .version' extra/artifacts/_common.json)
