@@ -36,7 +36,12 @@ static void on_1200_touch_handler(struct k_work *work) {
 	ARG_UNUSED(work);
 	_on_1200_bps();
 }
-static K_WORK_DELAYABLE_DEFINE(on_1200_touch_work, on_1200_touch_handler);
+static struct k_work_delayable on_1200_touch_work = [] {
+	struct k_work_delayable work{};
+	work.work.handler = on_1200_touch_handler;
+	work.work.flags = K_WORK_DELAYABLE;
+	return work;
+}();
 
 // The work item is statically initialised once (above); re-initialising a
 // pending item would corrupt the work queue.

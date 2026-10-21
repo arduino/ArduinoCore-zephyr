@@ -51,10 +51,15 @@ static struct i2c_target_callbacks target_callbacks = {
 	.read_requested = i2c_target_read_requested_cb,
 	.write_received = i2c_target_write_received_cb,
 	.read_processed = i2c_target_read_processed_cb,
+#if defined(CONFIG_I2C_TARGET_BUFFER_MODE)
+	.buf_write_received = nullptr,
+	.buf_read_requested = nullptr,
+#endif
 	.stop = i2c_target_stop_cb,
+	.error = nullptr,
 };
 
-arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg({0}), i2c_dev(i2c) {
+arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg{}, i2c_dev(i2c) {
 	ring_buf_init(&txRingBuffer.rb, sizeof(txRingBuffer.buffer), txRingBuffer.buffer);
 	ring_buf_init(&rxRingBuffer.rb, sizeof(rxRingBuffer.buffer), rxRingBuffer.buffer);
 }

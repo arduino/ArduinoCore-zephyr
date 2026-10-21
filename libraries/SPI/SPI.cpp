@@ -63,7 +63,11 @@ void arduino::ZephyrSPI::beginTransaction(SPISettings settings) {
 	case SPI_CONTROLLER:
 		break;
 	case SPI_PERIPHERAL:
+#if defined(SPI_OP_MODE_PERIPHERAL)
+		mode |= SPI_OP_MODE_PERIPHERAL;
+#else
 		mode |= SPI_OP_MODE_SLAVE;
+#endif
 		break;
 	}
 
