@@ -232,8 +232,7 @@ static int loader(const struct shell *sh) {
 
 	backup.wait_for_app_magic = 0;
 
-	uintptr_t bootanimation_addr = DT_REG_ADDR(DT_GPARENT(DT_NODELABEL(bootanimation))) +
-								   DT_REG_ADDR(DT_NODELABEL(bootanimation));
+	uintptr_t bootanimation_addr = DT_PARTITION_ADDR(DT_NODELABEL(bootanimation));
 
 	struct bootanimation_user_data *user_bootanimation =
 		(struct bootanimation_user_data *)bootanimation_addr;
