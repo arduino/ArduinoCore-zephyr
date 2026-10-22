@@ -125,9 +125,9 @@ __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELAB
 #elif CONFIG_FLASH_USES_MAPPED_PARTITION /* size of the mapped code partition */
 #define LOADER_MAX_SIZE DT_REG_SIZE(DT_CHOSEN(zephyr_code_partition))
 #elif CONFIG_FLASH_LOAD_OFFSET /* heuristic: size of Flash minus load offset */
-#define LOADER_MAX_SIZE (DT_REG_SIZE(DT_NODELABEL(flash0)) - CONFIG_FLASH_LOAD_OFFSET)
+#define LOADER_MAX_SIZE (DT_REG_SIZE(DT_CHOSEN(zephyr_flash)) - CONFIG_FLASH_LOAD_OFFSET)
 #else /* default: size of whole Flash */
-#define LOADER_MAX_SIZE DT_REG_SIZE(DT_NODELABEL(flash0))
+#define LOADER_MAX_SIZE DT_REG_SIZE(DT_CHOSEN(zephyr_flash))
 #endif
 __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
 
