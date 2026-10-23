@@ -19,7 +19,7 @@ get_branch_tip libraries arduino-libraries/Arduino_GigaDisplayTouch main \
 get_branch_tip libraries arduino-libraries/Arduino_Video main \
 	examples/ArduinoLogoDrawing \
 	examples/ArduinoLogo \
-	examples/LVGLDemo \
+	examples/CameraDisplay \
 
 skip_for_this_board libraries/Ethernet
 skip_for_this_board libraries/OTA/examples/OTAEthernet
