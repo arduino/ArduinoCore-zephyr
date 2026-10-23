@@ -16,3 +16,5 @@
 
 # Loads of those in the lvgl library
 libraries/Arduino_Video/examples/LVGLDemo|warning: missing terminating " character
+
+skip_for_this_board libraries/PDM
