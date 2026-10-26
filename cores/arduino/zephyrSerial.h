@@ -105,10 +105,18 @@ public:
 protected:
 	void IrqHandler();
 	static void IrqDispatch(const struct device *dev, void *data);
+	void rxUnthrottleLocked();
 
 	const struct device *uart;
 	ZephyrSerialBuffer<CONFIG_ARDUINO_API_SERIAL_BUFFER_SIZE> tx;
 	ZephyrSerialBuffer<CONFIG_ARDUINO_API_SERIAL_BUFFER_SIZE> rx;
+
+	/* Set when the RX interrupt has been disabled because the rx buffer is
+	 * full; the driver then keeps the incoming data (and, if it supports it,
+	 * applies flow control, as USB CDC-ACM does) until there is room again.
+	 * Protected by rx.lock.
+	 */
+	bool rxThrottled = false;
 };
 
 } // namespace arduino

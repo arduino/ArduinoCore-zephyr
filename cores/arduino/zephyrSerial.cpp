@@ -70,6 +70,7 @@ void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
 
 	k_spinlock_key_t key = k_spin_lock(&rx.lock);
 	ring_buf_reset(&rx.ringbuf);
+	rxThrottled = false;
 	k_spin_unlock(&rx.lock, key);
 
 	uart_irq_rx_enable(uart);
@@ -86,13 +87,26 @@ void arduino::ZephyrSerial::IrqHandler() {
 	}
 
 	while (uart_irq_rx_ready(uart)) {
-		length = uart_fifo_read(uart, buf, sizeof(buf));
+		/* Never read more than the rx buffer can hold, so that no data is
+		 * dropped. When the buffer is full, stop the RX interrupt: the data
+		 * is left in the driver until rxUnthrottleLocked() re-enables it.
+		 */
+		key = k_spin_lock(&rx.lock);
+		size_t space = ring_buf_space_get(&rx.ringbuf);
+		if (space == 0) {
+			rxThrottled = true;
+			uart_irq_rx_disable(uart);
+			k_spin_unlock(&rx.lock, key);
+			break;
+		}
+		length = uart_fifo_read(uart, buf, min(sizeof(buf), space));
+		if (length > 0) {
+			ring_buf_put(&rx.ringbuf, &buf[0], length);
+		}
+		k_spin_unlock(&rx.lock, key);
 		if (length <= 0) {
 			break;
 		}
-		key = k_spin_lock(&rx.lock);
-		ring_buf_put(&rx.ringbuf, &buf[0], length);
-		k_spin_unlock(&rx.lock, key);
 	}
 
 	key = k_spin_lock(&tx.lock);
@@ -121,6 +135,17 @@ void arduino::ZephyrSerial::IrqHandler() {
 void arduino::ZephyrSerial::IrqDispatch(const struct device *dev, void *data) {
 	(void)dev; // unused
 	reinterpret_cast<ZephyrSerial *>(data)->IrqHandler();
+}
+
+/* Must be called with rx.lock held. */
+void arduino::ZephyrSerial::rxUnthrottleLocked() {
+	/* Resume reception once half of the rx buffer is free, to avoid toggling
+	 * the RX interrupt for every byte read.
+	 */
+	if (rxThrottled && ring_buf_space_get(&rx.ringbuf) >= ring_buf_capacity_get(&rx.ringbuf) / 2) {
+		rxThrottled = false;
+		uart_irq_rx_enable(uart);
+	}
 }
 
 int arduino::ZephyrSerial::available() {
@@ -154,6 +179,7 @@ int arduino::ZephyrSerial::read() {
 
 	k_spinlock_key_t key = k_spin_lock(&rx.lock);
 	uint32_t cb_ret = ring_buf_get(&rx.ringbuf, &data, 1);
+	rxUnthrottleLocked();
 	k_spin_unlock(&rx.lock, key);
 
 	return cb_ret ? data : -1;
