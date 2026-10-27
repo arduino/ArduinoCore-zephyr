@@ -171,7 +171,6 @@ extern volatile __stm32_backup_sram_section struct backup_store backup;
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
-	char header[SKETCH_HEADER_LEN];
 
 	/* Test that attempting to open a disabled flash area fails */
 #ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
@@ -188,6 +187,8 @@ static int loader(const struct shell *sh) {
 #if defined(CONFIG_OTA)
 	try_ota_update(fa);
 #endif
+
+	char header[SKETCH_HEADER_LEN];
 
 #ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
 	uintptr_t base_addr = sketch_layout.sketch_addr;
@@ -260,7 +261,7 @@ static int loader(const struct shell *sh) {
 	void matrixEnd(void);
 	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
-	void matrixGrayscaleWrite(uint8_t * buf);
+	void matrixGrayscaleWrite(uint8_t *buf);
 #include "bootanimation.h"
 #include "usbanimation.h"
 
@@ -339,7 +340,6 @@ static int loader(const struct shell *sh) {
 	}
 
 	size_t sketch_buf_len = sketch_hdr->len;
-	printk("SKETCH LEN = %d\n", sketch_buf_len);
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
 
