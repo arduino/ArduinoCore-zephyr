@@ -19,7 +19,7 @@ config MAIN_STACK_REGION
 	string "Main stack memory region"
 	depends on CODE_DATA_RELOCATION
 	help
-	  Specify the memory region for main stack.
+	  Specify the memory region for main stack
 
 config USE_LOADER_AND_BINARY_SQUASHED
     bool "Loader and sketch share a single squashed flash image"
