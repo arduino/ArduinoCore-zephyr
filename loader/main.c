@@ -38,7 +38,7 @@ extern struct k_thread z_main_thread;
 	ZARD_BOARD_HAS_SERIALUSB && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
 
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
-bool check_boot_mode(void);
+bool check_dfu_mode_requested(void);
 void wait_for_dfu_update(void);
 #endif
 
@@ -144,6 +144,7 @@ extern volatile __stm32_backup_sram_section struct backup_store backup;
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
+	char header[SKETCH_HEADER_LEN];
 
 	/* Test that attempting to open a disabled flash area fails */
 	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
@@ -158,11 +159,10 @@ static int loader(const struct shell *sh) {
 #endif
 
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
-
-	char header[SKETCH_HEADER_LEN];
 	rc = flash_area_read(fa, 0, header, sizeof(header));
+
 	if (rc) {
-		printk("Failed to read header, rc %d\n", rc);
+		LOG_ERR("Failed to read header, rc %d\n", rc);
 		recoverable_error_led();
 		return rc;
 	}
@@ -170,10 +170,16 @@ static int loader(const struct shell *sh) {
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
 	if (sketch_header_v1_verify(sketch_hdr) != 0) {
-		printk("Invalid sketch header\n");
+		LOG_WRN("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
 	}
+
+#ifdef CONFIG_WAIT_FOR_DFU_IF_SKETCH_IS_NOT_VALID
+	if (!sketch_valid) {
+		wait_for_dfu_update();
+	}
+#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
@@ -218,7 +224,7 @@ static int loader(const struct shell *sh) {
 	void matrixEnd(void);
 	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
-	void matrixGrayscaleWrite(uint8_t *buf);
+	void matrixGrayscaleWrite(uint8_t * buf);
 #include "bootanimation.h"
 #include "usbanimation.h"
 
@@ -297,6 +303,7 @@ static int loader(const struct shell *sh) {
 	}
 
 	size_t sketch_buf_len = sketch_hdr->len;
+	printk("SKETCH LEN = %d\n", sketch_buf_len);
 
 	if (sketch_hdr->flags & SKETCH_FLAG_LINKED) {
 
@@ -386,7 +393,7 @@ static int loader(const struct shell *sh) {
 		recoverable_error_led();
 		return -1;
 	}
-
+	printk("CREATE THREAD!!\n");
 	k_thread_create(&llext_thread, llext_stack, K_THREAD_STACK_SIZEOF(llext_stack), &llext_entry,
 					llext_bootstrap, ext, main_fn, 1, K_INHERIT_PERMS, K_FOREVER);
 
@@ -418,7 +425,7 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 
 int main(void) {
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
-	if (check_boot_mode()) {
+	if (check_dfu_mode_requested()) {
 		wait_for_dfu_update();
 	}
 #endif
