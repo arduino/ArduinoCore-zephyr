@@ -47,5 +47,16 @@ config CUSTOM_FLASH_ALIGN
 
 endmenu
 
+config APP_WATCHDOG_ENFORCED
+    bool "Hardware watchdog enforced by Sysbuild (MCU Boot required)"
+    default n
+    help
+      This is automatically set to 'y' by Sysbuild if the secure 
+      watchdog parameters are injected into MCUBoot.
+
+config APP_WATCHDOG_TIMEOUT_MS
+    int "Watchdog timeout injected by Sysbuild"
+    default 20000
+
 source "Kconfig.zephyr"
 rsource "ota/Kconfig"
