@@ -27,19 +27,21 @@ void fading_blink_led_start(void);
 void fading_blink_led_stop(void);
 #endif
 
-bool check_boot_mode(void) {
-	bool rv = false;
-	int boot_mode = bootmode_check(BOOT_MODE_TYPE_BOOTLOADER);
-	if (boot_mode < 0) {
-		LOG_ERR("ERROR: Unable to read boot mode (%d)\n", boot_mode);
+const struct device *retention2 = DEVICE_DT_GET(DT_NODELABEL(retention2));
+
+bool check_dfu_mode_requested(void) {
+	uint8_t magic = 0;
+	if (retention_read(retention2, 0, &magic, 1)) {
+		LOG_ERR("Unable to read retention2\n");
+	} else {
+		if (magic == CONFIG_LOADER_DFU_MAGIC) {
+			if (retention_clear(retention2) < 0) {
+				LOG_ERR("ERROR: Unable delete retention2\n");
+			}
+			return true;
+		}
 	}
-	if (boot_mode == 1) {
-		rv = true;
-	}
-	if (bootmode_clear()) {
-		printk("ERROR: Unable to clear boot mode\n");
-	}
-	return rv;
+	return false;
 }
 
 struct usbd_dfu_flash_data {
@@ -143,7 +145,7 @@ static struct usbd_dfu_flash_data slot1_data = {
 	.id = PARTITION_ID(slot1_partition),
 };
 
-USBD_DFU_DEFINE_IMG(loader_image, "loader_image", &slot1_data, dfu_flash_read, dfu_flash_write,
+USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, dfu_flash_write,
 					slot1_next);
 
 /* User sketch update image: writes directly to the user_sketch partition */
@@ -270,10 +272,19 @@ static void dfu_update(void) {
 
 	k_sem_take(&dfu_update_sem, K_FOREVER);
 
+	/*
+	 * Add a short delay to allow the host (dfu-util) to request
+	 * and read the final DFU status before we kill the connection.
+	 */
+	k_msleep(500);
+
 	LOG_INF("DFU operation fulfilled. Deinitializing USB...");
 
 	usbd_disable(&dfu_usbd);
 	usbd_shutdown(&dfu_usbd);
+
+	LOG_INF("Rebooting to apply MCUboot upgrade...");
+	sys_reboot(SYS_REBOOT_COLD);
 }
 
 void wait_for_dfu_update(void) {

@@ -17,7 +17,8 @@
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/device.h>
-#include <zephyr/retention/bootmode.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/retention/retention.h>
 #if defined(CONFIG_MBEDTLS)
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
@@ -545,6 +546,6 @@ FORCE_EXPORT_SYM(regulator_disable);
 #endif
 
 EXPORT_SYMBOL(sketch_header_v1_verify);
-#if defined(CONFIG_RETENTION_BOOT_MODE)
-EXPORT_SYMBOL(bootmode_set);
+#if defined(CONFIG_RETENTION)
+EXPORT_SYMBOL(retention_write);
 #endif
