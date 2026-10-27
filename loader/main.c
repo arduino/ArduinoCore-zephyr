@@ -37,6 +37,11 @@ extern struct k_thread z_main_thread;
 #define ZARD_FIRST_SERIAL_IS_SERIALUSB                                                             \
 	ZARD_BOARD_HAS_SERIALUSB && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
 
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+bool check_boot_mode(void);
+void wait_for_dfu_update(void);
+#endif
+
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
@@ -421,6 +426,11 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+	if (check_boot_mode()) {
+		wait_for_dfu_update();
+	}
+#endif
 	loader(NULL);
 	return 0;
 }

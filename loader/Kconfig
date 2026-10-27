@@ -24,4 +24,20 @@ config MAIN_STACK_REGION
 	help
 	  Specify the memory region for main stack.
 
+config USE_DFU_FLASH_UPDATES
+    bool "Enable USB DFU flash updates (loader and sketch images)"
+    default y if BOARD_ARDUINO_MEZZA
+    help
+      Enables the USB DFU class used to flash updates to the loader image
+      and the user sketch image.
+
+config USE_DFU_FADING_BLINK
+    bool "Enable fading LED blink while waiting for a DFU update"
+    default y if BOARD_ARDUINO_MEZZA
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      Blinks a PWM-driven LED with a fade effect while the board is waiting
+      for a DFU update to be applied. Requires a "fade_led" alias in the
+      device tree.
+
 rsource "ota/Kconfig"
