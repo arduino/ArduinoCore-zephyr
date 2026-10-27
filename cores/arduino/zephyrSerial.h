@@ -57,10 +57,12 @@ public:
 		friend arduino::ZephyrSerial;
 		struct ring_buf ringbuf;
 		uint8_t buffer[SZ];
-		struct k_sem sem;
+		/* Protects ringbuf against concurrent access from the UART
+		 * callback, which may run in ISR context.
+		 */
+		struct k_spinlock lock;
 
 		ZephyrSerialBuffer() {
-			k_sem_init(&sem, 1, 1);
 			ring_buf_init(&ringbuf, sizeof(buffer), buffer);
 		}
 	};

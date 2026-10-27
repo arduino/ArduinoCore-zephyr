@@ -67,15 +67,17 @@ void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
 
 	uart_configure(uart, &config);
 	uart_irq_callback_user_data_set(uart, arduino::ZephyrSerial::IrqDispatch, this);
-	k_sem_take(&rx.sem, K_FOREVER);
+
+	k_spinlock_key_t key = k_spin_lock(&rx.lock);
 	ring_buf_reset(&rx.ringbuf);
-	k_sem_give(&rx.sem);
+	k_spin_unlock(&rx.lock, key);
 
 	uart_irq_rx_enable(uart);
 }
 
 void arduino::ZephyrSerial::IrqHandler() {
 	uint8_t buf[8];
+	k_spinlock_key_t key;
 	int length;
 	int ret = 0;
 
@@ -83,31 +85,37 @@ void arduino::ZephyrSerial::IrqHandler() {
 		return;
 	}
 
-	k_sem_take(&rx.sem, K_NO_WAIT);
-	while (uart_irq_rx_ready(uart) && ((length = uart_fifo_read(uart, buf, sizeof(buf))) > 0)) {
-		length = min(sizeof(buf), static_cast<size_t>(length));
+	while (uart_irq_rx_ready(uart)) {
+		length = uart_fifo_read(uart, buf, sizeof(buf));
+		if (length <= 0) {
+			break;
+		}
+		key = k_spin_lock(&rx.lock);
 		ring_buf_put(&rx.ringbuf, &buf[0], length);
+		k_spin_unlock(&rx.lock, key);
 	}
-	k_sem_give(&rx.sem);
 
-	k_sem_take(&tx.sem, K_NO_WAIT);
-
+	key = k_spin_lock(&tx.lock);
 	if (ring_buf_size_get(&tx.ringbuf) == 0) {
 		uart_irq_tx_disable(uart);
 	}
+	k_spin_unlock(&tx.lock, key);
 
-	while (uart_irq_tx_ready(uart) && ((length = ring_buf_size_get(&tx.ringbuf)) > 0)) {
-		length = min(sizeof(buf), static_cast<size_t>(length));
-		ring_buf_peek(&tx.ringbuf, &buf[0], length);
-
-		ret = uart_fifo_fill(uart, &buf[0], length);
-		if (ret < 0) {
+	while (uart_irq_tx_ready(uart)) {
+		key = k_spin_lock(&tx.lock);
+		length = min(sizeof(buf), static_cast<size_t>(ring_buf_size_get(&tx.ringbuf)));
+		if (length > 0) {
+			ring_buf_peek(&tx.ringbuf, &buf[0], length);
+			ret = uart_fifo_fill(uart, &buf[0], length);
+			if (ret > 0) {
+				ring_buf_get(&tx.ringbuf, nullptr, ret);
+			}
+		}
+		k_spin_unlock(&tx.lock, key);
+		if (length <= 0 || ret <= 0) {
 			break;
-		} else {
-			ring_buf_get(&tx.ringbuf, &buf[0], ret);
 		}
 	}
-	k_sem_give(&tx.sem);
 }
 
 void arduino::ZephyrSerial::IrqDispatch(const struct device *dev, void *data) {
@@ -116,21 +124,17 @@ void arduino::ZephyrSerial::IrqDispatch(const struct device *dev, void *data) {
 }
 
 int arduino::ZephyrSerial::available() {
-	int ret;
-
-	k_sem_take(&rx.sem, K_FOREVER);
-	ret = ring_buf_size_get(&rx.ringbuf);
-	k_sem_give(&rx.sem);
+	k_spinlock_key_t key = k_spin_lock(&rx.lock);
+	int ret = ring_buf_size_get(&rx.ringbuf);
+	k_spin_unlock(&rx.lock, key);
 
 	return ret;
 }
 
 int arduino::ZephyrSerial::availableForWrite() {
-	int ret;
-
-	k_sem_take(&tx.sem, K_FOREVER);
-	ret = ring_buf_space_get(&tx.ringbuf);
-	k_sem_give(&tx.sem);
+	k_spinlock_key_t key = k_spin_lock(&tx.lock);
+	int ret = ring_buf_space_get(&tx.ringbuf);
+	k_spin_unlock(&tx.lock, key);
 
 	return ret;
 }
@@ -138,9 +142,9 @@ int arduino::ZephyrSerial::availableForWrite() {
 int arduino::ZephyrSerial::peek() {
 	uint8_t data;
 
-	k_sem_take(&rx.sem, K_FOREVER);
+	k_spinlock_key_t key = k_spin_lock(&rx.lock);
 	uint32_t cb_ret = ring_buf_peek(&rx.ringbuf, &data, 1);
-	k_sem_give(&rx.sem);
+	k_spin_unlock(&rx.lock, key);
 
 	return cb_ret ? data : -1;
 }
@@ -148,9 +152,9 @@ int arduino::ZephyrSerial::peek() {
 int arduino::ZephyrSerial::read() {
 	uint8_t data;
 
-	k_sem_take(&rx.sem, K_FOREVER);
+	k_spinlock_key_t key = k_spin_lock(&rx.lock);
 	uint32_t cb_ret = ring_buf_get(&rx.ringbuf, &data, 1);
-	k_sem_give(&rx.sem);
+	k_spin_unlock(&rx.lock, key);
 
 	return cb_ret ? data : -1;
 }
@@ -159,9 +163,9 @@ size_t arduino::ZephyrSerial::write(const uint8_t *buffer, size_t size) {
 	size_t idx = 0;
 
 	while (1) {
-		k_sem_take(&tx.sem, K_FOREVER);
+		k_spinlock_key_t key = k_spin_lock(&tx.lock);
 		auto ret = ring_buf_put(&tx.ringbuf, &buffer[idx], size - idx);
-		k_sem_give(&tx.sem);
+		k_spin_unlock(&tx.lock, key);
 		idx += ret;
 		if (ret == 0) {
 			uart_irq_tx_enable(uart);
@@ -178,7 +182,13 @@ size_t arduino::ZephyrSerial::write(const uint8_t *buffer, size_t size) {
 }
 
 void arduino::ZephyrSerial::flush() {
-	while (ring_buf_size_get(&tx.ringbuf) > 0) {
+	while (true) {
+		k_spinlock_key_t key = k_spin_lock(&tx.lock);
+		bool empty = ring_buf_is_empty(&tx.ringbuf);
+		k_spin_unlock(&tx.lock, key);
+		if (empty) {
+			break;
+		}
 		k_yield();
 	}
 	while (uart_irq_tx_complete(uart) == 0) {
