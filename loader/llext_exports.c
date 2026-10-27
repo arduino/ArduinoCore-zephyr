@@ -384,6 +384,11 @@ EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
 
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
+#if defined(CONFIG_TIMER_READS_ITS_FREQUENCY_AT_RUNTIME)
+/* used by the k_cyc_to_* conversions (e.g. micros()) when the timer frequency is a variable */
+extern unsigned int z_clock_hw_cycles_per_sec;
+EXPORT_SYMBOL(z_clock_hw_cycles_per_sec);
+#endif
 
 #ifdef CONFIG_ARM
 /* ARM compiler ABI helpers: exported as __real_##name for VN() trampolines in llext_wrappers.c */
