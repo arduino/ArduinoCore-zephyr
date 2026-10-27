@@ -23,7 +23,7 @@ manifest:
   projects:
     - name: zephyr
       remote: maidnl
-      revision: mezza-dev-zephyr-main
+      revision: mezza-dev-new-boot-layout
       import:
         name-allowlist:
           - cmsis
@@ -45,6 +45,11 @@ manifest:
         # the 'manifest.project-filter' config. Enable all Zephyr HALs with:
         #
         #   west config -d manifest.project-filter
+    # Add this new block for mcuboot
+    - name: mcuboot
+      remote: maidnl
+      path: bootloader/mcuboot
+      revision: support_dfu_boot_mode_activation
 
     - name: cannectivity
       path: modules/lib/cannectivity
