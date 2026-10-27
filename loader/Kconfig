@@ -66,6 +66,13 @@ config APP_WATCHDOG_TIMEOUT_MS
     int "Watchdog timeout injected by Sysbuild"
     default 20000
 
+config USE_NETWORK_LED_TRACKER
+    bool "Enable LED blinking depending on network activity"
+    default y if BOARD_ARDUINO_MEZZA
+    help
+      To get this working it is necessary to have led_ethernet and led_wifi
+      defined as aliases in the device tree
+
 config USE_DFU_FLASH_UPDATES
     bool "Enable USB DFU flash updates (loader and sketch images)"
     default y if BOARD_ARDUINO_MEZZA
