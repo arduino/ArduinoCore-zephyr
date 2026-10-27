@@ -156,6 +156,22 @@ if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
     cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
 fi
 
+SQUASH_ARGS=
+if [ -n "$board" ] && [[ -f firmwares/zephyr-$variant.bin ]]; then
+    # Dynamically extract squash arguments using the Python helper
+    PLATFORM_PATH=$(pwd)
+    BOOTLOADER_FILE="zephyr-${variant}.bin"
+    
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py "boards.txt" "${board}" "${PLATFORM_PATH}" "${VARIANT_DIR}" "${BOOTLOADER_FILE}" "${variant}")
+fi
+# extract FLASH_ERASE_DIM as backup in case this information is not present 
+# in the dts file 
+if [[ ! -z $SQUASH_ARGS ]]; then
+	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]]; then
+		FLASH_ERASE_DIM="${BASH_REMATCH[1]}"
+	fi
+fi
+
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
 extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
@@ -171,6 +187,48 @@ extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"realloc=__wrap_realloc" \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
+
+# Boards squashing the sketch after the loader in the MCUboot slot0 image:
+# the sketch position depends on the loader size, so it is computed here.
+if [ -n "$SQUASH_ARGS" ]; then
+	echo "build.sh: (mcuboot) adding _sketch_start symbol to sym-static.ld"
+	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
+	
+	# Read the array of values from the python script
+	read -r -a SLOT0_INFO <<< $(python3 extra/extract_slot0_info.py "${IMAGE_DIR}/zephyr/zephyr.dts")
+	
+	if [ ${#SLOT0_INFO[@]} -eq 0 ]; then
+		echo "Error: Could not find slot0_partition info in zephyr.dts"
+		exit 1
+	fi
+	
+	SLOT0_ADDR_HEX=${SLOT0_INFO[0]}
+	SLOT0_DIM=${SLOT0_INFO[1]}
+	DTS_FLASH_ERASE_DIM=${SLOT0_INFO[2]}
+	
+	calculated_start=$(( size_bytes + SLOT0_ADDR_HEX ))
+	actual_start=$(printf "0x%X" "$calculated_start")
+	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
+	
+	echo "build.sh: (mcuboot) adding _sketch_max_size symbol to sym-static.ld"
+	
+	# Fallback to SQUASH_ARGS flash erase dimension if not found in DTS
+	if [ "$DTS_FLASH_ERASE_DIM" != "None" ] && [ -n "$DTS_FLASH_ERASE_DIM" ]; then
+		USED_FLASH_ERASE_DIM=$DTS_FLASH_ERASE_DIM
+	else
+		USED_FLASH_ERASE_DIM=$FLASH_ERASE_DIM
+	fi
+	
+	if [ -z "$USED_FLASH_ERASE_DIM" ]; then
+		echo "Error: Flash erase dimension not found in DTS or SQUASH_ARGS"
+		exit 1
+	fi
+	
+	# Calculate sketch_max_size = slot0_dimension - sketch_start_offset - (2 * erase_sector)
+	calculated_max_size=$(( SLOT0_DIM - size_bytes - (2 * USED_FLASH_ERASE_DIM) ))
+	actual_max_size=$(printf "0x%X" "$calculated_max_size")
+	echo "PROVIDE(_sketch_max_size = ${actual_max_size});" >> "${VARIANT_DIR}/syms-static.ld"
+fi
 
 cmake -P extra/gen_arduino_files.cmake $variant
 
