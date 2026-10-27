@@ -432,11 +432,18 @@ static int loader(const struct shell *sh) {
 SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
+#ifdef CONFIG_USE_NETWORK_LED_TRACKER
+void start_network_led_monitor(void);
+#endif
+
 int main(void) {
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
 	if (check_dfu_mode_requested()) {
 		wait_for_dfu_update();
 	}
+#endif
+#ifdef CONFIG_USE_NETWORK_LED_TRACKER
+	start_network_led_monitor();
 #endif
 	loader(NULL);
 	return 0;
