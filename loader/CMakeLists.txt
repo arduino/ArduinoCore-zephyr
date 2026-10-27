@@ -15,6 +15,11 @@ list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
+# ACTIVATE PADDING ONLY IF required by configuration
+if(CONFIG_FLASH_ALIGN_BASED_ON_DT_ERASE_DIM OR CONFIG_CUSTOM_FLASH_ALIGN_ACTIVE)
+    zephyr_linker_sources(SECTIONS SORT_KEY zzz_flash_padding flash_padding.ld)
+endif()
+
 project(app LANGUAGES C CXX)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
