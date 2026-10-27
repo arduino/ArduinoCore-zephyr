@@ -21,4 +21,33 @@ config MAIN_STACK_REGION
 	help
 	  Specify the memory region for main stack.
 
+config USE_DFU_FLASH_UPDATES
+    bool "Enable USB DFU flash updates (loader and sketch images)"
+    help
+      Enables the USB DFU class used to flash updates to the loader image
+      and, via the dynamic DFU alternate, the sketch image.
+      Enable this in the board/variant configuration (e.g. the variant's
+      .conf file), not here.
+
+config USE_LOADER_AND_BINARY_SQUASHED
+    bool "Loader and sketch share a single squashed flash image"
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      Enable this when the loader and the sketch are packed together into
+      a single flash image whose layout (sketch offset, erase size, block
+      count and padding) is only known at runtime. When enabled, the
+      loader reads this layout from the image header via
+      retrieve_flash_info() instead of relying on statically retained
+      sketch_base_addr/sketch_max_size symbols. This layout is only
+      produced to support the dynamic sketch DFU alternate, hence the
+      dependency on USE_DFU_FLASH_UPDATES.
+
+config USE_DFU_FADING_BLINK
+    bool "Enable fading LED blink while waiting for a DFU update"
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      Blinks a PWM-driven LED with a fade effect while the board is waiting
+      for a DFU update to be applied. Requires a "fade_led" alias in the
+      device tree.
+
 rsource "ota/Kconfig"

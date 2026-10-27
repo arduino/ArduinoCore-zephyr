@@ -9,11 +9,19 @@
 #include <zephyr/drivers/uart/cdc_acm.h>
 #include <zephyr/usb/usb_device.h>
 #include <SerialUSB.h>
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+#include <zephyr/retention/retention.h>
+#include <zephyr/retention/bootmode.h>
+#endif
 
 #if ZARD_BOARD_HAS_SERIALUSB
 const struct device *const usb_dev = DEVICE_DT_GET(ZARD_SERIALUSB_PHANDLE);
 
 void __attribute__((weak)) _on_1200_bps() {
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+	uint8_t magic = CONFIG_LOADER_DFU_MAGIC;
+	retention_write(retention2, 0, &magic, 1);
+#endif
 	NVIC_SystemReset();
 }
 
