@@ -160,3 +160,62 @@
 | Arduino API Programming Reference | https://docs.arduino.cc/learn/programming/reference/ |
 | ArduinoCore-API (source of truth) | https://github.com/arduino/ArduinoCore-API |
 | ArduinoCore-API `/api` folder | https://github.com/arduino/ArduinoCore-API/tree/master/api |
+
+---
+
+#### Arduino Core Unity Test Results
+
+| Test | Category | Status |
+|------|----------|--------|
+| **Digital I/O** |  |  |
+| `test_digitalio_single` | Digital I/O | ⚠️ |
+| **Analog I/O** |  |  |
+| `test_analogio_adc` | Analog ADC | ❌ COMPILE FAIL |
+| `test_analogio_pwm` | Analog PWM | ❌ COMPILE FAIL |
+| `test_analogio_dac` | Analog DAC | ❌ COMPILE FAIL |
+| **Advanced I/O** |  |  |
+| `test_tone_no_tone` | Tone | ❌ COMPILE FAIL |
+| `test_pulse_board1` | Pulse | ⚠️ |
+| `test_pulse_board2` | Pulse | ⚠️ |
+| **Time** |  |  |
+| `test_time_single` | Time | ✅ |
+| **Random Numbers** |  |  |
+| `test_random` | Random | ✅ |
+| **External Interrupts** |  |  |
+| `test_interrupts_single` | Interrupts | ✅ |
+| **Serial (UART)** |  |  |
+| `test_uart_tx` | UART | ⚠️ |
+| `test_uart_rx` | UART | ⚠️ |
+| `test_uart_connected2_tx` | UART | ⚠️ |
+| `test_uart_connected2_rx` | UART | ⚠️ |
+| **SPI** |  |  |
+| `test_spi_connected1_loopback` | SPI | ⚠️ |
+| `test_spi_connected2_masterpingpong` | SPI | 🟢 |
+| `test_spi_connected2_slavepingpong` | SPI | 🟢 |
+| **I2C (Wire)** |  |  |
+| `test_wire_connected1_pingpong` | I2C/Wire | ❌ |
+| `test_wire_connected2_masterpingpong` | I2C/Wire | 🟢 |
+| `test_wire_connected2_slavepingpong` | I2C/Wire | 🟢 |
+| **CAN** |  |  |
+| `test_can_single` | CAN | ❌ COMPILE FAIL |
+| `test_can_connected2_node1` | CAN | ❌ COMPILE FAIL |
+| `test_can_connected2_node2` | CAN | ❌ COMPILE FAIL |
+| **OneWire** |  |  |
+| `test_onewire_DS18x20` | OneWire | 🟢 |
+| **WiFi** |  |  |
+| `test_wifi_sta` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_ap` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_client` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_server` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_udp_client` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_udp_server` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_extras` | WiFi | ❌ COMPILE FAIL |
+| `test_wifi_exceptions` | WiFi | ❌ COMPILE FAIL |
+
+| Status | Meaning |
+|--------|---------|
+| ✅ PASS | All checks passed on hardware |
+| ⚠️ PARTIAL | Ran on hardware; some checks failed or did not complete |
+| 🟢 NOT RUN | Compiles, but not yet run on hardware (missing setup or hardware) |
+| ❌ FAIL | Ran on hardware and failed |
+| ❌ COMPILE FAIL | Does not compile |
