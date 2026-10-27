@@ -18,7 +18,9 @@
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/device.h>
-#include <zephyr/retention/bootmode.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/sys/poweroff.h>
+#include <zephyr/retention/retention.h>
 #if defined(CONFIG_MBEDTLS)
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
@@ -479,6 +481,22 @@ FORCE_EXPORT_SYM(flash_area_open);
 FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);
 FORCE_EXPORT_SYM(flash_area_erase);
+#endif
+
+#if defined(CONFIG_POWEROFF)
+FORCE_EXPORT_SYM(sys_poweroff);
+#endif
+
+#if defined(CONFIG_HWINFO)
+/*
+ * hwinfo_get_reset_cause()/hwinfo_clear_reset_cause() are Zephyr syscalls:
+ * their public names are just static inline wrappers (generated in
+ * syscalls/hwinfo.h, both in the loader and in the sketch EDK) which call
+ * z_impl_* directly since CONFIG_USERSPACE is disabled. The real symbol
+ * referenced by the compiled sketch is therefore z_impl_*, not the wrapper.
+ */
+FORCE_EXPORT_SYM(z_impl_hwinfo_get_reset_cause);
+FORCE_EXPORT_SYM(z_impl_hwinfo_clear_reset_cause);
 #endif
 
 #if defined(CONFIG_FILE_SYSTEM)
