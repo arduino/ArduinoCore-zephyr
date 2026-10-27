@@ -10,7 +10,6 @@ config PINCTRL
 config USB_CONFIGURATION_STRING_DESC
 	default "$(APP_VERSION_EXTENDED_STRING)"
 
-source "Kconfig.zephyr"
 
 config LLEXT_HEAP_REGION
 	string "LLEXT heap memory region"
@@ -23,6 +22,33 @@ config MAIN_STACK_REGION
 	depends on CODE_DATA_RELOCATION
 	help
 	  Specify the memory region for main stack.
+
+menu "Flash Padding Options"
+
+choice FLASH_PADDING_STRATEGY
+    prompt "Flash padding strategy"
+    optional
+    depends on !LINKER_LAST_SECTION_ID
+	 depends on !MCUBOOT
+    help
+      Select how the firmware image is padded. Requires CONFIG_LINKER_LAST_SECTION_ID=n.
+
+config FLASH_ALIGN_BASED_ON_DT_ERASE_DIM
+    bool "Align based on Devicetree erase block size"
+
+config CUSTOM_FLASH_ALIGN_ACTIVE
+    bool "Align to a custom dimension"
+
+endchoice
+
+config CUSTOM_FLASH_ALIGN
+    int "Custom flash alignment boundary"
+    depends on CUSTOM_FLASH_ALIGN_ACTIVE
+    default 1024
+    help
+      The dimension to align the padding to, disregarding the Devicetree block size.
+
+endmenu
 
 config LOADER_DFU_MAGIC
   int "Number used to activate the loader DFU via memory retention"
@@ -53,4 +79,5 @@ config WAIT_FOR_DFU_IF_SKETCH_IS_NOT_VALID
       If the sketch stored in flash has an invalid header, block and wait
       for a DFU update instead of attempting to start it.
 
+source "Kconfig.zephyr"
 rsource "ota/Kconfig"
