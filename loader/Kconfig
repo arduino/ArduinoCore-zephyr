@@ -78,7 +78,7 @@ config USE_DFU_FLASH_UPDATES
     default y if BOARD_ARDUINO_MEZZA
     help
       Enables the USB DFU class used to flash updates to the loader image
-      and the user sketch image.
+      and, via the dynamic DFU alternate, the sketch image.
 
 config USE_LOADER_AND_BINARY_SQUASHED
     bool "Loader and sketch share a single squashed flash image"

@@ -27,6 +27,22 @@ void fading_blink_led_start(void);
 void fading_blink_led_stop(void);
 #endif
 
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+/* Defined in main.c (under CONFIG_USE_LOADER_AND_BINARY_SQUASHED): holds the
+ * flash layout info populated there by retrieve_flash_info() and consumed
+ * here by the dynamic sketch DFU alternate. */
+struct sketch_flash_layout {
+	const struct device *flash_dev;
+	uint32_t sketch_offset;
+	uint32_t sketch_addr;
+	uint32_t erase_size;
+	uint32_t block_num;
+	bool custom_padding;
+};
+
+extern struct sketch_flash_layout sketch_layout;
+#endif
+
 const struct device *retention2 = DEVICE_DT_GET(DT_NODELABEL(retention2));
 
 bool check_dfu_mode_requested(void) {
@@ -148,24 +164,160 @@ static struct usbd_dfu_flash_data slot1_data = {
 USBD_DFU_DEFINE_IMG(all_image, "complete_image", &slot1_data, dfu_flash_read, dfu_flash_write,
 					slot1_next);
 
-/* User sketch update image: writes directly to the user_sketch partition */
-static bool user_sketch_next(void *priv, enum usb_dfu_state state, enum usb_dfu_state next) {
-	ARG_UNUSED(priv);
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* ---------------------- DYNAMIC DFU ALTERNATE ----------------------------- */
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-	if (state == DFU_MANIFEST_SYNC && next == DFU_IDLE) {
-		LOG_INF("Sketch update download finished");
-		/* TODO: verify the sketch signature before marking it usable */
-	}
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
 
-	return true;
-}
+#define UPDATE_PARTITION_ID   PARTITION_ID(slot1_partition)
+#define UPDATE_PARTITION_SIZE DT_REG_SIZE(DT_NODELABEL(slot1_partition))
 
-static struct usbd_dfu_flash_data user_sketch_data = {
-	.id = PARTITION_ID(user_sketch),
+/* Running state of the dynamic sketch DFU write; the flash layout it relies
+ * on (sketch_offset, erase_size, block_num, custom_padding) comes from
+ * sketch_layout, populated by main.c's retrieve_flash_info(). */
+struct sketch_dfu_state {
+	uint32_t current_offset;
 };
 
-USBD_DFU_DEFINE_IMG(user_sketch_image, "user_sketch_image", &user_sketch_data, dfu_flash_read,
-					dfu_flash_write, user_sketch_next);
+static struct sketch_dfu_state dfu_state = {.current_offset = 0};
+
+static int dynamic_flash_write(void *const priv, const uint32_t block, const uint16_t size,
+							   const uint8_t buf[static CONFIG_USBD_DFU_TRANSFER_SIZE]) {
+	const struct flash_area *fa;
+	struct sketch_dfu_state *const data = priv;
+	int err;
+
+	if (size == 0) {
+		return 0;
+	}
+
+	/* In case there is no custom padding the sketch is automatically aligned
+	 * at the first flash block after the loader, so we start to delete the
+	 * sketch from there*/
+	uint32_t start_offset = sketch_layout.sketch_offset;
+	if (sketch_layout.custom_padding) {
+		start_offset =
+			(sketch_layout.sketch_offset / sketch_layout.erase_size) * sketch_layout.erase_size;
+		LOG_INF("Custom padding is applied, start update at offset %d (0x%08X)", start_offset,
+				start_offset);
+	}
+
+	err = flash_area_open(UPDATE_PARTITION_ID, &fa);
+	if (err) {
+		LOG_ERR("Failed to open flash area (err %d)", err);
+		return err;
+	}
+
+	/* Get hardware write block size directly from the flash device */
+	size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
+
+	if (block == 0) {
+		if (sketch_layout.sketch_offset == 0 || sketch_layout.erase_size == 0 ||
+			sketch_layout.block_num == 0) {
+			LOG_ERR("Flash parameter not set");
+			err = -EINVAL;
+			goto end;
+		}
+
+		uint32_t sketch_total_size = sketch_layout.erase_size * sketch_layout.block_num;
+
+		if ((sketch_layout.sketch_offset + sketch_total_size) > UPDATE_PARTITION_SIZE) {
+			LOG_ERR("Sketch offset exceeds partition size");
+			err = -ENOSPC;
+			goto end;
+		}
+
+		data->current_offset = 0;
+
+		LOG_INF("Erase header (1) 0x%08x bytes at offset 0", sketch_layout.erase_size);
+		err = flash_area_erase(fa, 0, sketch_layout.erase_size);
+		if (err) {
+			LOG_ERR("Flash area erase failed (%d)", err);
+			goto end;
+		}
+
+		LOG_INF("Erase sketch initial block (2) 0x%08x bytes at offset 0x%08x",
+				sketch_layout.erase_size, start_offset);
+		err = flash_area_erase(fa, start_offset, sketch_layout.erase_size);
+		if (err) {
+			LOG_ERR("Flash area erase failed - 2 (%d)", err);
+			goto end;
+		}
+	}
+
+	uint32_t buf_offset = 0;
+	uint32_t remaining_size = size;
+
+	while (remaining_size > 0) {
+		uint32_t write_offset;
+		uint32_t process_size;
+
+		/* Case 1: Header region */
+		if (data->current_offset < sketch_layout.erase_size) {
+			process_size = MIN(remaining_size, sketch_layout.erase_size - data->current_offset);
+			write_offset = data->current_offset;
+		}
+		/* Case 2: Gap between header and sketch */
+		else if (data->current_offset < start_offset) {
+			process_size = MIN(remaining_size, start_offset - data->current_offset);
+
+			/* Advance stream counters without writing */
+			data->current_offset += process_size;
+			buf_offset += process_size;
+			remaining_size -= process_size;
+			continue;
+		}
+		/* Case 3: Sketch region */
+		else {
+			write_offset = data->current_offset;
+
+			if (write_offset >= UPDATE_PARTITION_SIZE) {
+				LOG_ERR("Write offset 0x%08x exceeds partition size", write_offset);
+				err = -ENOSPC;
+				goto end;
+			}
+
+			process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
+
+			/* Erase dynamically as we cross into a new block */
+			if (write_offset > start_offset && (write_offset % sketch_layout.erase_size == 0)) {
+				LOG_INF("Dynamically erasing block of size 0x%08x at offset 0x%08x",
+						sketch_layout.erase_size, write_offset);
+				err = flash_area_erase(fa, write_offset, sketch_layout.erase_size);
+				if (err) {
+					LOG_ERR("Dynamic flash area erase failed at offset 0x%08x (%d)", write_offset,
+							err);
+					goto end;
+				}
+			}
+		}
+
+		/*
+		 * Round up length to align with hardware write block size.
+		 * Extra uninitialized trailing bytes from buf will be written to flash.
+		 */
+		size_t write_len = ROUND_UP(process_size, wbs);
+
+		err = flash_area_write(fa, write_offset, &buf[buf_offset], write_len);
+		if (err) {
+			LOG_ERR("Flash write failed at offset 0x%08x (len %zu)", write_offset, write_len);
+			goto end;
+		}
+
+		data->current_offset += process_size;
+		buf_offset += process_size;
+		remaining_size -= process_size;
+	}
+
+end:
+	flash_area_close(fa);
+	return err;
+}
+
+USBD_DFU_DEFINE_IMG(sketch_image, "sketch", &dfu_state, NULL, dynamic_flash_write, slot1_next);
+
+#endif /* CONFIG_USE_LOADER_AND_BINARY_SQUASHED */
 
 /* +++ DFU USB CONFIGURATION and FUNCTIONS +++ */
 
