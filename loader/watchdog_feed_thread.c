@@ -6,8 +6,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(watchdog_feeding);
 
-/* Only compile this thread if Sysbuild injected the security flags */
-
 const struct device *const wdt_dev = DEVICE_DT_GET(DT_ALIAS(watchdog0));
 static int wdt_channel_id;
 
