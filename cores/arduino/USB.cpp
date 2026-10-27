@@ -12,6 +12,7 @@
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
 #include <zephyr/retention/retention.h>
 #include <zephyr/retention/bootmode.h>
+const struct device *retention2 = DEVICE_DT_GET(DT_NODELABEL(retention2));
 #endif
 
 #if ZARD_BOARD_HAS_SERIALUSB
