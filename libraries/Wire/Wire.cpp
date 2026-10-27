@@ -6,6 +6,7 @@
 
 #include <Wire.h>
 #include <stddef.h>
+#include <zephyr/sys/util.h>
 #include <zephyr/sys/util_macro.h>
 
 #include <zephyr/logging/log.h>
@@ -112,15 +113,14 @@ void arduino::ZephyrI2C::beginTransmission(uint8_t address) {
 uint8_t arduino::ZephyrI2C::endTransmission(bool stopBit) {
 	int ret = -EIO;
 	uint8_t *buf = NULL;
-	size_t max = ring_buf_capacity_get(&txRingBuffer.rb);
-	size_t len = ring_buf_get_claim(&txRingBuffer.rb, &buf, max);
+	size_t len = ring_buf_get_ptr(&txRingBuffer.rb, &buf, 0);
 
 	ARG_UNUSED(stopBit);
 
 	ret = i2c_write(i2c_dev, buf, len, _address);
 
-	// Must be called even if 0 bytes claimed.
-	ring_buf_get_finish(&txRingBuffer.rb, len);
+	// Must be called even if 0 bytes were consumed.
+	ring_buf_consume(&txRingBuffer.rb, len);
 
 	return ret ? 1 : 0;
 }
@@ -150,19 +150,19 @@ size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len_in, bool stop
 	// requestFrom() replaces the RX buffer following legacy cores behavior
 	ring_buf_reset(&rxRingBuffer.rb);
 
-	// This claims MIN(len_in, capacity).
-	len = ring_buf_put_claim(&rxRingBuffer.rb, &buf, len_in);
+	// This yields MIN(len_in, capacity) since the buffer was just reset.
+	len = MIN(ring_buf_put_ptr(&rxRingBuffer.rb, &buf, 0), len_in);
 	if (len && buf) {
 		ret = i2c_read(i2c_dev, buf, len, address);
 	}
 
 	if (ret != 0) {
-		// In case i2c_read fails don't claim space in the ring buffer
+		// In case i2c_read fails don't commit space in the ring buffer
 		len = 0;
 	}
 
-	// Must be called even if 0 bytes claimed.
-	ring_buf_put_finish(&rxRingBuffer.rb, len);
+	// Must be called even if 0 bytes committed.
+	ring_buf_commit(&rxRingBuffer.rb, len);
 
 	return len;
 }
