@@ -806,6 +806,7 @@ mezza.build.mcu=cortex-m33
 mezza.build.fpu=-mfpu=fpv5-sp-d16
 mezza.build.architecture=cortex-m33
 mezza.compiler.zephyr.arch.define=
+mezza.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.variant.path}/root-ec-p256.pem" --erase_flash_dim 8192 --image_version 1.0.0.0
 
 mezza.build.float-abi=-mfloat-abi=hard
 mezza.build.extra_flags=
@@ -831,15 +832,23 @@ mezza.upload_port.0.pid=0x017B
 mezza.upload_port.1.vid=0x2341
 mezza.upload_port.1.pid=0x007B
 mezza.upload.target=stm32h5f5xx
+mezza.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
 
 mezza.leave.dfuse=
-mezza.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
 
 mezza.bootloader.tool=dfu-util
 mezza.bootloader.tool.default=dfu-util
-mezza.bootloader.file=zephyr-{build.variant}.bin
+mezza.bootloader.file=zephyr-{build.variant}.signed.bin
 mezza.bootloader.vid=0x2341
 mezza.bootloader.pid=0x017B
 mezza.bootloader.native_usb=true
 mezza.bootloader.interface=0
 mezza.bootloader.dfuse=
+
+mezza.flash-loader-and-sketch.2=run echo
+mezza.tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{bootloader.interface} {upload.dfuse}{leave.dfuse}
+
+mezza.loader.args.with_sketch={empty} -w
+mezza.loader.args.without_sketch={empty} -w
+mezza.sketch.args.with_loader={empty} -w
+mezza.sketch.args.without_loader={empty} -w
