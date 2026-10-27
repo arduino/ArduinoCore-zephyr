@@ -21,6 +21,11 @@ config MAIN_STACK_REGION
 	help
 	  Specify the memory region for main stack.
 
+config LOADER_DFU_MAGIC
+  int "Number used to activate the loader DFU via memory retention"
+  range 0 255
+  default 120
+
 config USE_DFU_FLASH_UPDATES
     bool "Enable USB DFU flash updates (loader and sketch images)"
     help
@@ -41,6 +46,8 @@ config USE_LOADER_AND_BINARY_SQUASHED
       sketch_base_addr/sketch_max_size symbols. This layout is only
       produced to support the dynamic sketch DFU alternate, hence the
       dependency on USE_DFU_FLASH_UPDATES.
+      Enable this in the board/variant configuration (e.g. the variant's
+      .conf file), not here.
 
 config USE_DFU_FADING_BLINK
     bool "Enable fading LED blink while waiting for a DFU update"
@@ -49,5 +56,26 @@ config USE_DFU_FADING_BLINK
       Blinks a PWM-driven LED with a fade effect while the board is waiting
       for a DFU update to be applied. Requires a "fade_led" alias in the
       device tree.
+      Enable this in the board/variant configuration (e.g. the variant's
+      .conf file), not here.
+
+config WAIT_FOR_DFU_IF_SKETCH_IS_NOT_VALID
+    bool "Wait for a DFU update when the sketch header is invalid"
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      If the sketch stored in flash has an invalid header, block and wait
+      for a DFU update instead of attempting to start it.
+      Enable this in the board/variant configuration (e.g. the variant's
+      .conf file), not here.
+
+config USB_DEVICE_DFU_PID_OFFSET
+  hex "Offset added to USB_DEVICE_PID for the loader DFU USB device"
+  default 0x0100
+  depends on USE_DFU_FLASH_UPDATES
+  help
+    The loader exposes a separate USB device (distinct PID) for DFU flash
+    updates. This offset is added to the board's USB_DEVICE_PID to derive
+    that device's PID, so boards can pick their own value if 0x0100 clashes
+    with something else.
 
 rsource "ota/Kconfig"
