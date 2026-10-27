@@ -80,6 +80,20 @@ config USE_DFU_FLASH_UPDATES
       Enables the USB DFU class used to flash updates to the loader image
       and the user sketch image.
 
+config USE_LOADER_AND_BINARY_SQUASHED
+    bool "Loader and sketch share a single squashed flash image"
+    default y if BOARD_ARDUINO_MEZZA
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      Enable this when the loader and the sketch are packed together into
+      a single flash image whose layout (sketch offset, erase size, block
+      count and padding) is only known at runtime. When enabled, the
+      loader reads this layout from the image header via
+      retrieve_flash_info() instead of relying on statically retained
+      sketch_base_addr/sketch_max_size symbols. This layout is only
+      produced to support the dynamic sketch DFU alternate, hence the
+      dependency on USE_DFU_FLASH_UPDATES.
+
 config USE_DFU_FADING_BLINK
     bool "Enable fading LED blink while waiting for a DFU update"
     default y if BOARD_ARDUINO_MEZZA
