@@ -55,6 +55,17 @@ config LOADER_DFU_MAGIC
   range 0 255
   default 120
 
+config APP_WATCHDOG_ENFORCED
+    bool "Hardware watchdog enforced by Sysbuild (MCU Boot required)"
+    default n
+    help
+      This is automatically set to 'y' by Sysbuild if the secure 
+      watchdog parameters are injected into MCUBoot.
+
+config APP_WATCHDOG_TIMEOUT_MS
+    int "Watchdog timeout injected by Sysbuild"
+    default 20000
+
 config USE_DFU_FLASH_UPDATES
     bool "Enable USB DFU flash updates (loader and sketch images)"
     default y if BOARD_ARDUINO_MEZZA
