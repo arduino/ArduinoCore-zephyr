@@ -19,4 +19,10 @@
 #define LEDG        D87 /* PJ_13 */
 #define LEDB        D88 /* PE_3 */
 
+// Default wiring for an external RS485 transceiver, matching the mbed core.
+#define RS485_SERIAL_PORT       Serial1
+#define RS485_DEFAULT_TX_PIN    D1
+#define RS485_DEFAULT_DE_PIN    A6
+#define RS485_DEFAULT_RE_PIN    A5
+
 #include "../common/gpio_lowlevel_stm32.h"
