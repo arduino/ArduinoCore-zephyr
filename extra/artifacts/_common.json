@@ -31,7 +31,7 @@
     {
       "packager": "arduino",
       "name": "zephyr-sketch-tool",
-      "version": "0.4.2"
+      "version": "0.0.99"
     },
     {
       "packager": "arduino",
