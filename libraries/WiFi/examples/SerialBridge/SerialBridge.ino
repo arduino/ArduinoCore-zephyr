@@ -112,16 +112,17 @@ static void uart_irq_callback(const struct device *dev, void *user_data) {
 
 	while (uart_irq_tx_ready(dev)) {
 		uint8_t *data;
-		uint32_t len = ring_buf_get_claim(port->tx, &data, CHUNK_SIZE);
+		uint32_t len = ring_buf_get_ptr(port->tx, &data, 0);
 
 		if (len == 0) {
-			ring_buf_get_finish(port->tx, 0);
 			uart_irq_tx_disable(dev);
 			break;
 		}
 
-		int sent = uart_fifo_fill(dev, data, len);
-		ring_buf_get_finish(port->tx, sent > 0 ? sent : 0);
+		int sent = uart_fifo_fill(dev, data, MIN(len, CHUNK_SIZE));
+		if (sent > 0) {
+			ring_buf_consume(port->tx, sent);
+		}
 		if (sent <= 0) {
 			break;
 		}

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <zephyr/kernel.h>
+#include <zephyr/version.h>
 #include <time.h>
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
@@ -386,7 +387,8 @@ EXPORT_SYMBOL(stdin);
 EXPORT_SYMBOL(stdout);
 EXPORT_SYMBOL(stderr);
 
-#if defined(CONFIG_RING_BUFFER)
+/* The ring buffer API is fully inline since Zephyr 4.5 */
+#if defined(CONFIG_RING_BUFFER) && (ZEPHYR_VERSION_CODE < ZEPHYR_VERSION(4, 5, 0))
 EXPORT_SYMBOL(ring_buf_get);
 EXPORT_SYMBOL(ring_buf_peek);
 EXPORT_SYMBOL(ring_buf_put);
