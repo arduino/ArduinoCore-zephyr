@@ -349,19 +349,7 @@
 	reg = <0x8000000 DT_SIZE_K(2048)>;     /* assign all Flash to the M7 */
 	status = "okay";
 
-	/delete-node/ partitions;
 	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		boot_partition: partition@0 {
-			compatible = "zephyr,mapped-partition";
-			label = "mcuboot";
-			reg = <0x00000000 0x00040000>;
-			read-only;
-		};
-
 		slot0_partition: partition@40000 {
 			compatible = "zephyr,mapped-partition";
 			label = "image-0";
@@ -375,7 +363,6 @@
 		};
 	};
 };
-
 
 /* Include common flash filesystem configuration */
 qspi_flash: &mx25l12833f {};
@@ -637,14 +624,18 @@ qspi_flash: &mx25l12833f {};
 	};
 };
 
+&sai4 {
+	status = "okay";
+
+	/* PLL3_P instead of default PLL2_P, so PLL2/SDMMC2 stays untouched */
+	clocks = <&rcc STM32_CLOCK(APB4, 21)>,
+	         <&rcc STM32_SRC_PLL3_P SAI4A_SEL(2)>;
+};
+
 &sai4_a {
 	status = "okay";
 	pinctrl-0 = <&sai4_ck1_pe2 &sai4_d1_pb2>;
 	pinctrl-names = "default";
-
-	/* PLL3_P instead of default PLL2_P, so PLL2/SDMMC2 stays untouched */
-	clocks = <&rcc STM32_CLOCK(APB4, 21)>,
-		 <&rcc STM32_SRC_PLL3_P SAI4A_SEL(2)>;
 
 	dmic_dev: mp34dt05@0 {
 		compatible = "st,mpxxdtyy";
