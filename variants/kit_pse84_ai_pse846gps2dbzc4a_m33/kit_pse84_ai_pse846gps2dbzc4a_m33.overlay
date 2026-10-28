@@ -124,14 +124,20 @@ i2c1: &scb5 {
 };
 
 
+/*
+ * The PSoC Edge I2C driver does not derive the SCB clock from
+ * clock-frequency; it uses this divider with fixed 16x oversampling.
+ * 100 MHz / 63 = ~1.59 MHz SCB clock (PDL requires 1.55-3.2 MHz for a
+ * 100 kHz master) -> ~99 kHz SCL.
+ */
 &peri0_group1_16bit_1 {
 	status = "okay";
-	clock-div = <1>;
+	clock-div = <63>;
 };
 
 &peri0_group1_16bit_3 {
 	status = "okay";
-	clock-div = <1>;
+	clock-div = <63>;
 };
 
 &p8_0_scb0_i2c_scl {
