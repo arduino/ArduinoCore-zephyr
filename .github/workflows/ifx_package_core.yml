@@ -538,6 +538,26 @@ jobs:
           # sets ALL_TESTS and ALL_LIBRARIES env vars in GITHUB_ENV
           extra/ci_apply_tests.sh ${{ matrix.artifact }} ${{ matrix.variant }}
 
+      # compile-sketches pins an exact Python version in its pyproject.toml,
+      # which actions/setup-python may not publish for the runner's OS release
+      # (e.g. 3.12.4 on Ubuntu 26.04). Pre-seed the tool cache with a portable
+      # build of that version, so setup-python finds it on any runner image.
+      - name: Provide Python required by compile-sketches
+        run: |
+          PYPROJECT="${RUNNER_WORKSPACE}/../_actions/pillo79/compile-sketches/next/pyproject.toml"
+          PY_VER=$(sed -n 's/^python = "\(.*\)"$/\1/p' "${PYPROJECT}")
+          [ -n "${PY_VER}" ] || { echo "::error::Python version not found in ${PYPROJECT}"; exit 1; }
+          TC_DIR="${RUNNER_TOOL_CACHE}/Python/${PY_VER}"
+          if [ -f "${TC_DIR}/x64.complete" ]; then
+            echo "Python ${PY_VER} already in tool cache"
+            exit 0
+          fi
+          pipx run uv python install --no-bin "${PY_VER}" --install-dir "${RUNNER_TEMP}/uv-python"
+          mkdir -p "${TC_DIR}"
+          ln -sfn "$(ls -d "${RUNNER_TEMP}"/uv-python/cpython-"${PY_VER}"-linux-x86_64-gnu)" "${TC_DIR}/x64"
+          touch "${TC_DIR}/x64.complete"
+          "${TC_DIR}/x64/bin/python" --version
+
       - name: Compile tests for ${{ matrix.board }}
         uses: pillo79/compile-sketches@next
         with:
