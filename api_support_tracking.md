@@ -193,7 +193,7 @@
 | `test_spi_connected2_masterpingpong` | SPI | 🟢 |
 | `test_spi_connected2_slavepingpong` | SPI | 🟢 |
 | **I2C (Wire)** |  |  |
-| `test_wire_connected1_pingpong` | I2C/Wire | ❌ |
+| `test_wire_connected1_pingpong` | I2C/Wire | ✅ |
 | `test_wire_connected2_masterpingpong` | I2C/Wire | 🟢 |
 | `test_wire_connected2_slavepingpong` | I2C/Wire | 🟢 |
 | **CAN** |  |  |

@@ -124,12 +124,6 @@ i2c1: &scb5 {
 };
 
 
-/*
- * The PSoC Edge I2C driver does not derive the SCB clock from
- * clock-frequency; it uses this divider with fixed 16x oversampling.
- * 100 MHz / 63 = ~1.59 MHz SCB clock (PDL requires 1.55-3.2 MHz for a
- * 100 kHz master) -> ~99 kHz SCL.
- */
 &peri0_group1_16bit_1 {
 	status = "okay";
 	clock-div = <63>;
@@ -156,6 +150,30 @@ i2c1: &scb5 {
 };
 
 &p17_1_scb5_i2c_sda {
+	drive-open-drain;
+	input-enable;
+};
+
+/* Wire on header P17_2(SCL)/P17_3(SDA); on-board 4.7k pull-ups only on P17_0/P17_1 - jumper to them or add external */
+&scb11 {
+	compatible = "infineon,i2c";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <100000>;
+
+	clocks = <&peri0_group1_16bit_1>;
+
+	pinctrl-0 = <&p17_2_scb11_i2c_scl &p17_3_scb11_i2c_sda>;
+	pinctrl-names = "default";
+};
+
+&p17_2_scb11_i2c_scl {
+	drive-open-drain;
+	input-enable;
+};
+
+&p17_3_scb11_i2c_sda {
 	drive-open-drain;
 	input-enable;
 };
@@ -328,7 +346,7 @@ spi1: &scb10 {
 				    <&gpio_prt20 6 GPIO_ACTIVE_HIGH>;  /* LED_RGB_RED      */
 
 		serials = <&uart2 &uart1>;
-		i2cs = <&i2c0 &i2c1>;
+		i2cs = <&scb11 &i2c1>;
 		spis = <&spi1>;
 	};
 };
