@@ -806,7 +806,7 @@ mezza.build.mcu=cortex-m33
 mezza.build.fpu=-mfpu=fpv5-sp-d16
 mezza.build.architecture=cortex-m33
 mezza.compiler.zephyr.arch.define=
-mezza.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.variant.path}/root-ec-p256.pem" --erase_flash_dim 8192 --image_version 1.0.0.0
+mezza.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.certificate}" --erase_flash_dim 8192 --image_version 1.0.0.0
 
 mezza.build.float-abi=-mfloat-abi=hard
 mezza.build.extra_flags=
