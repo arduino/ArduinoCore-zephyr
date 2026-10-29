@@ -195,7 +195,7 @@ static int loader(const struct shell *sh) {
 		return rc;
 	}
 
-#if defined(CONFIG_OTA)
+#if defined(CONFIG_OTA_BACKEND_FS)
 	try_ota_update(fa);
 #endif
 

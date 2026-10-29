@@ -11,6 +11,9 @@
  *   cp Blink.ino.elf-zsk.bin-bundle.bin UPDATE.bin
  *   python3 -m http.server 8000
  *
+ * On boards booted by MCUboot (Nano XL Link) sketch and full updates are the
+ * same: serve "<sketch>.ino.signed.elf-zsk.bin" instead.
+ *
  * Copyright (c) Arduino s.r.l. and/or its affiliated companies
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -19,14 +22,13 @@
 #include <ota.h>
 #include <ZephyrClient.h>
 #include <WiFi.h>
-#include <zephyr/fs/fs.h>
 #include <zephyr/autoconf.h>
 
 #ifndef CONFIG_OTA
 #error "This variant's loader was built without CONFIG_OTA."
 #endif
 
-#define STAGING_PATH CONFIG_OTA_LOADER_UPDATE_PATH CONFIG_OTA_LOADER_TEMP_PATH_POSTFIX
+#define UPDATE_TYPE OTA_LOADER
 
 #include "arduino_secrets.h"
 char ssid[] = SECRET_SSID;
@@ -39,7 +41,7 @@ const char *path = "/UPDATE.bin";
 ZephyrClient client;
 
 static long httpGet(Client &c, const char *host, uint16_t port,
-                    const char *path, struct fs_file_t *out) {
+                    const char *path, enum ota_type type) {
   if (!c.connect(host, port)) {
     Serial.println("Connection failed");
     return -1;
@@ -98,6 +100,12 @@ static long httpGet(Client &c, const char *host, uint16_t port,
     return -1;
   }
 
+  if (ota_write_begin(type, content_length) < 0) {
+    Serial.println("Cannot start the update (too large?)");
+    c.stop();
+    return -1;
+  }
+
   uint8_t buf[512];
   long received = 0;
   last = millis();
@@ -120,8 +128,8 @@ static long httpGet(Client &c, const char *host, uint16_t port,
       continue;
     }
 
-    if (fs_write(out, buf, got) != got) {
-      Serial.println("Filesystem write failed");
+    if (ota_write(buf, got) < 0) {
+      Serial.println("Update write failed");
       c.stop();
       return -1;
     }
@@ -130,7 +138,10 @@ static long httpGet(Client &c, const char *host, uint16_t port,
   }
 
   c.stop();
-  return received == content_length ? received : -1;
+  if (ota_write_end() < 0) {
+    return -1;
+  }
+  return received;
 }
 
 void setup() {
@@ -151,27 +162,16 @@ void setup() {
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
 
-  fs_unlink(STAGING_PATH);
-
-  struct fs_file_t file;
-  fs_file_t_init(&file);
-  if (fs_open(&file, STAGING_PATH, FS_O_CREATE | FS_O_WRITE) < 0) {
-    Serial.println("Cannot open staging file");
-    return;
-  }
-
   Serial.print("Downloading http://");
   Serial.print(server);
   Serial.print(":");
   Serial.print(port);
   Serial.println(path);
 
-  long len = httpGet(client, server, port, path, &file);
-  fs_close(&file);
+  long len = httpGet(client, server, port, path, UPDATE_TYPE);
 
   if (len < 0) {
     Serial.println("Download failed");
-    fs_unlink(STAGING_PATH);
     return;
   }
 
