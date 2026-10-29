@@ -158,6 +158,9 @@ void setup() {
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
 
+  // Online again: keep this sketch if it was installed as a test.
+  ota_confirm();
+
   Serial.print("Downloading http://");
   Serial.print(server);
   Serial.print(":");

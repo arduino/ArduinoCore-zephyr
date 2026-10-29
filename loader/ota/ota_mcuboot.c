@@ -5,13 +5,11 @@
  */
 
 /*
- * OTA through MCUboot: the update is a full MCUboot image (loader + sketch,
- * hash-only or signed) streamed into slot1. MCUboot verifies it on the next
- * boot; an image it rejects is erased and the running one keeps booting. In
- * swap modes the new image runs as a test and is swapped back on the next
- * reset unless confirmed (ota_confirm() or the loader's confirm thread); in
- * overwrite-only it replaces slot0 for good. Sketch and loader updates are the
- * same image.
+ * OTA through MCUboot: the update is a full MCUboot image (loader + sketch)
+ * streamed into slot1. MCUboot verifies it on the next boot; an image it
+ * rejects is erased and the running one keeps booting. In swap modes the new
+ * image runs as a test until the sketch calls ota_confirm(); in overwrite-only
+ * it replaces slot0 for good.
  */
 
 #include <errno.h>

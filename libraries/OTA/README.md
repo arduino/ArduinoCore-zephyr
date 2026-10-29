@@ -72,10 +72,9 @@ MCUboot swaps an update in as a test (swap-using-offset):
   `ota_write_end()` or `ota_sketch_ready()`; nothing changes.
 - An image whose hash or signature does not verify is erased by MCUboot and
   the running sketch keeps booting.
-- A valid image runs once as a test. The loader confirms it after
-  `CONFIG_LOADER_CONFIRM_DELAY_MS` (10 s) from its lowest-priority thread,
-  or the sketch confirms earlier with `ota_confirm()`. If the board resets
-  before that (a crash, or the watchdog after a lockup) MCUboot swaps the
+- A valid image runs once as a test and must call `ota_confirm()` within
+  `CONFIG_LOADER_TRIAL_WINDOW_MS` (60 s). If it does not, or the board resets
+  before that (a crash, or the watchdog after a lockup), MCUboot swaps the
   previous image back.
 - A USB upload (double-tap reset, or `arduino-cli upload`) overwrites the
   running image for good, without a swap; one that is broken or interrupted

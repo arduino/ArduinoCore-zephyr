@@ -67,10 +67,9 @@ int ota_loader_start(void);
 
 /*
  * Keep the running image. On boards whose MCUboot swaps updates in as a test,
- * an image that is not confirmed is swapped back on the next reset; the loader
- * confirms it by itself after CONFIG_LOADER_CONFIRM_DELAY_MS. Call this to
- * confirm earlier, e.g. once the sketch has reached its server again. Does
- * nothing where updates are not tested.
+ * an image that does not call this within CONFIG_LOADER_TRIAL_WINDOW_MS is
+ * swapped back. Call it once the sketch works, e.g. after reaching its server
+ * again. Does nothing where updates are not tested.
  */
 int ota_confirm(void);
 
