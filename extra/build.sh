@@ -20,12 +20,38 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 	export ZEPHYR_SDK_INSTALL_DIR=${SDK_PATH}
 fi
 
+
+# in case we use mcuboot we need a certificate to sign image
+# we use "insecure" (because is public) certificate by mcuboot
+
+
+
+remaining_args=()
+SIGNING_KEY_PATH=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --key)
+      SIGNING_KEY_PATH="$2"
+      shift  
+      ;;
+    *)
+      remaining_args+=("$1")
+      shift 1
+      ;;
+  esac
+done
+
+set -- "${remaining_args[@]}"
+
 if [ $# -eq 0 ] || [ x$1 == x"-h" ] || [ x$1 == x"--help" ]; then
 	cat << EOF
 Usage:
 	$0 <arduino_board>
 	$0 <zephyr_board> [<west_args>]
 Build the loader for the given target.
+
+A key file (path) for signing can be provided with --key path.
 
 When given an <arduino_board> defined in 'boards.txt' (e.g. 'giga'), the actual
 Zephyr board target and arguments are taken from that definition.
@@ -95,6 +121,41 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
+
+
+DEFAULT_KEY_PATH="${VARIANT_DIR}/../../../bootloader/mcuboot/root-ec-p256.pem"
+KEY_PATH_TARGET="${VARIANT_DIR}/keys/"
+KEY_FILE_NAME="development-key.pem"
+# check if the board uses mcuboot (so that a KEY is required to sign images)
+if [ -f ${VARIANT_DIR}/mcuboot.conf ]; then
+	if [[ ! -d "$KEY_PATH_TARGET" ]]; then
+		mkdir -p "$KEY_PATH_TARGET"
+	fi
+        
+	if [[ ${SIGNING_KEY_PATH} == "" ]]; then
+		echo "[WARNING]: Signing key is required but not provided using default"
+		SIGNING_KEY_PATH=${DEFAULT_KEY_PATH}
+	elif [ ! -f ${SIGNING_KEY_PATH} ]; then
+		echo "[ERROR]: Signing key provided but not found, using default development one!!!"
+		SIGNING_KEY_PATH=${DEFAULT_KEY_PATH}
+	else
+		KEY_FILE_NAME=$(basename "$SIGNING_KEY_PATH")
+	fi
+	echo "Using signing key: $SIGNING_KEY_PATH"
+	echo "copied as $KEY_PATH_TARGET$KEY_FILE_NAME"
+	cp "$SIGNING_KEY_PATH" "$KEY_PATH_TARGET$KEY_FILE_NAME"
+
+	# propagate the (now copied) signing key path into the variant's
+	# sysbuild.conf, so that MCUboot (built via sysbuild) signs with it
+	if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
+		KEY_FILE_REALPATH=$(realpath "$KEY_PATH_TARGET$KEY_FILE_NAME")
+		if grep -qE '^SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=' ${VARIANT_DIR}/sysbuild.conf; then
+			sed -i -e "s|^SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=.*|SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"${KEY_FILE_REALPATH}\"|" ${VARIANT_DIR}/sysbuild.conf
+		else
+			echo "SB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"${KEY_FILE_REALPATH}\"" >> ${VARIANT_DIR}/sysbuild.conf
+		fi
+	fi
+fi
 
 # A variant shipping a sysbuild.conf boots through MCUboot built alongside the
 # loader (its MCUboot config, mcuboot.conf/.overlay, is picked up by
@@ -268,7 +329,7 @@ EOF
 	if [ -n "$comment" ]; then
 		# if there's a comment, add/update it as a commented-out line above the actual field
 		if grep -qE "^# ${match_regexp}:" $file; then
-			sed -i -e "s/^# ${match_regexp}:.*/# ${full_field_name}: ${comment}/" $file
+			sed -i -e "s|^# ${match_regexp}:.*|# ${full_field_name}: ${comment}|" $file
 		else
 			echo "# ${full_field_name}: ${comment}" >> $file
 		fi
@@ -276,7 +337,7 @@ EOF
 
 	# update the actual field line
 	if grep -qE "^${match_regexp}" $file; then
-		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${value}/" $file
+		sed -i -e "s|^${match_regexp}=.*|${full_field_name}=${value}|" $file
 	else
 		echo "${full_field_name}=${value}" >> $file
 	fi
@@ -325,4 +386,8 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
+	
+	if [ -f ${VARIANT_DIR}/mcuboot.conf ]; then
+		update_local_field "build.certificate" "$(realpath "$KEY_PATH_TARGET$KEY_FILE_NAME")"
+	fi
 fi
