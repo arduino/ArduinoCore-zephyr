@@ -7,6 +7,8 @@
 
 import enum
 import json
+import os
+import re
 
 class TestStatus(enum.IntEnum):
     """
@@ -140,13 +142,17 @@ class LoaderEntry:
 class TestEntry:
     def __init__(self, artifact, board, sketch, link_mode, excepted, status, issues, job_link,
                  group=None, name=None):
-        import re
         self.artifact = artifact
         self.board = board
         self.sketch = sketch
         self.link_mode = link_mode
         self.excepted = excepted
-        self.status = INVALID_EXCEPTION if (excepted and status.built) else status
+        if excepted and status == ERROR:
+            self.status = EXPECTED_ERROR
+        elif excepted and status.built:
+            self.status = INVALID_EXCEPTION
+        else:
+            self.status = status
         self.issues = issues
         self.job_link = job_link
 
@@ -161,6 +167,20 @@ class TestEntry:
             else:
                 self.group = ""
                 self.name = sketch
+
+    @classmethod
+    def failure(cls, message, artifact='', board='', job_link=None):
+        """
+        Create an entry for a CI test run that failed to complete.
+        """
+        return cls(artifact, board, 'CI test', '', False, FAILURE, [ message ], job_link)
+
+    @classmethod
+    def skipped(cls, message, artifact='', board=''):
+        """
+        Create an entry for CI tests that were not run.
+        """
+        return cls(artifact, board, 'CI test', '', False, SKIP, [ message ], None)
 
     def to_dict(self):
         return {
@@ -220,3 +240,78 @@ class TestGroup:
         self.boards.add(test_entry.board)
         self.sketches.add(test_entry.sketch)
         self.group_names.add((test_entry.group, test_entry.name))
+
+
+def load_known_issues(variant):
+    """
+    Read the list of known issues for a variant from its known_example_issues.txt file.
+    Returns a tuple of:
+     - exceptions: list of sketch patterns whose errors are expected
+     - warning_filters: list of (sketch_pattern, warning_pattern) tuples for expected warnings
+    """
+    exceptions = []
+    warning_filters = []
+    if os.path.exists(f"variants/{variant}/known_example_issues.txt"):
+        with open(f"variants/{variant}/known_example_issues.txt", 'r') as f:
+            for line in f:
+                line = line.split('#')[0].strip()
+                if not line:
+                    continue
+                elif '|' in line:
+                    # this is a warning filter, not an exception
+                    sketch_pattern, warning_pattern = line.split('|', 1)
+                    sketch_pattern = re.compile(f"^(ArduinoCore-zephyr/)?{sketch_pattern}")
+                    warning_pattern = re.compile(warning_pattern)
+                    warning_filters.append(( sketch_pattern, warning_pattern ))
+                else:
+                    # this is an exception
+                    exceptions.append(re.compile(f"^(ArduinoCore-zephyr/)?{line}"))
+    return exceptions, warning_filters
+
+def load_sketch_reports(report_file):
+    """
+    Read the sketch reports from a compile-sketches report file.
+    Returns a tuple of (sketch reports, error message); the list is empty and the
+    message describes the problem if the file is missing, unreadable or empty.
+    """
+    try:
+        with open(report_file, 'r') as f:
+            report_data = json.load(f)
+    except FileNotFoundError:
+        return [], "Report file not found."
+    except Exception as e:
+        return [], f"Error reading report file: {e}"
+
+    reports = report_data.get('boards', [{}])[0].get('sketches', [])
+    if not reports:
+        return [], "Test report is empty, check CI log."
+
+    return reports, None
+
+def evaluate_sketch(report, exceptions, warning_filters):
+    """
+    Evaluate a single sketch report from compile-sketches against the known issues.
+    Returns a tuple of (sketch, excepted, status, issues), where status does not yet
+    account for the exception (TestEntry does that).
+    """
+    sketch = report.get('name', 'unknown_sketch')
+    success = report.get('compilation_success', False)
+    issues = report.get('issues', [])
+
+    # Replace long absolute paths with '...' for brevity.
+    sketch_issues = [ re.sub(r'(/.+?)((/[^/]+){3}):', r'...\2:', issue) for issue in issues ]
+
+    # Remove known warnings, if any
+    for sketch_pattern, warning_pattern in warning_filters:
+        if sketch_pattern.match(sketch):
+            sketch_issues = [ issue for issue in sketch_issues if not warning_pattern.search(issue) ]
+
+    if not success:
+        status = ERROR
+    elif len(sketch_issues): # Implies warnings/non-critical issues
+        status = WARNING
+    else:
+        status = PASS
+
+    excepted = any(pattern.match(sketch) for pattern in exceptions)
+    return sketch, excepted, status, sketch_issues
