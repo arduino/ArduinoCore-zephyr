@@ -20,26 +20,24 @@ void pinMode(pin_size_t pinNumber, PinMode pinMode) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
 	if (pinMode == INPUT) { // input mode
-		gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_INPUT | GPIO_ACTIVE_HIGH);
+		global_gpio_pin_configure(pinNumber, GPIO_INPUT | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == INPUT_PULLUP) { // input with internal pull-up
-		gpio_pin_configure_dt(&arduino_pins[pinNumber],
-							  GPIO_INPUT | GPIO_PULL_UP | GPIO_ACTIVE_HIGH);
+		global_gpio_pin_configure(pinNumber, GPIO_INPUT | GPIO_PULL_UP | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == INPUT_PULLDOWN) { // input with internal pull-down
-		gpio_pin_configure_dt(&arduino_pins[pinNumber],
-							  GPIO_INPUT | GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH);
+		global_gpio_pin_configure(pinNumber, GPIO_INPUT | GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == OUTPUT) { // output mode
-		gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+		global_gpio_pin_configure(pinNumber, GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
 	}
 }
 
 void digitalWrite(pin_size_t pinNumber, PinStatus status) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	gpio_pin_set_dt(&arduino_pins[pinNumber], status);
+	gpio_pin_set(local_gpio_port(pinNumber), local_gpio_pin(pinNumber), status);
 }
 
 PinStatus digitalRead(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber, LOW);
 
-	return (gpio_pin_get_dt(&arduino_pins[pinNumber]) == 1) ? HIGH : LOW;
+	return (gpio_pin_get(local_gpio_port(pinNumber), local_gpio_pin(pinNumber)) == 1) ? HIGH : LOW;
 }
