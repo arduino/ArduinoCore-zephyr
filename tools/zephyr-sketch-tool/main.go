@@ -9,9 +9,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/arduino/ArduinoCore-zephyr/tools/lib/cli"
 )
 
 func main() {
+	cli.Init("zephyr-sketch-tool")
+
 	var output = flag.String("output", "", "Output to a specific file (default: add -zsk.bin suffix)")
 	var debug = flag.Bool("debug", false, "Enable debugging mode")
 	var immediate = flag.Bool("immediate", false, "Start sketch immediately [UNO Q]")
@@ -27,38 +31,40 @@ func main() {
 	var otaOffset = flag.String("ota-offset", "", "[ota] sketch offset in merged binary (hex)")
 	var otaMagic = flag.String("ota-magic", "", "[ota] board magic number (hex, 32-bit)")
 
-	flag.Parse()
+	cli.ParseFlags()
 
 	if *ota {
 		if err := runOTA(*otaLoader, *otaSketch, *otaOffset, *otaMagic, *otaSketch); err != nil {
-			fmt.Printf("OTA error: %v\n", err)
-			os.Exit(1)
+			cli.Fatal("%v", err)
 		}
 		return
 	}
 
 	if flag.NArg() != 1 {
-		fmt.Printf("Usage: %s [flags] <filename>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [flags] <filename>\n", os.Args[0])
 		flag.PrintDefaults()
-		return
+		cli.Fatal("expected exactly one file argument")
 	}
 	filename := flag.Arg(0)
 
 	// Read the file content
 	content, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
-		return
+		cli.Fatal("reading file: %v", err)
 	}
 
 	var ELF_HEADER = []byte { 0x7f, 0x45, 0x4c, 0x46 }
-	var elf_header_found = bytes.Compare(ELF_HEADER, content[0:4]) == 0
+	var elf_header_found = bytes.HasPrefix(content, ELF_HEADER)
 	if *add_header || (!*force && !elf_header_found) {
 		fmt.Printf("File does not have an ELF header, adding empty space\n")
 
 		var newContent = make([]byte, len(content)+16)
 		copy(newContent[16:], content)
 		content = newContent
+	}
+
+	if len(content) < 16 {
+		cli.Fatal("%s: file too short (%d bytes)", filename, len(content))
 	}
 
 	// Create and fill custom header
@@ -90,8 +96,7 @@ func main() {
 	var bytes = make([]byte, 9)
 	_, err = binary.Encode(bytes, binary.LittleEndian, header)
 	if err != nil {
-		fmt.Printf("Error encoding header: %v\n", err)
-		return
+		cli.Fatal("encoding header: %v", err)
 	}
 
 	// Bytes 7 to 15 are free to use in current ELF specification. We will
@@ -100,8 +105,7 @@ func main() {
 	if !*force {
 		for i := 7; i < 16; i++ {
 			if content[i] != 0 {
-				fmt.Printf("Target ELF header area is not empty. Use --force to overwrite\n")
-				return
+				cli.Fatal("%s: target ELF header area is not empty, use -force to overwrite", filename)
 			}
 		}
 	}
@@ -118,8 +122,7 @@ func main() {
 	// Write the new content to the new file
 	err = os.WriteFile(newFilename, content, 0644)
 	if err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
-		return
+		cli.Fatal("writing to file: %v", err)
 	}
 
 	fmt.Printf("File %s saved as %s\n", filename, newFilename)
