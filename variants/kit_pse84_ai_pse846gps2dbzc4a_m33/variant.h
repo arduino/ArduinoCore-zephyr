@@ -84,9 +84,9 @@
 #define SCK     D3  /**< P16_0 */
 #define SS      D9  /**< P16_6 */
 
-/** I2C pin definitions (Wire = SCB0 on P8, Wire1 = SCB5 on P17) */
-#define SDA     43  /**< P8_1  */
-#define SCL     42  /**< P8_0  */
+/** I2C pin definitions (Wire = SCB11 on P17, Wire1 = SCB5 on P17) */
+#define SDA     13  /**< P17_3 */
+#define SCL     12  /**< P17_2 */
 #define SDA1    15  /**< P17_1 */
 #define SCL1    14  /**< P17_0 */
 
