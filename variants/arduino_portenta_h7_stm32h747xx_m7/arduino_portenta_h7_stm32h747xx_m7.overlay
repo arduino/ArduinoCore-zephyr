@@ -350,6 +350,11 @@
 	status = "okay";
 
 	partitions {
+		/* the Arduino bootloader occupies the first two 128K sectors */
+		boot_partition: partition@0 {
+			reg = <0x00000000 0x00040000>;
+		};
+
 		slot0_partition: partition@40000 {
 			compatible = "zephyr,mapped-partition";
 			label = "image-0";
@@ -363,6 +368,10 @@
 		};
 	};
 };
+
+/* MCUboot layout from the board: overlaps the bootloader and user_sketch */
+/delete-node/ &scratch_partition;
+/delete-node/ &slot1_partition;
 
 /* Include common flash filesystem configuration */
 qspi_flash: &mx25l12833f {};
