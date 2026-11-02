@@ -16,3 +16,4 @@ get_branch_tip libraries arduino-libraries/Arduino_Video main \
 	examples/ArduinoLogoDrawing \
 	examples/ArduinoLogo \
 	examples/LVGLDemo \
+	examples/CameraDisplay \
