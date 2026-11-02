@@ -43,6 +43,7 @@ EOF
 	exit 0
 fi
 
+debug=false
 # try to find the board in boards.txt
 chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
 if ! [ -z "$chosen_board" ]; then
@@ -57,7 +58,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		debug=true
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -76,6 +77,13 @@ fi
 
 # Save the build version to loader/VERSION and for later use in local files
 build_version=$(extra/get_core_version.sh loader/VERSION)
+
+# CMake arguments go after a '--' separator, which args may already contain
+[[ " ${args[*]} " == *" -- "* ]] || args+=(--)
+args+=(-DAPP_BUILD_VERSION=${build_version})
+if ${debug} ; then 
+	args+=(-DEXTRA_CONF_FILE=../extra/debug.conf)
+fi
 
 echo
 echo "Build version: $build_version"
