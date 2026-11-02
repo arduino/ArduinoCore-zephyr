@@ -5,7 +5,6 @@
  */
 
 #include "SocketHelpers.h"
-#include "zephyr/net/net_if.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(sketch, LOG_LEVEL_NONE);
@@ -143,21 +142,33 @@ void NetworkInterface::config(const IPAddress ip, const IPAddress dns_server,
 }
 
 void NetworkInterface::setLocalIP(const IPAddress ip) {
-	local_ip.s_addr = ip;
+	struct in_addr addr;
+	addr.s_addr = ip;
 
-	if (!net_if_ipv4_addr_add(netif, &local_ip, NET_ADDR_MANUAL, 0)) {
+	if (!net_if_ipv4_addr_add(netif, &addr, NET_ADDR_MANUAL, 0)) {
 		LOG_ERR("Failed to set local IP address");
 		return;
 	}
+	local_ip = addr;
 	LOG_INF("Local IP address set: %s", ip.toString().c_str());
 }
 
 void NetworkInterface::setSubnetMask(const IPAddress subnet) {
 	struct in_addr netmask_addr;
 	netmask_addr.s_addr = subnet;
-	net_if_ipv4_set_netmask_by_addr(netif, &local_ip, &netmask_addr);
+
+	// The netmask is bound to an address: use the one set with setLocalIP(),
+	// or the current primary one (e.g. assigned by DHCP), as localIP() does
+	struct in_addr addr = local_ip;
+	if (addr.s_addr == 0 && netif->config.ip.ipv4 != nullptr) {
+		addr = netif->config.ip.ipv4->unicast[0].ipv4.address.in_addr;
+	}
+
+	if (addr.s_addr == 0 || !net_if_ipv4_set_netmask_by_addr(netif, &addr, &netmask_addr)) {
+		LOG_ERR("Failed to set subnet mask: no IPv4 address on the interface");
+		return;
+	}
 	LOG_INF("Subnet mask set: %s", subnet.toString().c_str());
-	return;
 }
 
 void NetworkInterface::setGatewayIP(const IPAddress gateway) {
