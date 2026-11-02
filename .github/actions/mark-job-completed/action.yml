@@ -1,0 +1,42 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Publish the outcome of the current job as a 'prereq-<id>' marker artifact,
+# with its final status and the URL of its log. See ci_filter_matrix.sh for
+# the marker format and its uses.
+#
+# Must be the last step of the job, run with 'if: !cancelled()', so that the
+# status of all previous steps is accounted for.
+
+name: Mark job as completed
+description: Publish the outcome of the current job as a marker artifact
+
+inputs:
+  id:
+    description: Id of the job, as listed in the matrix entries
+    required: true
+  retention-days:
+    description: Marker retention, in days (repository default if empty)
+    default: ''
+
+runs:
+  using: composite
+  steps:
+
+    - name: Create marker
+      shell: bash
+      env:
+        ID: ${{ inputs.id }}
+        STATUS: ${{ job.status }}
+        ATTEMPT: ${{ github.run_attempt }}
+        JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ job.check_run_id }}
+      run: |
+        mkdir -p prereqs
+        jq -n '{ id: env.ID, status: env.STATUS, attempt: (env.ATTEMPT | tonumber), job_url: env.JOB_URL }' > prereqs/${ID}.json
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: prereq-${{ inputs.id }}
+        path: prereqs/
+        overwrite: true # replace the marker of a previous attempt
+        retention-days: ${{ inputs.retention-days }}

@@ -100,18 +100,18 @@ def print_summary():
 
             # Core build status + message on failure
             if res.status == FAILURE:
-                f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='6'>Core build failed!</td></tr>")
+                f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='6'>Core build failed for this variant!</td></tr>")
                 continue
 
             pin = f"{len(res.warnings)} :label:" if res.status == WARNING else ":green_book:"
             f_print(f"</td><td align='center'>{pin}</td>")
 
-            # Sketch build status + message on failure
+            # Sketch build status + message on failure or if tests were skipped
             res = BOARD_TESTS[board]
             f_print(f"<td align='center'>{res.status.board_icon}</td>")
-            if res.status == FAILURE:
+            if res.status in (FAILURE, SKIP):
                 f_print(f"<td colspan='5'>")
-                f_print("<br>".join(f"{test.issues[0]} (<a href='{test.job_link}'>full log</a>)" for test in res.tests if test.status == FAILURE and test.issues))
+                f_print("<br>".join(test.issues[0] + (f" (<a href='{test.job_link}'>full log</a>)" if test.job_link else "") for test in res.tests if test.status == res.status and test.issues))
                 f_print("</td></tr>")
                 continue
 
@@ -400,7 +400,7 @@ with open(full_report_file, 'w') as f:
 
     # Print the test matrix sections, per artifact
     for artifact in ARTIFACTS:
-        artifact_boards = sorted([ board for board in ARTIFACT_TESTS[artifact].boards if BOARD_TESTS[board].status != FAILURE ])
+        artifact_boards = sorted([ board for board in ARTIFACT_TESTS[artifact].boards if BOARD_TESTS[board].status not in (FAILURE, SKIP) ])
 
         if not artifact_boards:
             continue
