@@ -13,8 +13,9 @@
 # skip_for_this_board removes all tests under the given path prefix.
 
 # Board-specific external repos
-skip_for_this_board libraries/ArduinoBLE
+# skip_for_this_board libraries/ArduinoBLE
 skip_for_this_board libraries/PDM
 skip_for_this_board libraries/Camera
 skip_for_this_board libraries/Storage
+skip_for_this_board libraries/OTA
 
