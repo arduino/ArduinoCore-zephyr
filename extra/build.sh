@@ -104,10 +104,11 @@ BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
 
-# A variant shipping a sysbuild.conf is built through sysbuild, which lets
-# per-image sysbuild.cmake files add further images alongside the loader.
-# Under sysbuild the loader's own build tree is ${BUILD_DIR}/loader and the
-# llext-edk target is not part of 'all', so it is built separately.
+# A variant shipping a sysbuild.conf boots through MCUboot built alongside the
+# loader (its MCUboot config, mcuboot.conf/.overlay, is picked up by
+# loader/sysbuild.cmake). Under sysbuild the loader's tree is
+# ${BUILD_DIR}/loader and the llext-edk target is not part of 'all', so it is
+# built separately.
 if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	IMAGE_DIR=${BUILD_DIR}/loader
 	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
@@ -148,6 +149,12 @@ for ext in elf bin hex uf2; do
 done
 cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# The MCUboot companion image (sysbuild builds only)
+rm -f firmwares/mcuboot-$variant.bin
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
+    cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
