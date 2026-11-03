@@ -87,12 +87,15 @@ jobs:
         run: |
           echo "## Building \`$CORE_VER\`" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Cache west modules and blobs
-        uses: actions/cache@v5
+      # Restore the west cache saved by main (or the latest one, if the
+      # manifest changed): west only fetches what is missing from it.
+      - name: Restore west modules and blobs
+        id: west-cache
+        uses: actions/cache/restore@v5
         with:
           key: west-cache-${{ hashFiles('west.yml', 'boards.txt') }}
           restore-keys: |
-            west-blobs-
+            west-cache-
           path: ${{ runner.temp }}/west-cache
 
       - name: Initialize Zephyr environment
@@ -127,6 +130,15 @@ jobs:
           (cd && tar cphf - --exclude-from=build-env.exclude .cmake $TOPDIR zephyr-sdk-* \
                 | zstd -T0 -9 --long=27 > build-env.tar.zstd)
           ls -lh ~/build-env.tar.zstd
+
+      # Caches saved by other branches and PRs are only visible to them, so
+      # only main saves a new west cache, shared with all the others.
+      - name: Save west modules and blobs
+        if: ${{ github.ref == 'refs/heads/main' && steps.west-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          key: ${{ steps.west-cache.outputs.cache-primary-key }}
+          path: ${{ runner.temp }}/west-cache
 
       - name: Archive build environment
         uses: actions/upload-artifact@v7
