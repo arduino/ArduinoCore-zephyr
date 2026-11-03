@@ -5,6 +5,8 @@
  */
 
 #include "zephyr/sys/printk.h"
+#include <stdint.h>
+#include <string.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sketch);
 
@@ -31,11 +33,30 @@ extern struct k_thread z_main_thread;
 
 #define SKETCH_RAM_BUFFER_LEN 131072
 
+#define MCU_BOOT_HEADER_OFFSET 32
+
 /* Need to replicate logic from zephyrSerial.h to avoid C++ here */
 #define ZARD_BOARD_HAS_SERIALUSB                                                                   \
 	DT_NODE_HAS_PROP(DT_PATH(zephyr_user), cdc_acm_serial) && CONFIG_USBD_CDC_ACM_CLASS
 #define ZARD_FIRST_SERIAL_IS_SERIALUSB                                                             \
 	ZARD_BOARD_HAS_SERIALUSB && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
+
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+/* Describes where the sketch image lives inside the squashed loader+sketch
+ * flash image. Populated by retrieve_flash_info() below; also read by
+ * dfu_flash_updates.c for the dynamic sketch DFU alternate. */
+struct sketch_flash_layout {
+	uint32_t sketch_offset;
+	uint32_t sketch_addr;
+	uint32_t erase_size;
+	uint32_t block_num;
+	bool custom_padding;
+};
+
+struct sketch_flash_layout sketch_layout = {0};
+
+void retrieve_flash_info(void);
+#endif
 
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
 bool check_dfu_mode_requested(void);
@@ -118,9 +139,15 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 #endif /* CONFIG_USERSPACE */
 
 /* Export Flash parameters for use by core building scripts */
+/* When Loader and sketch are squashed the sketch is placed in a variable
+ * position into the flash: the exact place depends on the loader dimension
+ * so when we build the loader we calculate those values directly inside
+ * build.sh (those are placed in sys-static.ld - last 2 rows of the file)*/
+#ifndef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
+#endif
 
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
@@ -147,7 +174,11 @@ static int loader(const struct shell *sh) {
 	char header[SKETCH_HEADER_LEN];
 
 	/* Test that attempting to open a disabled flash area fails */
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
+#else
 	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
+#endif
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		recoverable_error_led();
@@ -158,8 +189,13 @@ static int loader(const struct shell *sh) {
 	try_ota_update(fa);
 #endif
 
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+	uintptr_t base_addr = sketch_layout.sketch_addr;
+	rc = flash_area_read(fa, sketch_layout.sketch_offset, header, sizeof(header));
+#else
 	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 	rc = flash_area_read(fa, 0, header, sizeof(header));
+#endif
 
 	if (rc) {
 		LOG_ERR("Failed to read header, rc %d\n", rc);
@@ -423,11 +459,59 @@ static int loader(const struct shell *sh) {
 SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+
+void retrieve_flash_info(void) {
+	const struct flash_area *fa;
+	uint32_t info[4];
+	int rc;
+
+	memset(&sketch_layout, 0, sizeof(sketch_layout));
+
+	rc = flash_area_open(PARTITION_ID(slot0_partition), &fa);
+	if (rc) {
+		LOG_ERR("Failed to open flash area, rc %d", rc);
+		recoverable_error_led();
+		return;
+	}
+
+	rc = flash_area_read(fa, MCU_BOOT_HEADER_OFFSET, info, sizeof(info));
+	const size_t slot_size = fa->fa_size;
+	flash_area_close(fa);
+	if (rc) {
+		LOG_ERR("Failed to read the sketch layout, rc %d", rc);
+		recoverable_error_led();
+		return;
+	}
+
+	/* offset, erase size, block count, padding flag (2 padded, 1 not) */
+	if (info[0] < MCU_BOOT_HEADER_OFFSET + sizeof(info) || info[0] >= slot_size || info[1] == 0 ||
+		info[2] == 0 || info[2] > slot_size / info[1] || (info[3] != 1 && info[3] != 2)) {
+		LOG_ERR("No valid sketch layout in the image");
+		recoverable_error_led();
+		return;
+	}
+
+	sketch_layout.sketch_offset = info[0];
+	sketch_layout.sketch_addr = DT_PARTITION_ADDR(DT_NODELABEL(slot0_partition)) + info[0];
+	sketch_layout.erase_size = info[1];
+	sketch_layout.block_num = info[2];
+	sketch_layout.custom_padding = (info[3] == 2);
+
+	LOG_INF("sketch at 0x%08X (offset 0x%08X), %u blocks of 0x%X", sketch_layout.sketch_addr,
+			info[0], info[2], info[1]);
+}
+
+#endif /* CONFIG_USE_LOADER_AND_BINARY_SQUASHED */
+
 #ifdef CONFIG_USE_NETWORK_LED_TRACKER
 void start_network_led_monitor(void);
 #endif
 
 int main(void) {
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+	retrieve_flash_info();
+#endif
 #ifdef CONFIG_USE_DFU_FLASH_UPDATES
 	if (check_dfu_mode_requested()) {
 		wait_for_dfu_update();

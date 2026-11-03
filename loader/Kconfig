@@ -96,6 +96,8 @@ config USE_LOADER_AND_BINARY_SQUASHED
       produced to support the dynamic sketch DFU alternate, hence the
       dependency on USE_DFU_FLASH_UPDATES.
 
+
+
 config USE_DFU_FADING_BLINK
     bool "Enable fading LED blink while waiting for a DFU update"
     default y if BOARD_ARDUINO_MEZZA
