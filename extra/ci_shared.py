@@ -308,6 +308,9 @@ def evaluate_sketch(report, exceptions, warning_filters):
 
     if not success:
         status = ERROR
+        # Make sure failed tests always have something to show in the report
+        if not sketch_issues:
+            sketch_issues = [ "Compilation failed with no error messages, check full log." ]
     elif len(sketch_issues): # Implies warnings/non-critical issues
         status = WARNING
     else:
