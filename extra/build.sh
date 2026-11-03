@@ -136,6 +136,15 @@ done
 cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
+SQUASH_ARGS=
+if [ -n "$board" ] && [[ -f firmwares/zephyr-$variant.bin ]]; then
+    # Dynamically extract squash arguments using the Python helper
+    PLATFORM_PATH=$(pwd)
+    BOOTLOADER_FILE="zephyr-${variant}.bin"
+    
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py "boards.txt" "${board}" "${PLATFORM_PATH}" "${VARIANT_DIR}" "${BOOTLOADER_FILE}" "${variant}")
+fi
+
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
 extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
@@ -151,6 +160,38 @@ extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
 	"realloc=__wrap_realloc" \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
+
+# Boards squashing the sketch after the loader in the MCUboot slot0 image:
+# the sketch position depends on the loader size, so it is computed here.
+if [ -n "$SQUASH_ARGS" ]; then
+	echo "build.sh: (mcuboot) adding _sketch_start symbol to sym-static.ld"
+	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
+	
+	# Read the array of values from the python script
+	read -r -a SLOT0_INFO <<< $(python3 extra/extract_slot0_info.py "${IMAGE_DIR}/zephyr/zephyr.dts")
+	
+	if [ ${#SLOT0_INFO[@]} -eq 0 ]; then
+		echo "Error: Could not find slot0_partition info in zephyr.dts"
+		exit 1
+	fi
+	
+	SLOT0_ADDR_HEX=${SLOT0_INFO[0]}
+	SLOT0_DIM=${SLOT0_INFO[1]}
+	
+	calculated_start=$(( size_bytes + SLOT0_ADDR_HEX ))
+	actual_start=$(printf "0x%X" "$calculated_start")
+	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
+	
+	echo "build.sh: (mcuboot) adding _sketch_max_size symbol to sym-static.ld"
+	
+	# Space reserved at the end of slot0 by MCUboot (trailer + TLVs + swap sector), 0 if none
+	LOADER_CFG="${IMAGE_DIR}/zephyr/.config"
+	rom_end=$(sed -n 's/^CONFIG_ROM_END_OFFSET=//p' "$LOADER_CFG")
+	rom_end=$(( ${rom_end:-0} ))
+	calculated_max_size=$(( SLOT0_DIM - size_bytes - rom_end ))
+	actual_max_size=$(printf "0x%X" "$calculated_max_size")
+	echo "PROVIDE(_sketch_max_size = ${actual_max_size});" >> "${VARIANT_DIR}/syms-static.ld"
+fi
 
 cmake -P extra/gen_arduino_files.cmake $variant
 
