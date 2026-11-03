@@ -175,7 +175,6 @@ FORCE_EXPORT_SYM(net_if_ipv4_maddr_add);
 FORCE_EXPORT_SYM(net_if_ipv4_maddr_join);
 FORCE_EXPORT_SYM(net_if_ipv4_set_gw);
 FORCE_EXPORT_SYM(net_if_ipv4_addr_add);
-FORCE_EXPORT_SYM(net_if_ipv4_set_netmask);
 FORCE_EXPORT_SYM(net_if_ipv4_set_netmask_by_addr);
 #endif
 FORCE_EXPORT_SYM(net_if_lookup_by_dev);
@@ -268,6 +267,11 @@ FORCE_EXPORT_SYM(video_buffer_release);
 FORCE_EXPORT_SYM(video_import_buffer);
 FORCE_EXPORT_SYM(video_set_ctrl);
 FORCE_EXPORT_SYM(video_enqueue);
+FORCE_EXPORT_SYM(video_dequeue);
+FORCE_EXPORT_SYM(video_set_format);
+FORCE_EXPORT_SYM(video_get_caps);
+FORCE_EXPORT_SYM(video_stream_start);
+FORCE_EXPORT_SYM(video_stream_stop);
 #endif
 #if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
 FORCE_EXPORT_SYM(video_register_user_buffer_ops);
@@ -379,8 +383,6 @@ EXPORT_SYMBOL(stderr);
 EXPORT_SYMBOL(ring_buf_get);
 EXPORT_SYMBOL(ring_buf_peek);
 EXPORT_SYMBOL(ring_buf_put);
-EXPORT_SYMBOL(ring_buf_area_claim);
-EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
 
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
@@ -469,7 +471,6 @@ FORCE_EXPORT_SYM(flash_area_open);
 FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);
 FORCE_EXPORT_SYM(flash_area_erase);
-FORCE_EXPORT_SYM(flash_area_close);
 #endif
 
 #if defined(CONFIG_FILE_SYSTEM)

@@ -21,6 +21,14 @@
 	status = "okay";
 };
 
+&adc12_common {
+    status = "okay";
+};
+
+&adc3_common {
+    status = "okay";
+};
+
 &adc1 {
 	status = "okay";
 };
@@ -77,17 +85,31 @@
 	};
 };
 
+&dmamux1 {
+	status = "okay";
+};
+
+&dma1 {
+	status = "okay";
+};
+
+&sdhc {
+	status = "okay";
+};
+
 &flash0 {
 	reg = <0x8000000 DT_SIZE_K(2048)>;     /* assign all Flash to the M7 */
 	status = "okay";
 
 	partitions {
 		slot0_partition: partition@40000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00040000 0x000A0000>;
 		};
 
 		user_sketch: partition@e0000 {
+			compatible = "zephyr,mapped-partition";
 			label = "user_sketch";
 			reg = <0x000E0000 0x00120000>;
 		};

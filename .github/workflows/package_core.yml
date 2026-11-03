@@ -261,6 +261,7 @@ jobs:
             variants/${{ matrix.variant }}/ \
             boards.local_${{ matrix.variant }}.txt \
             cores/arduino/api/ \
+            $(ls bootloaders/${{ matrix.variant }}/updater.bin 2>/dev/null) \
             ${FULL_BUILD_DIR} \
           | zstd > ${BINARIES_FILE}
 

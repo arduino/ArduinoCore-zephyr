@@ -21,26 +21,33 @@
 		compatible = "zephyr,log-uart";
 		uarts = <&uart9 &board_cdc_acm_uart>;
 	};
+
+	aliases {
+		flash0 = &code_flash;
+	};
 };
 
-&flash0 {
+&code_flash {
 	partitions {
 		mcuboot: partition@0 {
+			compatible = "zephyr,mapped-partition";
 			label = "mcuboot";
 			reg = <0x00000000 DT_SIZE_K(64)>;
 		};
 		code_partition: partition@10000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00010000 (DT_SIZE_M(1) - DT_SIZE_K(64))>;
 		};
 		user_sketch: partition@100000 {
+			compatible = "zephyr,mapped-partition";
 			label = "user_sketch";
 			reg = <0x00100000 (DT_SIZE_M(1))>;
 		};
 	};
 };
 
-&flash1 {
+&data_flash {
     // Conflicts with "storage" partition
 	/delete-node/ partitions;
 };
