@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/pwm/stm32_pwm.h>
+
 /* USB CDC-ACM UART for console */
 &zephyr_udc0 {
     board_cdc_acm_uart: board_cdc_acm_uart {
@@ -80,7 +82,7 @@
         zephyr,deferred-init;
         pinctrl-0 = <>;
         pinctrl-1 = <>;
-        pinctrl-2 = <&tim1_ch1_pk1 &tim1_ch3_pj9>;
+        pinctrl-2 = <&tim1_ch2_pe11 &tim1_ch4_pe14 &tim1_ch3n_pe12 &tim1_ch3_pe13>;
         pinctrl-names = "default", "sleep", "arduino";
     };
 };
@@ -99,31 +101,16 @@
 	};
 };
 
-
-&timers8 {
+&timers4 {
     status = "okay";
     st,prescaler = <100>;
 
-    pwm8: pwm {
+    pwm4: pwm {
         status = "okay";
         zephyr,deferred-init;
         pinctrl-0 = <>;
         pinctrl-1 = <>;
-        pinctrl-2 = <&tim8_ch2_pj10 &tim8_ch3n_ph15>;
-        pinctrl-names = "default", "sleep", "arduino";
-    };
-};
-
-&timers12 {
-    status = "okay";
-    st,prescaler = <100>;
-
-    pwm12: pwm {
-        status = "okay";
-        zephyr,deferred-init;
-        pinctrl-0 = <>;
-        pinctrl-1 = <>;
-        pinctrl-2 = <&tim12_ch1_ph6>;
+        pinctrl-2 = <&tim4_ch4_pb9 &tim4_ch3_pb8>;
         pinctrl-names = "default", "sleep", "arduino";
     };
 };
@@ -289,22 +276,23 @@
                             <&gpioa 0 GPIO_ACTIVE_HIGH>, /* D26 PA0 */
                             <&gpioa 1 GPIO_ACTIVE_HIGH>, /* D27 IMU interrupt */
                             <&gpiog 0 GPIO_ACTIVE_HIGH>, /* D28 SE05X_EN */
-                            <&gpiok 1 GPIO_ACTIVE_HIGH>, /* D29 PWM tim1 ch1 */
-                            <&gpioj 9 GPIO_ACTIVE_HIGH>, /* D30 PWM tim1 ch3 */
-                            <&gpioj 10 GPIO_ACTIVE_HIGH>, /* D31 PWM tim8 ch2 */
-                            <&gpioh 15 GPIO_ACTIVE_HIGH>, /* D32 PWM tim8 ch3n */
-                            <&gpioh 6 GPIO_ACTIVE_HIGH>, /* D33 PWM tim12 ch1 */
+                            <&gpio_invalid 2 GPIO_ACTIVE_HIGH>, /* D29 Reserved */
+                            <&gpio_invalid 3 GPIO_ACTIVE_HIGH>, /* D30 Reserved */
+                            <&gpio_invalid 4 GPIO_ACTIVE_HIGH>, /* D31 Reserved */
+                            <&gpio_invalid 5 GPIO_ACTIVE_HIGH>, /* D32 Reserved */
+                            <&gpio_invalid 6 GPIO_ACTIVE_HIGH>, /* D33 Reserved */
 			    <&gpiog 10 GPIO_ACTIVE_HIGH>; /* D34 VL53L1CB XSHUT */
 
         adc-pin-gpios = <&gpioc 4 GPIO_ACTIVE_HIGH>,   /* A0 PC4  */
                         <&gpiof 13 GPIO_ACTIVE_HIGH>,   /* A1 PF13 */
                         <&gpiof 3 GPIO_ACTIVE_HIGH>;    /* A2 PF3  */
 
-        pwm-pin-gpios = <&gpiok 1 GPIO_ACTIVE_HIGH>,   /* D8  PK1  pwm1  ch1  */
-                        <&gpioj 9 GPIO_ACTIVE_HIGH>,    /* D9  PJ9  pwm1  ch3  */
-                        <&gpioj 10 GPIO_ACTIVE_HIGH>,   /* D31 PJ10 pwm8  ch2  */
-                        <&gpioh 15 GPIO_ACTIVE_HIGH>,   /* D32 PH15 pwm8  ch3n */
-                        <&gpioh 6 GPIO_ACTIVE_HIGH>;    /* D33 PH6  pwm12 ch1  */
+        pwm-pin-gpios = <&gpioe 11 GPIO_ACTIVE_HIGH>,  /* D7  PE11 pwm1 ch2  */
+                        <&gpioe 14 GPIO_ACTIVE_HIGH>,   /* D8  PE14 pwm1 ch4  */
+                        <&gpioe 12 GPIO_ACTIVE_HIGH>,   /* D9  PE12 pwm1 ch3n */
+                        <&gpioe 13 GPIO_ACTIVE_HIGH>,   /* D10 PE13 pwm1 ch3  */
+                        <&gpiob 9 GPIO_ACTIVE_HIGH>,    /* D11 PB9  pwm4 ch4  */
+                        <&gpiob 8 GPIO_ACTIVE_HIGH>;    /* D12 PB8  pwm4 ch3  */
 
         serials = <&board_cdc_acm_uart>, <&usart1>, <&lpuart1>;
         cdc-acm-serial = <&board_cdc_acm_uart>;
@@ -320,12 +308,16 @@
                             <&gpioe 3 GPIO_ACTIVE_HIGH>,  /* Red LED PE_3 */
                             <&gpiof 4 GPIO_ACTIVE_HIGH>;  /* Blue LED PF_4 */
 
-        /* PWM channels: timers1(ch1,ch3), timers8(ch2,ch3n), timers12(ch1) */
-        pwms =  <&pwm1 1 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
+        /*
+         * PWM channels: timers1(ch2,ch4,ch3n,ch3), timers4(ch4,ch3).
+         * D9 (CH3N) and D10 (CH3) share the same channel, and duty cycle.
+         */
+        pwms =  <&pwm1 2 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
+                <&pwm1 4 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
+                <&pwm1 3 PWM_HZ(1000) (PWM_POLARITY_NORMAL | STM32_PWM_COMPLEMENTARY)>,
                 <&pwm1 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
-                <&pwm8 2 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
-                <&pwm8 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
-                <&pwm12 1 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
+                <&pwm4 4 PWM_HZ(1000) PWM_POLARITY_NORMAL>,
+                <&pwm4 3 PWM_HZ(1000) PWM_POLARITY_NORMAL>;
     };
 };
 
