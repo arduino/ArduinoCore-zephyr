@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"unsafe"
+
+	"github.com/arduino/ArduinoCore-zephyr/tools/lib/cli"
 )
 
 // UF2 block constants with fixed-size types.
@@ -46,6 +48,8 @@ type UF2Block struct {
 const numBlocksOffset = unsafe.Offsetof(UF2Block{}.NumBlocks)
 
 func main() {
+	cli.Init("bin2uf2")
+
 	// Customize the default usage message to be more explicit.
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <addr> <familyID> <source file> <destination file>\n", os.Args[0])
@@ -57,27 +61,25 @@ func main() {
 		fmt.Fprintln(os.Stderr, "  dest file    Output UF2 file")
 	}
 
-	flag.Parse()
+	cli.ParseFlags()
 
 	// Check for the correct number of positional arguments.
 	if len(flag.Args()) != 4 {
 		flag.Usage()
-		os.Exit(1)
+		cli.Fatal("expected 4 arguments, got %d", flag.NArg())
 	}
 
 	// Parse the address from the first positional argument.
 	parsedAddr, err := strconv.ParseUint(strings.TrimPrefix(flag.Arg(0), "0x"), 16, 32)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Invalid address format: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("invalid address format: %v", err)
 	}
 	address := uint32(parsedAddr)
 
 	// Parse the familyID from the second positional argument.
 	parsedFamilyID, err := strconv.ParseUint(strings.TrimPrefix(flag.Arg(1), "0x"), 16, 32)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Invalid familyID format: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("invalid familyID format: %v", err)
 	}
 	familyID := uint32(parsedFamilyID)
 
@@ -87,16 +89,14 @@ func main() {
 	// Open source file
 	src, err := os.Open(srcPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Could not open source file %s: %v\n", srcPath, err)
-		os.Exit(1)
+		cli.Fatal("could not open source file %s: %v", srcPath, err)
 	}
 	defer src.Close()
 
 	// Create destination file
 	dst, err := os.Create(dstPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Could not create destination file %s: %v\n", dstPath, err)
-		os.Exit(1)
+		cli.Fatal("could not create destination file %s: %v", dstPath, err)
 	}
 	defer dst.Close()
 
@@ -112,8 +112,7 @@ func main() {
 			break
 		}
 		if err != nil && err != io.ErrUnexpectedEOF {
-			fmt.Fprintf(os.Stderr, "Error: Failed reading from source file %s: %v\n", srcPath, err)
-			os.Exit(1)
+			cli.Fatal("failed reading from source file %s: %v", srcPath, err)
 		}
 
 		// Zero out the unused portion of the buffer for partial reads
@@ -150,14 +149,12 @@ func main() {
 
 		// 2. Write the entire 476-byte data section (payload + padding) in one go.
 		if _, err := dst.Write(block.Payload[:]); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed writing data section to %s: %v\n", dstPath, err)
-			os.Exit(1)
+			cli.Fatal("failed writing data section to %s: %v", dstPath, err)
 		}
 
 		// 3. Write the final magic number
 		if err := binary.Write(dst, binary.LittleEndian, block.Magic3); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed writing final magic to %s: %v\n", dstPath, err)
-			os.Exit(1)
+			cli.Fatal("failed writing final magic to %s: %v", dstPath, err)
 		}
 
 		address += payloadSize
@@ -176,12 +173,10 @@ func main() {
 		offset := int64(i)*int64(blockSize) + int64(numBlocksOffset)
 		_, err := dst.Seek(offset, io.SeekStart)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed seeking in destination file %s: %v\n", dstPath, err)
-			os.Exit(1)
+			cli.Fatal("failed seeking in destination file %s: %v", dstPath, err)
 		}
 		if err := binary.Write(dst, binary.LittleEndian, totalBlocks); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed updating total blocks in %s: %v\n", dstPath, err)
-			os.Exit(1)
+			cli.Fatal("failed updating total blocks in %s: %v", dstPath, err)
 		}
 	}
 
