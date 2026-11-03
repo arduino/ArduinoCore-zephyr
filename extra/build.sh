@@ -95,7 +95,21 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+
+# A variant shipping a sysbuild.conf boots through MCUboot built alongside the
+# loader (its MCUboot config, mcuboot.conf/.overlay, is picked up by
+# loader/sysbuild.cmake). Under sysbuild the loader's tree is
+# ${BUILD_DIR}/loader and the llext-edk target is not part of 'all', so it is
+# built separately.
+if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
+	IMAGE_DIR=${BUILD_DIR}/loader
+	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
+		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}"
+	cmake --build ${IMAGE_DIR} --target llext-edk
+else
+	IMAGE_DIR=${BUILD_DIR}
+	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
+fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
@@ -124,8 +138,14 @@ for ext in elf bin hex uf2; do
         cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
+cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# The MCUboot companion image (sysbuild builds only)
+rm -f firmwares/mcuboot-$variant.bin
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
+    cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
