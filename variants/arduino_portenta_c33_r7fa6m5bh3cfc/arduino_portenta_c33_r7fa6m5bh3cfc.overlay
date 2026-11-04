@@ -269,6 +269,7 @@
 };
 
 &eth {
+	compatible = "arduino,portenta-c33-ethernet", "renesas,ra-ethernet";
 	status = "okay";
 	zephyr,deferred-init;
 };
