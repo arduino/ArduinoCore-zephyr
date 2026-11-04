@@ -242,6 +242,19 @@ if [ ! -z "$board" ]; then
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	# Boards squashing the sketch after the loader into one MCUboot slot0 image
+	# (build.zsk_args.squash in boards.txt): the sketch gets what is left after
+	# the loader padded to an erase block, the image TLVs and MCUboot's trailer
+	# in the last erase block.
+	SQUASH_ARGS=$(python3 extra/get_squash_args.py boards.txt "${board}" "$(pwd)" \
+		"$(pwd)/${VARIANT_DIR}" "zephyr-${variant}.bin" "${variant}")
+	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([0-9]+) ]]; then
+		ERASE_DIM=${BASH_REMATCH[1]}
+		TLV_MAX=512
+		LOADER_SIZE=$(stat -c%s firmwares/zephyr-$variant.bin)
+		LOADER_SIZE=$(( (LOADER_SIZE + ERASE_DIM - 1) / ERASE_DIM * ERASE_DIM ))
+		CODE_SIZE=$(( CODE_SIZE - LOADER_SIZE - TLV_MAX - ERASE_DIM ))
+	fi
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
