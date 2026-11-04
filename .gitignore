@@ -18,3 +18,4 @@ includes.txt
 syms-dynamic.ld
 syms-static.ld
 tls-syms.S
+variants/*/keys/
