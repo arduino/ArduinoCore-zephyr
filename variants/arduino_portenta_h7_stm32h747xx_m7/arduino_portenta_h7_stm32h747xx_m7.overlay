@@ -319,6 +319,7 @@
 		zephyr,shell-uart = &usart1;
 		zephyr,cdc-acm-uart0 = &usart1;
 		zephyr,log-uart = &log_uarts;
+		zephyr,settings_partition = &kvs_partition;
 		arduino,camera-clock = &pwmclock;
 		arduino,eth-clock = &pwmclock;
 	};

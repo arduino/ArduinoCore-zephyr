@@ -538,3 +538,21 @@ FORCE_EXPORT_SYM(regulator_disable);
 #endif
 
 EXPORT_SYMBOL(sketch_header_v1_verify);
+
+#if defined(CONFIG_SETTINGS)
+#include <zephyr/settings/settings.h>
+
+EXPORT_SYMBOL(settings_subsys_init);
+EXPORT_SYMBOL(settings_delete);
+EXPORT_SYMBOL(settings_save_one);
+EXPORT_SYMBOL(settings_load_one);
+EXPORT_SYMBOL(settings_get_val_len);
+EXPORT_SYMBOL(settings_storage_get);
+#endif
+
+#if defined(CONFIG_NVS)
+#include <zephyr/kvss/nvs.h>
+
+EXPORT_SYMBOL(nvs_clear);
+EXPORT_SYMBOL(nvs_mount);
+#endif
