@@ -254,6 +254,7 @@
 
 &spi2 {
 	zephyr,deferred-init;
+	st,gpio-control;
 };
 
 &i2c2 {

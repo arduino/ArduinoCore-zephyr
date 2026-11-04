@@ -56,6 +56,7 @@
 &spi4 {
     status = "okay";
     zephyr,deferred-init;
+    st,gpio-control;
     pinctrl-0 = <&spi4_sck_pe12 &spi4_miso_pe13 &spi4_mosi_pe14>;
     pinctrl-names = "default";
 };
@@ -63,6 +64,7 @@
 &spi5 {
     status = "okay";
     zephyr,deferred-init;
+    st,gpio-control;
 };
 
 &rtc {

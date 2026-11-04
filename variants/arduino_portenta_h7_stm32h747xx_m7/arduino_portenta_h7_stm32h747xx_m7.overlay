@@ -90,6 +90,7 @@
 &spi2 {
 	status = "okay";
 	zephyr,deferred-init;
+	st,gpio-control;
 	pinctrl-0 = <&spi2_sck_pi1
 		     &spi2_miso_pc2 &spi2_mosi_pc3>;
 	pinctrl-names = "default";
