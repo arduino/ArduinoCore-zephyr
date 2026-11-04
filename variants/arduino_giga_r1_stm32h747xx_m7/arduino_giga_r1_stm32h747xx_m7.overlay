@@ -400,6 +400,7 @@
 		/* zephyr,console = &board_cdc_acm_uart; */
 		arduino,camera-clock = &pwmclock;
 		zephyr,console = &usart1;
+		zephyr,settings_partition = &kvs_partition;
 	};
 
 	log_uarts: log_uarts {
