@@ -742,3 +742,86 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##############################################################################################################
+
+nanoxllink.name=Arduino Nano XL Link
+nanoxllink.build.core=arduino
+nanoxllink.build.crossprefix=arm-zephyr-eabi-
+nanoxllink.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nanoxllink.build.zephyr_target=arduino_nano_xl_link
+nanoxllink.build.zephyr_args=
+nanoxllink.build.zephyr_hals=hal_microchip
+nanoxllink.build.zephyr_toolchain=arm-zephyr-eabi
+nanoxllink.build.artifact=zephyr_main
+nanoxllink.build.variant=arduino_nano_xl_link_pic32ck2051sg01144
+nanoxllink.build.extra_flags=
+nanoxllink.build.board=NANO_XL_LINK
+
+# Loader and sketch squashed into one ECDSA-P256 signed MCUboot image;
+# build.certificate comes from boards.local.txt (extra/build.sh).
+nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.certificate}" --erase_flash_dim 4096 --image_version 1.0.0.0
+
+nanoxllink.vid.0=0x2341
+nanoxllink.pid.0=0x007e
+nanoxllink.upload_port.0.vid=0x2341
+nanoxllink.upload_port.0.pid=0x007e
+
+# 1200-bps touch (or double tap) -> MCUboot USB DFU; alt 0 is slot1, which
+# MCUboot copies over slot0.
+nanoxllink.upload.tool=dfu-util
+nanoxllink.upload.tool.default=dfu-util
+nanoxllink.upload.protocol=
+nanoxllink.upload.transport=
+nanoxllink.upload.vid=0x2341
+nanoxllink.upload.pid=0x018e
+nanoxllink.upload.interface=0
+nanoxllink.upload.dfuse=
+nanoxllink.leave.dfuse=
+nanoxllink.upload.use_1200bps_touch=true
+nanoxllink.upload.wait_for_upload_port=true
+nanoxllink.upload.native_usb=true
+nanoxllink.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
+nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}
+
+# No burn-bootloader: MCUboot is updated over SWD only.
+
+##############################################################################################################
+
+nanoxllink_connector.name=Arduino Nano XL Link Connector
+nanoxllink_connector.build.core=arduino
+nanoxllink_connector.build.crossprefix=arm-zephyr-eabi-
+nanoxllink_connector.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nanoxllink_connector.build.zephyr_target=arduino_nano_xl_link
+nanoxllink_connector.build.zephyr_args=--shield arduino_nano_xl_link_connector -- -DEXTRA_CONF_FILE=../variants/arduino_nano_xl_link_pic32ck2051sg01144/connector.conf -DEXTRA_DTC_OVERLAY_FILE=../variants/arduino_nano_xl_link_pic32ck2051sg01144/connector.overlay
+nanoxllink_connector.build.zephyr_hals=hal_microchip
+nanoxllink_connector.build.zephyr_toolchain=arm-zephyr-eabi
+nanoxllink_connector.build.artifact=zephyr_main
+# Derived variant: extra/build.sh copies the bare module's sources here.
+nanoxllink_connector.build.variant=arduino_nano_xl_link_pic32ck2051sg01144_connector
+nanoxllink_connector.build.extra_flags=
+nanoxllink_connector.build.board=NANO_XL_LINK_CONNECTOR
+
+nanoxllink_connector.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.certificate}" --erase_flash_dim 4096 --image_version 1.0.0.0
+
+nanoxllink_connector.vid.0=0x2341
+nanoxllink_connector.pid.0=0x008e
+nanoxllink_connector.upload_port.0.vid=0x2341
+nanoxllink_connector.upload_port.0.pid=0x008e
+
+nanoxllink_connector.upload.tool=dfu-util
+nanoxllink_connector.upload.tool.default=dfu-util
+nanoxllink_connector.upload.protocol=
+nanoxllink_connector.upload.transport=
+nanoxllink_connector.upload.vid=0x2341
+nanoxllink_connector.upload.pid=0x018e
+nanoxllink_connector.upload.interface=0
+nanoxllink_connector.upload.dfuse=
+nanoxllink_connector.leave.dfuse=
+nanoxllink_connector.upload.use_1200bps_touch=true
+nanoxllink_connector.upload.wait_for_upload_port=true
+nanoxllink_connector.upload.native_usb=true
+nanoxllink_connector.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
+nanoxllink_connector.tools.dfu-util.upload.pattern={tools.dfu-util.sketch.cmd}

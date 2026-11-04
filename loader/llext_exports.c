@@ -525,7 +525,7 @@ EXPORT_SYMBOL(arm_irq_is_enabled);
 EXPORT_SYMBOL(arm_irq_priority_set);
 #endif
 
-#if defined(__arm__)
+#if defined(__arm__) && !defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
 EXPORT_SYMBOL(SystemCoreClock);
 #endif
 

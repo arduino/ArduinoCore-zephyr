@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+// UART1 (sercom1) ESP8266 com
+&sercom1 {
+	/delete-property/ zephyr,deferred-init;
+};
+
+// PD11 (D7) ESP8266 reset line
+&tcc2 {
+	/delete-property/ pinctrl-2;
+	pinctrl-names = "default", "sleep";
+};
+
+/*
+ * The ESP-AT module sits on an external connector and may not be fitted, so
+ * it is not probed at boot (its driver would hold boot for 10 s waiting for
+ * it). WiFi.status() initializes it on first use, once initVariant() has
+ * checked its firmware (variant.cpp).
+ */
+&esp8266 {
+	zephyr,deferred-init;
+};
+
+/*
+ * sercom6 is the only console here: unlike the bare module, log output is not
+ * mirrored on USB CDC, and the shell lives on the same UART.
+ */
+&log_uarts {
+	uarts = <&sercom6>;
+};
+
+/ {
+	chosen {
+		zephyr,console = &sercom6;
+		zephyr,shell-uart = &sercom6;
+	};
+
+	zephyr,user {
+		/*
+		 * ESP8266 firmware update through the WiFi SerialBridge example: USB
+		 * DTR drives GPIO0 (D2) and RTS drives reset (D7), as on the usual
+		 * esptool auto-reset circuit.
+		 */
+		coprocessor-serial = <&sercom1>;
+		coprocessor-boot-gpios = <&portc 19 GPIO_ACTIVE_LOW>;
+		coprocessor-reset-gpios = <&portd 11 GPIO_ACTIVE_LOW>;
+
+		/*
+		 * sercom1 intentionally excluded: dedicated to the ESP8266 AT UART,
+		 * not exposed as a generic Arduino Serial object. Serial1 = sercom6
+		 * (user header, also the debug console), Serial2 = sercom0 (RS485).
+		 */
+		serials = <&sercom6>, <&sercom0>;
+
+		/* D7 (&portd 11) intentionally excluded: dedicated ESP8266 reset line. */
+		pwm-pin-gpios = <&portc 19 0>,
+				<&portc 20 0>,
+				<&portc 15 0>,
+				<&portc 16 0>,
+				<&portc 17 0>,
+				<&porta 21 0>,
+				<&porta 20 0>,
+				<&portb 11 0>,
+				<&porta 23 0>,
+				<&portb 24 0>;
+
+		pwms = <&tcc1 4 PWM_HZ(500) 0>,
+		       <&tcc1 5 PWM_HZ(500) 0>,
+		       <&tcc1 0 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 1 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc1 2 PWM_HZ(500) PWM_POLARITY_INVERTED>,
+		       <&tcc4 1 PWM_HZ(500) 0>,
+		       <&tcc4 0 PWM_HZ(500) 0>,
+		       <&tcc3 0 PWM_HZ(500) 0>,
+		       <&tcc5 1 PWM_HZ(500) 0>,
+		       <&tcc6 1 PWM_HZ(500) 0>;
+	};
+};

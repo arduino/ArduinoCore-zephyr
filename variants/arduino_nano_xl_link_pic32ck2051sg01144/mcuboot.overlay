@@ -1,0 +1,56 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * MCUboot in BFM with USB DFU recovery; partitions come from the board.
+ */
+
+/ {
+	chosen {
+		/* Link MCUboot in BFM; the board's zephyr,flash is PFM. */
+		zephyr,flash = &flash0;
+	};
+};
+
+#include "retained_mem.dtsi"
+
+/*
+ * DFU fade LED: LED_BUILTIN (PB16) on TCC6 WO0. The other TCCs stay off so
+ * MCUboot never muxes Arduino pins (D2/D7 strap the ESP8266).
+ */
+/ {
+	aliases {
+		mcuboot-fade-led0 = &pwm_led_builtin;
+	};
+
+	pwm_led_builtin_leds {
+		compatible = "pwm-leds";
+
+		pwm_led_builtin: pwm_led_builtin {
+			pwms = <&tcc6 0 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+		};
+	};
+};
+
+&pinctrl {
+	tcc6_led_builtin: tcc6_led_builtin {
+		group1 {
+			pinmux = <PB16F_TCC6_WO0>;
+		};
+	};
+};
+
+&tcc6 {
+	pinctrl-0 = <&tcc6_led_builtin>;
+};
+
+&tcc1 { status = "disabled"; };
+&tcc2 { status = "disabled"; };
+&tcc3 { status = "disabled"; };
+&tcc4 { status = "disabled"; };
+&tcc5 { status = "disabled"; };
+
+/* No console; re-enable sercom6 to debug. */
+&sercom0 { status = "disabled"; };
+&sercom1 { status = "disabled"; };
+&sercom6 { status = "disabled"; };
