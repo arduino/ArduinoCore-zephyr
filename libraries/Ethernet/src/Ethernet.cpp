@@ -13,6 +13,9 @@
 
 #if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
 
+/* Internal Zephyr entry point for initializing network interfaces, not visible here. */
+extern "C" void net_if_init(void);
+
 static inline int init_eth_clock() {
 	if (!DT_HAS_CHOSEN(arduino_eth_clock)) {
 		return 0;
@@ -115,6 +118,15 @@ EthernetHardwareStatus EthernetClass::hardwareStatus() {
 		if (ret < 0) {
 			return EthernetNoHardware;
 		}
+	}
+
+	/* Zephyr skips interfaces whose devices are not ready at boot. Recover the
+	 * skipped initialization after deferred hardware initialization. This also
+	 * reinitializes the other network interfaces.
+	 */
+	auto *eth_ctx = static_cast<struct ethernet_context *>(net_if_l2_data(netif));
+	if (!eth_ctx->is_init) {
+		net_if_init();
 	}
 
 	return EthernetOk;

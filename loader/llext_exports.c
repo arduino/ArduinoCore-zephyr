@@ -166,6 +166,7 @@ FORCE_EXPORT_SYM(log_dynamic_sketch)
 #endif
 
 #if defined(CONFIG_NETWORKING)
+FORCE_EXPORT_SYM(net_if_init);
 FORCE_EXPORT_SYM(net_if_foreach);
 FORCE_EXPORT_SYM(net_if_down);
 FORCE_EXPORT_SYM(net_if_up);
