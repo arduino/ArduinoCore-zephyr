@@ -333,6 +333,7 @@ FORCE_EXPORT_SYM(usbd_can_detect_vbus);
 FORCE_EXPORT_SYM(usbd_enable);
 FORCE_EXPORT_SYM(usbd_disable);
 FORCE_EXPORT_SYM(usbd_device_register_vreq);
+FORCE_EXPORT_SYM(usbd_ep_ctrl_data_in_alloc);
 #endif
 
 #if defined(CONFIG_SHARED_MULTI_HEAP)
