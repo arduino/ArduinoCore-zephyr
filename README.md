@@ -97,10 +97,6 @@ To manually force a loader update, follow these steps:
 * the messages are emitted right at boot and the loader does not wait for the port to be opened, so they can be lost if the Serial Monitor is not already connected when the board starts;
 * early failures (flash errors, invalid sketch header) happen before the log output is enabled, so they are never printed and the LED pattern is the only indication;
 
----
-
-#### **Q: I get an out of memory error**
-**A:** Since collecting bug reports is very important at this time, we are keeping Zephyr's shell enabled to allow loading a full sketch (which requires a large stack). Adjust your board's `.conf` file to reduce the stack size if your platform doesn't have enough RAM.
 
 ---
 
