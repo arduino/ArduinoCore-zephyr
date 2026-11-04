@@ -107,6 +107,8 @@ protected:
 	const struct device *uart;
 	ZephyrSerialBuffer<CONFIG_ARDUINO_API_SERIAL_BUFFER_SIZE> tx;
 	ZephyrSerialBuffer<CONFIG_ARDUINO_API_SERIAL_BUFFER_SIZE> rx;
+	/* Set by IrqHandler() once the TX ring buffer is empty and the UART reports completion. */
+	volatile bool tx_done = true;
 };
 
 } // namespace arduino

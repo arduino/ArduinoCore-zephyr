@@ -92,10 +92,7 @@ void arduino::ZephyrSerial::IrqHandler() {
 
 	k_sem_take(&tx.sem, K_NO_WAIT);
 
-	if (ring_buf_size_get(&tx.ringbuf) == 0) {
-		uart_irq_tx_disable(uart);
-	}
-
+	bool filled = false;
 	while (uart_irq_tx_ready(uart) && ((length = ring_buf_size_get(&tx.ringbuf)) > 0)) {
 		length = min(sizeof(buf), static_cast<size_t>(length));
 		ring_buf_peek(&tx.ringbuf, &buf[0], length);
@@ -105,7 +102,17 @@ void arduino::ZephyrSerial::IrqHandler() {
 			break;
 		} else {
 			ring_buf_get(&tx.ringbuf, &buf[0], ret);
+			filled |= (ret > 0);
 		}
+	}
+
+	/*
+	 * Disable TX IRQ only once the UART reports completion: some drivers
+	 * (nRF, Renesas) report it only while TX IRQ is on. -ENOSYS counts as done.
+	 */
+	if (!filled && ring_buf_is_empty(&tx.ringbuf) && uart_irq_tx_complete(uart) != 0) {
+		uart_irq_tx_disable(uart);
+		tx_done = true;
 	}
 	k_sem_give(&tx.sem);
 }
@@ -160,7 +167,13 @@ size_t arduino::ZephyrSerial::write(const uint8_t *buffer, size_t size) {
 
 	while (1) {
 		k_sem_take(&tx.sem, K_FOREVER);
+		/* Lock IRQs so IrqHandler() can't set tx_done between these two steps */
+		unsigned int key = irq_lock();
 		auto ret = ring_buf_put(&tx.ringbuf, &buffer[idx], size - idx);
+		if (ret > 0) {
+			tx_done = false;
+		}
+		irq_unlock(key);
 		k_sem_give(&tx.sem);
 		idx += ret;
 		if (ret == 0) {
@@ -178,10 +191,7 @@ size_t arduino::ZephyrSerial::write(const uint8_t *buffer, size_t size) {
 }
 
 void arduino::ZephyrSerial::flush() {
-	while (ring_buf_size_get(&tx.ringbuf) > 0) {
-		k_yield();
-	}
-	while (uart_irq_tx_complete(uart) == 0) {
+	while (!tx_done) {
 		k_yield();
 	}
 }
