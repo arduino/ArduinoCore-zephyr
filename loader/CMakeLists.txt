@@ -8,7 +8,10 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} COMPONENTS basic_settings yaml boards)
 
 set(DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.overlay)
-set(EXTRA_CONF_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.conf)
+# Prepend: extra fragments (-DEXTRA_CONF_FILE) merge after the variant's conf.
+set(EXTRA_CONF_FILE
+    ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.conf
+    ${EXTRA_CONF_FILE})
 
 # Add dts/bindings to DTS_ROOT for custom bindings
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
