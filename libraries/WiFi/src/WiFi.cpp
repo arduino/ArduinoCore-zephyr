@@ -247,6 +247,16 @@ int WiFiClass::status() {
 		netif = wifiState.sta_iface;
 	}
 
+	if (netif == nullptr) {
+		return WL_NO_SHIELD;
+	}
+
+	/* The WiFi device may be zephyr,deferred-init: bring it up on first use. */
+	if (!device_is_ready(net_if_get_device(netif)) &&
+		device_init(net_if_get_device(netif)) != 0) {
+		return WL_NO_SHIELD;
+	}
+
 	if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, netif, &if_status,
 				 sizeof(struct wifi_iface_status))) {
 		return WL_NO_SHIELD;
