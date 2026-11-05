@@ -90,6 +90,7 @@
 &spi2 {
 	status = "okay";
 	zephyr,deferred-init;
+	st,gpio-control;
 	pinctrl-0 = <&spi2_sck_pi1
 		     &spi2_miso_pc2 &spi2_mosi_pc3>;
 	pinctrl-names = "default";
@@ -215,6 +216,11 @@
 	};
 };
 
+&adc12_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
+};
 
 &adc1 {
 	zephyr,deferred-init;
@@ -227,8 +233,6 @@
        	     &adc1_inp0_pa0_c
        	     &adc1_inp1_pa1_c>;
 	pinctrl-names = "default", "sleep", "arduino";
-	st,adc-clock-source = "SYNC";
-	st,adc-prescaler = <4>;
 	status = "okay";
 
 	#address-cells = <1>;
@@ -280,6 +284,12 @@
 	};
 };
 
+&adc3_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
+};
+
 &adc3 {
 	zephyr,deferred-init;
 	pinctrl-0 = <>;
@@ -287,8 +297,6 @@
 	pinctrl-2 = <&adc3_inp0_pc2_c
 		     &adc3_inp1_pc3_c>;
 	pinctrl-names = "default", "sleep", "arduino";
-	st,adc-clock-source = "SYNC";
-	st,adc-prescaler = <4>;
 	status = "okay";
 
 	#address-cells = <1>;
@@ -342,30 +350,29 @@
 	reg = <0x8000000 DT_SIZE_K(2048)>;     /* assign all Flash to the M7 */
 	status = "okay";
 
-	/delete-node/ partitions;
 	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
+		/* the Arduino bootloader occupies the first two 128K sectors */
 		boot_partition: partition@0 {
-			label = "mcuboot";
 			reg = <0x00000000 0x00040000>;
-			read-only;
 		};
 
 		slot0_partition: partition@40000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00040000 0x000A0000>;
 		};
 
 		user_sketch: partition@e0000 {
+			compatible = "zephyr,mapped-partition";
 			label = "user_sketch";
 			reg = <0x000E0000 0x00120000>;
 		};
 	};
 };
 
+/* MCUboot layout from the board: overlaps the bootloader and user_sketch */
+/delete-node/ &scratch_partition;
+/delete-node/ &slot1_partition;
 
 /* Include common flash filesystem configuration */
 qspi_flash: &mx25l12833f {};
@@ -393,6 +400,8 @@ qspi_flash: &mx25l12833f {};
 	disk-name = "SD";
 	bus-width = <4>;
 	clk-div = <1>;
+	interrupts = <124 0>;
+	interrupt-names = "event";
 };
 
 &fstab {
@@ -625,14 +634,18 @@ qspi_flash: &mx25l12833f {};
 	};
 };
 
-&sai4_a {
+&sai4 {
 	status = "okay";
-	pinctrl-0 = <&sai4_ck1_pe2 &sai4_d1_pb2>;
-	pinctrl-names = "default";
 
 	/* PLL3_P instead of default PLL2_P, so PLL2/SDMMC2 stays untouched */
 	clocks = <&rcc STM32_CLOCK(APB4, 21)>,
 		 <&rcc STM32_SRC_PLL3_P SAI4A_SEL(2)>;
+};
+
+&sai4_a {
+	status = "okay";
+	pinctrl-0 = <&sai4_ck1_pe2 &sai4_d1_pb2>;
+	pinctrl-names = "default";
 
 	dmic_dev: mp34dt05@0 {
 		compatible = "st,mpxxdtyy";
