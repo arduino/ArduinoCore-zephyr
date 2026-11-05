@@ -13,7 +13,7 @@
 #if ZARD_BOARD_HAS_SERIALUSB
 const struct device *const usb_dev = DEVICE_DT_GET(ZARD_SERIALUSB_PHANDLE);
 
-void __attribute__((weak)) _on_1200_bps() {
+extern "C" void __attribute__((weak)) _on_1200_bps() {
 	NVIC_SystemReset();
 }
 
