@@ -65,14 +65,23 @@ void NetworkInterface::MACAddress(uint8_t *mac) {
 }
 
 IPAddress NetworkInterface::localIP() {
+	if (netif == NULL || netif->config.ip.ipv4 == NULL) {
+		return arduino::INADDR_NONE;
+	}
 	return IPAddress(netif->config.ip.ipv4->unicast[0].ipv4.address.in_addr.s_addr);
 }
 
 IPAddress NetworkInterface::subnetMask() {
+	if (netif == NULL || netif->config.ip.ipv4 == NULL) {
+		return arduino::INADDR_NONE;
+	}
 	return IPAddress(netif->config.ip.ipv4->unicast[0].netmask.s_addr);
 }
 
 IPAddress NetworkInterface::gatewayIP() {
+	if (netif == NULL || netif->config.ip.ipv4 == NULL) {
+		return arduino::INADDR_NONE;
+	}
 	return IPAddress(netif->config.ip.ipv4->gw.s_addr);
 }
 
