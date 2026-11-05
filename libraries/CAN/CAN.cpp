@@ -8,6 +8,10 @@
 #include <string.h>
 #include <zephyr/sys/util_macro.h>
 
+#ifdef CONFIG_USBD_GS_USB
+extern "C" void cannectivity_pinctrl_selected(const struct device *dev, uint8_t state_id);
+#endif
+
 /* -------------------------------------------------------------------------- */
 /*  Arduino CAN implementation                                                */
 /* -------------------------------------------------------------------------- */
@@ -23,20 +27,31 @@ arduino::ZephyrCAN::ZephyrCAN(const struct device *can_dev)
 }
 
 bool arduino::ZephyrCAN::begin(CanBitRate can_bitrate) {
+	return begin(can_bitrate, PinctrlState::Standard);
+}
+
+bool arduino::ZephyrCAN::begin(CanBitRate can_bitrate, PinctrlState state) {
+	/* Init device or re-apply the pinctrl state so shared pins
+	 * are remuxed back to CAN after other peripherals have used them.
+	 */
+	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev, state);
+#ifdef CONFIG_USBD_GS_USB
+	cannectivity_pinctrl_selected(_dev, static_cast<uint8_t>(state));
+#endif
 	return _begin(can_bitrate, CanMode::Classic, static_cast<uint32_t>(can_bitrate), false);
 }
 
 bool arduino::ZephyrCAN::beginFD(CanBitRate arbitration_bitrate, uint32_t data_bitrate,
-								 bool bitrate_switch) {
+								 bool bitrate_switch, PinctrlState state) {
+	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev, state);
+#ifdef CONFIG_USBD_GS_USB
+	cannectivity_pinctrl_selected(_dev, static_cast<uint8_t>(state));
+#endif
 	return _begin(arbitration_bitrate, CanMode::FD, data_bitrate, bitrate_switch);
 }
 
 bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, uint32_t data_bitrate,
 								bool bitrate_switch) {
-	/* Init device and re-apply DEFAULT pinctrl state so shared pins
-	 * are remuxed back to CAN after other peripherals have used them.
-	 */
-	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev);
 
 	/* Bitrate can only be changed while the controller is stopped. */
 	(void)can_stop(_dev);

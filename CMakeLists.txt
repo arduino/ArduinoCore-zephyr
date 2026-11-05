@@ -10,10 +10,13 @@ set(ARDUINO_API_BLOB_VERSION 1.5.2)
 
 string(REPLACE "__" "_" NORMALIZED_BOARD_TARGET "${NORMALIZED_BOARD_TARGET}")
 
-# Define custom pinctrl state "arduino" for dynamic pin multiplexing.
-# Must be set here so both loader and samples see the custom pinctrl state
+# Define custom pinctrl states "arduino" and "arduino_alt" for dynamic pin multiplexing.
+# Must be set here so both loader and samples see the custom pinctrl states
 # while compiling Zephyr/board sources.
-zephyr_compile_options(-DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
+zephyr_compile_options(
+  -DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START
+  -DPINCTRL_STATE_ARDUINO_ALT=PINCTRL_STATE_PRIV_START+1
+)
 
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/variants/${BOARD})
   set(variant_dir variants/${BOARD})

@@ -96,7 +96,10 @@ public:
 	}
 
 	bool begin(CanBitRate can_bitrate) override;
-	bool beginFD(CanBitRate arbitration_bitrate, uint32_t data_bitrate, bool bitrate_switch = true);
+	/* Select a pinctrl state, falling back to Arduino if it is not defined. */
+	bool begin(CanBitRate can_bitrate, PinctrlState state);
+	bool beginFD(CanBitRate arbitration_bitrate, uint32_t data_bitrate, bool bitrate_switch = true,
+				 PinctrlState state = PinctrlState::Standard);
 	void end() override;
 
 	int write(CanMsg const &msg) override;
