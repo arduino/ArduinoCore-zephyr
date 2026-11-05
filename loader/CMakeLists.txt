@@ -49,6 +49,12 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
 
 FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
+
+# variant.c only (not .cpp): provides the board-specific _on_1200_bps().
+set(variant_c ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/variant.c)
+if(EXISTS ${variant_c})
+    target_sources(app PRIVATE ${variant_c})
+endif()
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
 

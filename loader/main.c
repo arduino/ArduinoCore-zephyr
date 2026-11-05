@@ -43,10 +43,16 @@ const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
 
 #include <zephyr/usb/usbd.h>
+#include <zephyr/sys/reboot.h>
 struct usbd_context *usbd_init_device(usbd_msg_cb_t msg_cb);
 static struct usbd_context *_usbd = NULL;
 
 int usbd_config_set(struct usbd_context *uds_ctx, uint8_t new_cfg);
+
+/* Variants override it in variant.c. */
+__attribute__((weak)) void _on_1200_bps(void) {
+	sys_reboot(SYS_REBOOT_COLD);
+}
 
 int loader_usb_disable() {
 	if (_usbd == NULL) {
@@ -65,10 +71,25 @@ int loader_usb_disable() {
 	return err;
 }
 
+/* The 1200-bps touch arrives in a USB callback: reset from a work item instead. */
+static void bootloader_reset_work_handler(struct k_work *work) {
+	ARG_UNUSED(work);
+	_on_1200_bps();
+}
+static K_WORK_DELAYABLE_DEFINE(bootloader_reset_work, bootloader_reset_work_handler);
+
 static void loader_usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) {
 	if (usbd_can_detect_vbus(ctx)) {
 		if (msg->type == USBD_MSG_VBUS_READY) {
 			usbd_enable(ctx);
+		}
+	}
+
+	if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
+		uint32_t baudrate;
+		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+		if (baudrate == 1200) {
+			k_work_schedule(&bootloader_reset_work, K_MSEC(100));
 		}
 	}
 }
