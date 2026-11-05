@@ -569,6 +569,11 @@ qspi_flash: &mx25l12833f {};
 	div-r = <5>;    /* 1000/200kHz = 5 -> 289MHz/5 = 57.8 MHz */
 };
 
+/*
+ * The DSI host sets the LTDC timings when the USB-C bridge or the
+ * Giga Display Shield attaches. Width and height size the frame buffer
+ * for the largest mode (USB-C 1024x768).
+ */
 &ltdc {
 	status = "okay";
 	zephyr,deferred-init;
@@ -579,24 +584,12 @@ qspi_flash: &mx25l12833f {};
 	def-back-color-green = <0>;
 	def-back-color-blue = <0>;
 	pixel-format = <PANEL_PIXEL_FORMAT_RGB_888>;
-
-	display-timings {
-		compatible = "zephyr,panel-timing";
-		hsync-active = <0>;
-		vsync-active = <0>;
-		de-active = <0>;
-		pixelclk-active = <0>;
-		hsync-len = <68>;
-		hfront-porch = <24>;
-		hback-porch = <80>;
-		vsync-len = <6>;
-		vfront-porch = <3>;
-		vback-porch = <29>;
-	};
 };
 
 &mipi_dsi {
 	status = "okay";
+	zephyr,deferred-init;
+	st,ltdc = <&ltdc>;
 
 	pll-ndiv = <40>;
 	pll-idf = <2>;
@@ -604,7 +597,7 @@ qspi_flash: &mx25l12833f {};
 
 	de-active-high;
 	bta-ack-disable;  /* ANX7625 bridge doesn't respond to BTA requests */
-	largest-packet-size = <16>;
+	largest-packet-size = <0>;
 
 	phy-timings = <35 35 35 35 0 10>;
 
@@ -614,6 +607,7 @@ qspi_flash: &mx25l12833f {};
 	 */
 	anx7625: anx7625@0 {
 		status = "okay";
+		zephyr,deferred-init;
 		compatible = "analogix,anx7625";
 		reg = <0>;  /* Virtual channel 0 */
 		pixel-format = <0>;  /* Not used */
@@ -622,6 +616,58 @@ qspi_flash: &mx25l12833f {};
 		video-on-gpios = <&gpiok 2 GPIO_ACTIVE_HIGH>;
 		video-rst-gpios = <&gpioj 3 GPIO_ACTIVE_HIGH>;
 		otg-on-gpios = <&gpioj 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+
+	/*
+	 * Giga Display Shield on the Portenta Mid Carrier.
+	 *
+	 * Timings: 480x800 portrait, porches as in the Giga Display Shield
+	 * overlay (hsync 8, hbp 6, hfp 1, vsync 32, vbp 40, vfp 8 at 27.5 MHz),
+	 * with the horizontal blanking stretched for the shared 57.8 MHz clock so
+	 * the DSI host programs the same lane-byte timings: HSA 18, line 1125
+	 * (18.0 us). HBP is 12 lane bytes instead of 13: no integer hback-porch
+	 * gives 13 at 57.8 MHz.
+	 */
+	st7701: st7701@0 {
+		status = "okay";
+		zephyr,deferred-init;
+		compatible = "sitronix,st7701";
+		reg = <0x0>;
+		data-lanes = <2>;
+		pixel-format = <MIPI_DSI_PIXFMT_RGB565>;
+		rotation = <0>;
+		gip-e0 = [e0 00 00 02];
+		gip-e1 = [e1 08 00 0a 00 07 00 09 00 00 33 33];
+		gip-e2 = [e2 00 00 00 00 00 00 00 00 00 00 00 00 00];
+		gip-e3 = [e3 00 00 33 33];
+		gip-e4 = [e4 44 44];
+		gip-e5 = [e5 0e 60 a0 a0 10 60 a0 a0 0a 60 a0 a0 0c 60 a0 a0];
+		gip-e6 = [e6 00 00 33 33];
+		gip-e7 = [e7 44 44];
+		gip-e8 = [e8 0d 60 a0 a0 0f 60 a0 a0 09 60 a0 a0 0b 60 a0 a0];
+		gip-eb = [eb 02 01 e4 e4 44 00 40];
+		gip-ec = [ec 02 01];
+		gip-ed = [ed ab 89 76 54 01 ff ff ff ff ff ff 10 45 67 98 ba];
+		pvgamctrl = [b0 40 c9 91 0d 12 07 02 09 09 1f 04 50 0f e4 29 df];
+		nvgamctrl = [b1 40 cb d0 11 92 07 00 08 07 1c 06 53 12 63 eb df];
+
+		/* Giga Display Shield mode: 480x800 at 57.8 MHz. */
+		width = <480>;
+		height = <800>;
+
+		display-timings {
+			compatible = "zephyr,panel-timing";
+			hsync-active = <1>;
+			vsync-active = <0>;
+			de-active = <0>;
+			pixelclk-active = <0>;
+			hsync-len = <17>;
+			hfront-porch = <532>;
+			hback-porch = <12>;
+			vsync-len = <32>;
+			vfront-porch = <8>;
+			vback-porch = <40>;
+		};
 	};
 };
 
