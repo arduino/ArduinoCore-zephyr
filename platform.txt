@@ -16,14 +16,18 @@ compiler.warning_flags.more=-Wall -Wno-type-limits -Wno-missing-field-initialize
 compiler.warning_flags.all=-Wall -Wextra
 
 compiler.path={build.compiler_path}
+# Debug info only with "Optimize for Debugging"
+compiler.optimization_flags=-Os
+compiler.optimization_flags.release=-Os
+compiler.optimization_flags.debug=-g -Os
 compiler.c.cmd={build.crossprefix}gcc
-compiler.c.flags=-g -Os -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.machine_flags_file}" "@{compiler.zephyr.cflags_file}" -fdata-sections -ffunction-sections -MMD
+compiler.c.flags={compiler.optimization_flags} -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.machine_flags_file}" "@{compiler.zephyr.cflags_file}" -fdata-sections -ffunction-sections -MMD
 compiler.c.elf.cmd={build.crossprefix}g++
 compiler.c.elf.flags=-Wl,--gc-sections "@{compiler.zephyr.machine_flags_file}" -std=gnu++17
 compiler.S.cmd={build.crossprefix}g++
 compiler.S.flags=-c -x assembler-with-cpp "@{compiler.zephyr.machine_flags_file}"
 compiler.cpp.cmd={build.crossprefix}g++
-compiler.cpp.flags=-g -Os -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.machine_flags_file}" "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD
+compiler.cpp.flags={compiler.optimization_flags} -std=gnu++17 -c {compiler.define} {compiler.warning_flags} {compiler.zephyr.macros} "@{compiler.zephyr.machine_flags_file}" "@{compiler.zephyr.cxxflags_file}" {compiler.zephyr.common_ldflags} {compiler.zephyr.extra_ldflags} {compiler.zephyr.common_cxxflags} {compiler.zephyr.extra_cxxflags} -MMD
 compiler.ar.cmd={build.crossprefix}ar
 compiler.ar.flags=rcs
 compiler.objcopy.cmd=
