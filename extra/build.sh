@@ -206,13 +206,13 @@ cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 # Build the bootloader updater for boards with a separate bootloader
-BOOTLOADER_DIR=bootloaders/${variant}
-if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
-	UPDATER_BUILD_DIR=build/updater-${variant}
-	rm -rf ${UPDATER_BUILD_DIR}
-	west build -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}"
-	cp ${UPDATER_BUILD_DIR}/zephyr/zephyr.bin ${BOOTLOADER_DIR}/updater.bin
-fi
+# BOOTLOADER_DIR=bootloaders/${variant}
+# if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
+#	UPDATER_BUILD_DIR=build/updater-${variant}
+#	rm -rf ${UPDATER_BUILD_DIR}
+#	west build -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}"
+#	cp ${UPDATER_BUILD_DIR}/zephyr/zephyr.bin ${BOOTLOADER_DIR}/updater.bin
+#fi
 
 # The MCUboot companion image (sysbuild builds only)
 rm -f firmwares/mcuboot-$variant.bin
