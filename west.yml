@@ -22,8 +22,8 @@ manifest:
 
   projects:
     - name: zephyr
-      remote: arduino
-      revision: zephyr-arduino-v4.5.0
+      remote: maidnl
+      revision: zephyr-arduino-v4.5.0-with-mezza
       import:
         name-allowlist:
           - cmsis
