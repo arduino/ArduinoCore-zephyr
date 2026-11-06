@@ -114,6 +114,9 @@ recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUIN
 ## Compile c++ files
 recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.library_discovery_phase_flag} {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
 
+## Preprocess c++ files without comments
+preproc.macros.flags=-w -x c++ -E
+
 ## Compile asm files
 recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
 
