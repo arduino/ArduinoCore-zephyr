@@ -90,7 +90,8 @@ jobs:
         run: |
           # Set up basic environment for later steps
           CORE_VER=$(extra/get_core_version.sh)
-          ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant)')
+          # 'id' identifies the build-board job for each entry, as expected by ci_collect_data.py
+          ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant) | map(. + {id: "build-\(.board)"})')
           # limit builds/tests to this board family's own boards, for both
           # direct pushes and PRs. Only apply the filter if it leaves at
           # least one board, so branches with no feature_board opted in yet
@@ -116,7 +117,8 @@ jobs:
           else
             echo "CORE_BRANCH=${{ github.base_ref || github.ref_name }}" >> "$GITHUB_ENV"
           fi
-          echo "ALL_BOARD_FQBNS=$(jq -c 'map((. + {link_mode: "static"}), (. + {link_mode: "dynamic"}))' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
+          # 'id' identifies the test-core job for each entry, as expected by ci_collect_data.py
+          echo "ALL_BOARD_FQBNS=$(jq -c 'map((. + {link_mode: "static"}), (. + {link_mode: "dynamic"})) | map(. + {id: "test-\(.board)-\(.link_mode)"})' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
           echo "ARTIFACTS=$(jq -c '["zephyr"] + (map(.artifact) | unique)' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
           echo "SUB_ARCHES=$(jq -c 'map(.subarch) | unique' <<< ${ALL_BOARD_DATA})" >> "$GITHUB_ENV"
 
