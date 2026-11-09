@@ -29,3 +29,8 @@ if(EXISTS ${arduino_variant_dir}/mcuboot.overlay)
     set(mcuboot_EXTRA_DTC_OVERLAY_FILE ${arduino_variant_dir}/mcuboot.overlay
         CACHE INTERNAL "MCUboot devicetree overlay of this variant")
 endif()
+
+# MCUboot hooks shared by the variants; built only when a variant's
+# mcuboot.conf sets CONFIG_BOOT_IMAGE_ACCESS_HOOKS.
+set(mcuboot_EXTRA_ZEPHYR_MODULES ${APP_DIR}/mcuboot_hooks
+    CACHE INTERNAL "Arduino MCUboot hooks")
