@@ -47,6 +47,12 @@ target_compile_definitions(app PUBLIC _GNU_SOURCE)
 
 if(CONFIG_ARCH_POSIX)
     zephyr_linker_sources(NOINIT native_sim/llext_heap_noinit.ld)
+    target_sources(app PRIVATE native_sim/sketch_native_impl.c)
+    target_include_directories(app PRIVATE native_sim)
+    target_sources(native_simulator INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/native_sim/sketch_native_host.c)
+    target_compile_options(native_simulator INTERFACE
+        -I${CMAKE_CURRENT_SOURCE_DIR}/native_sim)
 endif()
 
 target_link_libraries(app PUBLIC blobs)
