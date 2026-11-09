@@ -15,6 +15,9 @@ SECTIONS {
         *(.comment.*)
         *(.llvmbc)
         *(.llvmcmd)
+        /* e.g. the build ID added by host toolchains: unused, and placed at
+           the start of FLASH, where the entry point is expected */
+        *(.note .note.*)
     }
 
     .text : ALIGN(4) {
@@ -108,7 +111,8 @@ SECTIONS {
         KEEP(*(.rel .rel.*))
     }
 
+    /* link-time constants in a static link: keep them with the code */
     .got : {
         KEEP(*(.got .got.* .got.plt .got.plt*))
-    }
+    } >FLASH
 }
