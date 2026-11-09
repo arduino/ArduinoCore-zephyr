@@ -4,25 +4,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* CI/dev only target: pins are lines of the emulated GPIO port. */
+/*
+ * CI/dev only target: pins are lines of an emulated GPIO port. The core
+ * identifies pins by the controller address, so the port needs a reg.
+ */
 / {
-	zephyr,user {
-		digital-pin-gpios = <&gpio0 0 0>,
-				    <&gpio0 1 0>,
-				    <&gpio0 2 0>,
-				    <&gpio0 3 0>,
-				    <&gpio0 4 0>,
-				    <&gpio0 5 0>,
-				    <&gpio0 6 0>,
-				    <&gpio0 7 0>,
-				    <&gpio0 8 0>,
-				    <&gpio0 9 0>,
-				    <&gpio0 10 0>,
-				    <&gpio0 11 0>,
-				    <&gpio0 12 0>,
-				    <&gpio0 13 0>;
+	arduino_gpio: gpio@800 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0x800 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
 
-		builtin-led-gpios = <&gpio0 13 0>;
+	zephyr,user {
+		digital-pin-gpios = <&arduino_gpio 0 0>,
+				    <&arduino_gpio 1 0>,
+				    <&arduino_gpio 2 0>,
+				    <&arduino_gpio 3 0>,
+				    <&arduino_gpio 4 0>,
+				    <&arduino_gpio 5 0>,
+				    <&arduino_gpio 6 0>,
+				    <&arduino_gpio 7 0>,
+				    <&arduino_gpio 8 0>,
+				    <&arduino_gpio 9 0>,
+				    <&arduino_gpio 10 0>,
+				    <&arduino_gpio 11 0>,
+				    <&arduino_gpio 12 0>,
+				    <&arduino_gpio 13 0>;
+
+		builtin-led-gpios = <&arduino_gpio 13 0>;
 
 		serials = <&uart0>;
 	};
