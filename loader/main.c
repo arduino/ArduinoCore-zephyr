@@ -31,10 +31,8 @@ LOG_MODULE_REGISTER(sketch);
 #include <string.h>
 #include <posix_board_if.h>
 
-/* Overridden when a sketch file was mapped at CONFIG_ARDUINO_NATIVE_SKETCH_BASE */
-__weak bool native_sketch_loaded(void) {
-	return false;
-}
+/* true if a sketch file was mapped at CONFIG_ARDUINO_NATIVE_SKETCH_BASE */
+bool native_sketch_loaded(void);
 #endif
 
 extern struct k_thread z_main_thread;
