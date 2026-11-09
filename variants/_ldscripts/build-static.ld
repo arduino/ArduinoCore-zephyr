@@ -108,7 +108,8 @@ SECTIONS {
         KEEP(*(.rel .rel.*))
     }
 
+    /* link-time constants in a static link: keep them with the code */
     .got : {
         KEEP(*(.got .got.* .got.plt .got.plt*))
-    }
+    } >FLASH
 }
