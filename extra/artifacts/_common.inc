@@ -15,5 +15,6 @@ README.md
 doc/
 cores/
 libraries/
+loader/cannectivity/cannectivity_proxy.h
 variants/_ldscripts/
 variants/common/

@@ -8,6 +8,10 @@
 #include <string.h>
 #include <zephyr/sys/util_macro.h>
 
+#ifdef CONFIG_USBD_GS_USB
+#include "../../loader/cannectivity/cannectivity_proxy.h"
+#endif
+
 /* -------------------------------------------------------------------------- */
 /*  Arduino CAN implementation                                                */
 /* -------------------------------------------------------------------------- */
@@ -27,21 +31,50 @@ bool arduino::ZephyrCAN::begin(CanBitRate can_bitrate) {
 }
 
 bool arduino::ZephyrCAN::begin(CanBitRate can_bitrate, PinctrlState state) {
-	/* Init device or re-apply the pinctrl state so shared pins
-	 * are remuxed back to CAN after other peripherals have used them.
-	 */
-	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev, state);
-	return _begin(can_bitrate, CanMode::Classic, static_cast<uint32_t>(can_bitrate), false);
+	return _begin(can_bitrate, CanMode::Classic, static_cast<uint32_t>(can_bitrate), false, state);
 }
 
 bool arduino::ZephyrCAN::beginFD(CanBitRate arbitration_bitrate, uint32_t data_bitrate,
 								 bool bitrate_switch, PinctrlState state) {
-	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev, state);
-	return _begin(arbitration_bitrate, CanMode::FD, data_bitrate, bitrate_switch);
+	return _begin(arbitration_bitrate, CanMode::FD, data_bitrate, bitrate_switch, state);
 }
 
 bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, uint32_t data_bitrate,
-								bool bitrate_switch) {
+								bool bitrate_switch, PinctrlState state) {
+
+	if (!_cb_thread_started) {
+		k_tid_t const tid = k_thread_create(
+			&_cb_thread, _cb_thread_stack, K_KERNEL_STACK_SIZEOF(_cb_thread_stack),
+			&_callback_thread_entry, this, nullptr, nullptr, K_PRIO_PREEMPT(10), 0, K_NO_WAIT);
+		if (tid == nullptr) {
+			return false;
+		}
+		k_thread_name_set(&_cb_thread, "arduino_can_cb");
+		_cb_thread_started = true;
+	}
+
+#ifdef CONFIG_USBD_GS_USB
+	const int shared_ret = proxy_can_init(_dev, mode == CanMode::FD ? CAN_MODE_FD : CAN_MODE_NORMAL,
+										  static_cast<uint32_t>(arbitration_bitrate), data_bitrate,
+										  _rx_callback, this);
+	if (shared_ret != -ENODEV) {
+		if (shared_ret != 0) {
+			return false;
+		}
+		if (zephyr::arduino::init_dev_apply_pinctrl(_dev, state) < 0) {
+			proxy_can_end(_dev, this);
+			return false;
+		}
+		_tx_frame_flags =
+			mode == CanMode::FD ? CAN_FRAME_FDF | (bitrate_switch ? CAN_FRAME_BRS : 0U) : 0U;
+		return true;
+	}
+#endif
+
+	/* Init device or re-apply the pinctrl state so shared pins
+	 * are remuxed back to CAN after other peripherals have used them.
+	 */
+	(void)zephyr::arduino::init_dev_apply_pinctrl(_dev, state);
 
 	/* Bitrate can only be changed while the controller is stopped. */
 	(void)can_stop(_dev);
@@ -94,18 +127,6 @@ bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, ui
 	if (ret < 0 && ret != -EALREADY) {
 		return false;
 	}
-
-	if (!_cb_thread_started) {
-		k_tid_t const tid = k_thread_create(
-			&_cb_thread, _cb_thread_stack, K_KERNEL_STACK_SIZEOF(_cb_thread_stack),
-			&_callback_thread_entry, this, nullptr, nullptr, K_PRIO_PREEMPT(10), 0, K_NO_WAIT);
-		if (tid == nullptr) {
-			return false;
-		}
-		k_thread_name_set(&_cb_thread, "arduino_can_cb");
-		_cb_thread_started = true;
-	}
-
 	if (_std_filter_configured) {
 		_filter_id_std = can_add_rx_filter(_dev, _rx_callback, this, &_std_filter);
 	}
@@ -136,6 +157,12 @@ bool arduino::ZephyrCAN::_begin(CanBitRate arbitration_bitrate, CanMode mode, ui
 }
 
 void arduino::ZephyrCAN::end() {
+#ifdef CONFIG_USBD_GS_USB
+	const int shared_ret = proxy_can_end(_dev, this);
+	if (shared_ret != -ENODEV) {
+		return;
+	}
+#endif
 	if (_filter_id_std >= 0) {
 		can_remove_rx_filter(_dev, _filter_id_std);
 		_filter_id_std = -1;
@@ -234,6 +261,10 @@ int arduino::ZephyrCAN::addReceiveFilter(uint32_t id, uint32_t mask, bool extend
 	if (!device_is_ready(_dev)) {
 		return -ENODEV;
 	}
+	const uint32_t id_mask = extended ? CAN_EXT_ID_MASK : CAN_STD_ID_MASK;
+	if (((id | mask) & ~id_mask) != 0U) {
+		return -EINVAL;
+	}
 
 	/* Filters are configured before begin()/beginFD() and installed at begin-time. */
 	if (_filter_id_std >= 0 || _filter_id_ext >= 0) {
@@ -298,6 +329,21 @@ template bool arduino::ZephyrCAN::_read_impl<arduino::CanFDMsg>(arduino::CanFDMs
 	ARG_UNUSED(dev);
 	ZephyrCAN *self = static_cast<ZephyrCAN *>(user_data);
 	/* Called from interrupt context — K_NO_WAIT is mandatory. */
+
+#ifdef CONFIG_USBD_GS_USB
+	/* Match the hardware-filter semantics when the bridge supplies all frames.
+	 * Configuring either ID type disables the implicit accept-all filters.
+	 */
+	if (self->_std_filter_configured || self->_ext_filter_configured) {
+		const bool extended = (frame->flags & CAN_FRAME_IDE) != 0U;
+		const bool configured =
+			extended ? self->_ext_filter_configured : self->_std_filter_configured;
+		const struct can_filter &filter = extended ? self->_ext_filter : self->_std_filter;
+		if (!configured || ((frame->id ^ filter.id) & filter.mask) != 0U) {
+			return;
+		}
+	}
+#endif
 
 	if (self->_rx_user_callback != nullptr) {
 		/* Callback-exclusive mode: enqueue only to callback queue, not polling. */

@@ -501,6 +501,10 @@ FORCE_EXPORT_SYM(fs_unregister);
 
 #if defined(CONFIG_CAN)
 FORCE_EXPORT_SYM(can_add_rx_filter);
+#if defined(CONFIG_USBD_GS_USB)
+FORCE_EXPORT_SYM(proxy_can_init);
+FORCE_EXPORT_SYM(proxy_can_end);
+#endif
 #endif
 
 #if defined(CONFIG_DYNAMIC_INTERRUPTS)

@@ -11,6 +11,16 @@
 
 struct device;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* C entry point for firmware services using the standard Arduino pin routing. */
+int zephyr_init_dev_apply_pinctrl(const struct device *dev);
+
+#ifdef __cplusplus
+}
+
 namespace arduino {
 
 /* Zephyr state IDs, not pinctrl-N property indices. Additional states
@@ -51,3 +61,5 @@ inline constexpr size_t state_pin_index_from_spec_index(const DT_SPEC (&specs)[N
 
 } // namespace arduino
 } // namespace zephyr
+
+#endif /* __cplusplus */

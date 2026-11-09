@@ -96,7 +96,7 @@ public:
 	}
 
 	bool begin(CanBitRate can_bitrate) override;
-	/* Select a pinctrl state, falling back to Arduino if it is not defined. */
+	/* Reapply the selected pins at each begin, falling back to Arduino if undefined. */
 	bool begin(CanBitRate can_bitrate, PinctrlState state);
 	bool beginFD(CanBitRate arbitration_bitrate, uint32_t data_bitrate, bool bitrate_switch = true,
 				 PinctrlState state = PinctrlState::Standard);
@@ -136,6 +136,9 @@ public:
 	 *
 	 * If no filter is configured before begin(), wildcard filters are installed for
 	 * both standard and extended IDs (accept-all behavior).
+	 * When the controller is shared with the USB-CAN bridge, the bridge owns the
+	 * hardware wildcard filters and these filters are applied in software to the
+	 * frames forwarded to this library. USB reception keeps its accept-all behavior.
 	 *
 	 * At most one configured filter per ID type is tracked by the library:
 	 * - one standard (11-bit) filter
@@ -170,7 +173,7 @@ private:
 	bool _cb_thread_started;
 
 	bool _begin(CanBitRate arbitration_bitrate, CanMode mode, uint32_t data_bitrate,
-				bool bitrate_switch);
+				bool bitrate_switch, PinctrlState state);
 
 	/* Template implementations for write/writeFD */
 	template <typename MsgType> int _write_impl(MsgType const &msg);

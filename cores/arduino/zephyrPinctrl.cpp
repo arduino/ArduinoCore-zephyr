@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <Arduino.h>
-#include <zephyrPinctrl.h>
+#include "zephyrPinctrl.h"
 #include <zephyr/device.h>
 #include <zephyr/drivers/pinctrl.h>
+
+#if defined(CONFIG_SOC_FAMILY_RENESAS_RA)
+// RA pinctrl initializers use register definitions from the SoC header.
+#include <soc.h>
+#endif
 
 // Keep the public IDs independent of the driver header, but verify their mapping here.
 static_assert(static_cast<uint8_t>(arduino::PinctrlState::Standard) == PINCTRL_STATE_ARDUINO,
@@ -196,6 +200,10 @@ int init_dev_apply_pinctrl(const struct device *dev, ::arduino::PinctrlState sta
 
 } // namespace arduino
 } // namespace zephyr
+
+extern "C" int zephyr_init_dev_apply_pinctrl(const struct device *dev) {
+	return zephyr::arduino::init_dev_apply_pinctrl(dev);
+}
 
 /*
  * Declare selected device objects as weak to allow the linker to succeed when a driver is disabled

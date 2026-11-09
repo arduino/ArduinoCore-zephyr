@@ -40,6 +40,15 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
 )
 
 FILE(GLOB app_sources *.c)
+if(CONFIG_USBD_GS_USB)
+    target_sources(app PRIVATE cannectivity/cannectivity_proxy.c)
+    if(CONFIG_LLEXT_EDK)
+        # EDK builds omit cores/arduino; the proxy still needs its pinctrl helper.
+        target_sources(app PRIVATE
+            ${CMAKE_CURRENT_LIST_DIR}/../cores/arduino/zephyrPinctrl.cpp
+        )
+    endif()
+endif()
 target_sources(app PRIVATE ${app_sources})
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
