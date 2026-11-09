@@ -27,6 +27,16 @@ LOG_MODULE_REGISTER(sketch);
 #include "ota/ota_sketch_check.h"
 #include "error_led.h"
 
+#ifdef CONFIG_ARCH_POSIX
+#include <string.h>
+#include <posix_board_if.h>
+
+/* Overridden when a sketch file was mapped at CONFIG_ARDUINO_NATIVE_SKETCH_BASE */
+__weak bool native_sketch_loaded(void) {
+	return false;
+}
+#endif
+
 extern struct k_thread z_main_thread;
 
 #define SKETCH_RAM_BUFFER_LEN 131072
@@ -113,9 +123,14 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 #endif /* CONFIG_USERSPACE */
 
 /* Export Flash parameters for use by core building scripts */
+#ifdef CONFIG_ARCH_POSIX
+__attribute__((retain)) const uintptr_t sketch_base_addr = CONFIG_ARDUINO_NATIVE_SKETCH_BASE;
+__attribute__((retain)) const uintptr_t sketch_max_size = CONFIG_ARDUINO_NATIVE_SKETCH_MAX_SIZE;
+#else
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
+#endif
 
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
@@ -134,9 +149,19 @@ __attribute__((retain)) const uintptr_t loader_max_size = LOADER_MAX_SIZE;
 struct backup_store {
 	uint32_t wait_for_app_magic;
 };
+#ifndef CONFIG_ARCH_POSIX
 extern volatile __stm32_backup_sram_section struct backup_store backup;
+#endif
 
 static int loader(const struct shell *sh) {
+#ifdef CONFIG_ARCH_POSIX
+	uintptr_t base_addr = CONFIG_ARDUINO_NATIVE_SKETCH_BASE;
+
+	char header[SKETCH_HEADER_LEN] = {0};
+	if (native_sketch_loaded()) {
+		memcpy(header, (const void *)base_addr, sizeof(header));
+	}
+#else
 	const struct flash_area *fa;
 	int rc;
 
@@ -161,6 +186,7 @@ static int loader(const struct shell *sh) {
 		recoverable_error_led();
 		return rc;
 	}
+#endif /* CONFIG_ARCH_POSIX */
 
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
@@ -304,7 +330,9 @@ static int loader(const struct shell *sh) {
 
 		extern struct k_heap llext_heap;
 		typedef void (*entry_point_t)(struct k_heap *heap, size_t heap_size);
-		entry_point_t entry_point = (entry_point_t)(base_addr + SKETCH_HEADER_LEN + 1);
+		/* bit 0 selects Thumb state on ARM */
+		entry_point_t entry_point =
+			(entry_point_t)(base_addr + SKETCH_HEADER_LEN + (IS_ENABLED(CONFIG_ARM) ? 1 : 0));
 		entry_point(&llext_heap, llext_heap.heap.init_bytes);
 		// should never reach here
 		for (;;) {
@@ -412,6 +440,12 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
-	loader(NULL);
+	int rc = loader(NULL);
+
+#ifdef CONFIG_ARCH_POSIX
+	/* a sketch that runs never returns here: end the process on failure */
+	posix_exit(rc == 0 ? 0 : 1);
+#endif
+	(void)rc;
 	return 0;
 }

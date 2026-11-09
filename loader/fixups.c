@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#ifndef CONFIG_ARCH_POSIX
 #include <cmsis_core.h>
+#endif
 #include <zephyr/init.h>
 #include <zephyr/drivers/led.h>
 #include <zephyr/sys/printk.h>
@@ -16,6 +18,7 @@ void __cxa_pure_virtual() {
 }
 #endif
 
+#ifndef CONFIG_ARCH_POSIX
 int disable_mpu_rasr_xn(void) {
 	uint32_t index;
 	/* Kept the max index as 8(irrespective of soc) because the sram
@@ -39,6 +42,7 @@ int disable_mpu_rasr_xn(void) {
 #if defined(CONFIG_ARM_MPU)
 SYS_INIT(disable_mpu_rasr_xn, PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
 #endif
+#endif /* !CONFIG_ARCH_POSIX */
 
 #if defined(CONFIG_SOC_SERIES_RP2040)
 /* Raspberry Pi chips do not link CMSIS by default,
