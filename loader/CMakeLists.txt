@@ -50,7 +50,7 @@ if(CONFIG_ARCH_POSIX)
     # directory in the EDK too (it only exports the include directories)
     zephyr_include_directories(${ZEPHYR_BASE}/boards/native/common)
     zephyr_linker_sources(NOINIT native_sim/llext_heap_noinit.ld)
-    target_sources(app PRIVATE native_sim/sketch_native_impl.c)
+    target_sources(app PRIVATE native_sim/sketch_native_impl.c native_sim/gpio_log.c)
     target_include_directories(app PRIVATE native_sim)
     target_sources(native_simulator INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/native_sim/sketch_native_host.c)
