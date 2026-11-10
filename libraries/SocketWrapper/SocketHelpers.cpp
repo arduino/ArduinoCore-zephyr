@@ -129,8 +129,15 @@ int NetworkInterface::begin(bool blocking, uint64_t additional_event_mask) {
 
 	int ret = 0;
 	if (blocking && netif->config.dhcpv4.state != NET_DHCPV4_BOUND) {
+		// Zephyr's DHCPv4 client can wait up to CONFIG_NET_DHCPV4_INITIAL_DELAY_MAX
+		// seconds (default/max 10, see RFC2131 4.4.1) before even sending the first
+		// DISCOVER, on top of the DISCOVER/OFFER/REQUEST/ACK round trip itself. A
+		// fixed 10s wait here left little to no margin and could time out before the
+		// lease was actually bound, especially with multiple interfaces negotiating
+		// DHCP concurrently (e.g. WiFi + Ethernet), returning a non-fatal "connected"
+		// status with stale/unset (0.0.0.0) IP info. Give it more headroom.
 		ret = net_mgmt_event_wait_on_iface(netif, NET_EVENT_IPV4_DHCP_BOUND, NULL, NULL, NULL,
-										   K_SECONDS(10));
+										   K_SECONDS(20));
 	}
 	return (ret == 0) ? 1 : 0;
 }
