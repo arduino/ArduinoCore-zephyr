@@ -86,6 +86,17 @@
 		cdc-acm-serial = <&board_cdc_acm_uart>;
 		serials = <&uart7>, <&usart2>;
 
+		/* uart9 and chip-en-gpios (gpioi 6) are wired internally to the
+		 * ST67W611M1A6BTR Wi-Fi/BLE radio module (used to flash its
+		 * firmware or talk to it directly over UART). Exposed here as
+		 * 'coprocessor-*' rather than as a numbered Serial object, so
+		 * the module's UART/control pins stay reserved for a bridge
+		 * sketch (e.g. WiFiProgrammer) instead of colliding with the
+		 * WiFi driver, which already owns chip-en-gpios on &st67w611m1. */
+		coprocessor-serial = <&uart9>;
+		coprocessor-boot-gpios = <&gpioi 11 GPIO_ACTIVE_HIGH>;
+		coprocessor-reset-gpios = <&gpioi 6 GPIO_ACTIVE_HIGH>;
+
 		i2cs = <&i2c2>, <&i2c1>, <&i2c4>;
 		spis = <&spi4>, <&spi1>;
 
