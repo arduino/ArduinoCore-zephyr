@@ -205,8 +205,16 @@ jobs:
 
       - name: Get test sketches
         run: |
-          # sets ALL_TESTS and ALL_LIBRARIES env vars in GITHUB_ENV
-          extra/ci_apply_tests.sh ${{ matrix.artifact }} ${{ matrix.variant }}
+          extra/ci_apply_tests.sh ${{ matrix.artifact }} ${{ matrix.variant }} lists/
+          # pass the lists to compile-sketches as YAML lists
+          {
+            echo "ALL_LIBRARIES<<EOF"
+            sed -e 's/.*/ - name: "&"/' lists/libraries.txt
+            echo "EOF"
+            echo "ALL_TESTS<<EOF"
+            sed -e 's/.*/ - "&"/' lists/tests.txt
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
       - name: Compile tests for ${{ matrix.board }}
         uses: pillo79/compile-sketches@next
