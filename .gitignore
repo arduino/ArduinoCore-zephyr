@@ -19,3 +19,6 @@ syms-dynamic.ld
 syms-static.ld
 tls-syms.S
 /variants/native_sim*/libc.a
+/variants/native_sim*/libstdc++.a
+/variants/native_sim*/libsupc++.a
+/variants/native_sim*/libstdc++/
