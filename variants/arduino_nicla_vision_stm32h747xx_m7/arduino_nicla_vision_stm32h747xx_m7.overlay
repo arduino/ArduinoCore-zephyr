@@ -208,6 +208,7 @@
         zephyr,console = &lpuart1;
         zephyr,shell-uart = &lpuart1;
         zephyr,log-uart = &log_uarts;
+		zephyr,settings_partition = &kvs_partition;
         arduino,camera-clock = &pwmclock;
     };
 

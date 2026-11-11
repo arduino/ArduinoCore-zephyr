@@ -1,0 +1,35 @@
+#
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config ARDUINO_IOTCLOUD
+	bool "Arduino IoT Cloud support"
+	default y if BOARD_ARDUINO_NICLA_VISION
+	default y if BOARD_ARDUINO_PORTENTA_H7
+	default y if BOARD_ARDUINO_OPTA
+	default y if BOARD_ARDUINO_GIGA_R1
+	default y if BOARD_ARDUINO_PORTENTA_C33
+	default y if BOARD_ARDUINO_NANO_CONNECT
+	depends on NETWORKING
+	depends on NET_TCP
+	depends on NET_SOCKETS
+	imply SETTINGS				if !BOARD_ARDUINO_NANO_CONNECT
+	imply NVS				if !BOARD_ARDUINO_NANO_CONNECT
+	imply NVS_DATA_CRC			if !BOARD_ARDUINO_NANO_CONNECT
+	imply NVS_INIT_BAD_MEMORY_REGION	if !BOARD_ARDUINO_NANO_CONNECT
+	help
+	  Enable the Arduino IoT Cloud support and bring in zephyr packages required to run it
+
+if ARDUINO_IOTCLOUD
+
+config ARDUINO_IOTCLOUD_OTA
+	bool "Arduino IoT Cloud OTA support"
+	default y if BOARD_ARDUINO_NICLA_VISION
+	default y if BOARD_ARDUINO_PORTENTA_H7
+	default y if BOARD_ARDUINO_OPTA
+	default y if BOARD_ARDUINO_GIGA_R1
+	select OTA
+
+endif # ARDUINO_IOTCLOUD

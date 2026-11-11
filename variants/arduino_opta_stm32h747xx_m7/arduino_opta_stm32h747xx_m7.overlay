@@ -60,6 +60,7 @@
 		zephyr,shell-uart = &usart6;
 		zephyr,uart-mcumgr = &usart6;
 		zephyr,log-uart = &log_uarts;
+		zephyr,settings_partition = &kvs_partition;
 	};
 
 	log_uarts: log_uarts {
