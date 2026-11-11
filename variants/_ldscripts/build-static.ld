@@ -20,7 +20,9 @@ SECTIONS {
         *(.note .note.*)
     }
 
-    .text : ALIGN(4) {
+    /* the loader jumps to the start of FLASH: an explicit address keeps the
+       section start from being rounded up to its largest input alignment */
+    .text ORIGIN(FLASH) : {
         KEEP (*(.entry_point))
         *(.text)
         *(.stub)
