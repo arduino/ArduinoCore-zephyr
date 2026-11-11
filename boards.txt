@@ -820,19 +820,40 @@ mezza.upload.tool=dfu-util
 mezza.upload.tool.default=dfu-util
 mezza.upload.protocol=
 mezza.upload.transport=
-#mezza.upload.vid=0x2341
-#mezza.upload.pid=0x017B
+# The board uses three distinct PIDs: 0x007B for the running sketch/loader
+# (CDC-ACM), 0x017B for the loader's own self-hosted DFU mode (entered via
+# the 1200bps touch, no mcuboot involved), and 0x087B for mcuboot's dedicated
+# recovery DFU (bootloader.vid/pid). The 1200bps touch reboots the running
+# 0x007B device into the 0x017B DFU device, so upload must match that PID.
+mezza.upload.vid=0x2341
+mezza.upload.pid=0x017B
 mezza.upload.interface=1
 mezza.upload.use_1200bps_touch=true
-mezza.upload.wait_for_upload_port=true
+# arduino-cli's own serial-only wait (go-serial-utils Reset) only ever
+# detects new serial ports; after the 1200bps touch the board re-enumerates
+# purely as a DFU interface (no tty), so that wait would always burn its
+# full 10 s timeout before giving up. Waiting is instead delegated to
+# dfu-util's own -w flag (loader.args.with_sketch below), which waits for
+# the DFU device to actually appear via USB enumeration.
+mezza.upload.wait_for_upload_port=false
 mezza.upload.native_usb=true
 mezza.upload.dfuse=
 mezza.upload_port.0.vid=0x2341
-mezza.upload_port.0.pid=0x017B
+mezza.upload_port.0.pid=0x007B
 mezza.upload_port.1.vid=0x2341
-mezza.upload_port.1.pid=0x007B
+mezza.upload_port.1.pid=0x017B
+mezza.upload_port.2.vid=0x2341
+mezza.upload_port.2.pid=0x087B
 mezza.upload.target=stm32h5f5xx
 mezza.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.extension}
+# Default for upload.port.properties.pid, used as a "none" sentinel below:
+# arduino-cli only overwrites this with a real value when a port was
+# actually selected/open before the upload started; if none was (no -p, or
+# it already vanished because the board sits in mcuboot recovery DFU), this
+# default survives and the upload.pattern override falls back to mcuboot's
+# fixed recovery PID instead.
+mezza.upload.port.properties.pid=none
+mezza.upload.mcuboot_pid={bootloader.pid}
 
 mezza.leave.dfuse=
 
@@ -840,15 +861,42 @@ mezza.bootloader.tool=dfu-util
 mezza.bootloader.tool.default=dfu-util
 mezza.bootloader.file=zephyr-{build.variant}.signed.bin
 mezza.bootloader.vid=0x2341
-mezza.bootloader.pid=0x017B
+mezza.bootloader.pid=0x087B
 mezza.bootloader.native_usb=true
 mezza.bootloader.interface=0
 mezza.bootloader.dfuse=
 
 mezza.flash-loader-and-sketch.2=run echo
+# Whole-image (loader+sketch) flash. Two separate single-PID commands
+# replace the former "{upload.pid}/{bootloader.pid}" patched-dfu-util
+# syntax:
+# - loader.cmd targets the loader's own self-hosted DFU (PID upload.pid=
+#   0x017B), reached via the normal 1200bps touch from the running sketch.
+# - mcuboot.cmd targets mcuboot's dedicated recovery DFU (PID
+#   bootloader.pid=0x087B), used only when no live port was selected/open
+#   to begin with (see upload.port.properties.pid=none above), i.e. the
+#   board is already sitting in mcuboot recovery DFU on its own. That rule
+#   also double-checks "not {flash-loader-condition}" as a belt-and-braces
+#   reinforcement of the same idea, even though upload.port.properties.pid
+#   alone already makes this branch mutually exclusive with the other two.
+# Both devices already enumerate directly in DFU mode (bInterfaceProtocol
+# == 2), so dfu-util only ever matches them against the DFU-mode half of
+# --device (the part after the comma) - the Run-Time half before the comma
+# is never consulted for them.
 mezza.tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{bootloader.interface} {upload.dfuse}{leave.dfuse}
+mezza.tools.dfu-util.mcuboot.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.mcuboot_pid} -D "{upload.artifacts.sketch}" -a{bootloader.interface} {upload.dfuse}{leave.dfuse}
+# Note: when the loader is out of date, {loader.cmd} alone (alt-interface 0,
+# "complete_image" in dfu_flash_updates.c) already writes the squashed
+# loader+sketch image straight into slot1_partition in one pass - the sketch
+# is embedded at its correct offset by zephyr-sketch-tool's --squash step.
+# There is deliberately no extra rule re-flashing just the sketch (alt-
+# interface 1, the "sketch" dynamic DFU alternate) afterwards in that case:
+# it targets that same slot1_partition and would redundantly re-erase/
+# re-write the sketch sub-region using offsets derived from the OLD,
+# currently-running loader's layout, which can disagree with the new
+# loader's layout and corrupt the just-written image.
+mezza.tools.dfu-util.upload.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if and eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {mcuboot.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {loader.cmd}{loader.args.with_sketch} :: if and not eq "v{upload.port.properties.pid}" "vnone" not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
 
 mezza.loader.args.with_sketch={empty} -w
 mezza.loader.args.without_sketch={empty} -w
-mezza.sketch.args.with_loader={empty} -w
 mezza.sketch.args.without_loader={empty} -w
