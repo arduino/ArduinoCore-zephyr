@@ -575,6 +575,7 @@ EXPORT_SYMBOL(settings_save_one);
 EXPORT_SYMBOL(settings_load_one);
 EXPORT_SYMBOL(settings_get_val_len);
 EXPORT_SYMBOL(settings_storage_get);
+EXPORT_SYMBOL(settings_load_subtree_direct);
 #endif
 
 #if defined(CONFIG_NVS)
@@ -582,4 +583,9 @@ EXPORT_SYMBOL(settings_storage_get);
 
 EXPORT_SYMBOL(nvs_clear);
 EXPORT_SYMBOL(nvs_mount);
+#endif
+
+#ifdef CONFIG_CRC32_IEEE
+#include <zephyr/sys/crc.h>
+EXPORT_SYMBOL(crc32_ieee_update);
 #endif

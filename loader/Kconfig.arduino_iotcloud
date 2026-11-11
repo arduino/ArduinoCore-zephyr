@@ -19,6 +19,7 @@ config ARDUINO_IOTCLOUD
 	imply NVS				if !BOARD_ARDUINO_NANO_CONNECT
 	imply NVS_DATA_CRC			if !BOARD_ARDUINO_NANO_CONNECT
 	imply NVS_INIT_BAD_MEMORY_REGION	if !BOARD_ARDUINO_NANO_CONNECT
+	imply CRC32_IEEE
 	help
 	  Enable the Arduino IoT Cloud support and bring in zephyr packages required to run it
 
