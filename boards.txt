@@ -762,5 +762,6 @@ native_sim.build.link_mode=static
 native_sim.build.check_command-static={build.check_command-dynamic}
 native_sim.upload.extension=bin-zsk.bin
 native_sim.upload.tool=
-native_sim.compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -nostdlib -no-pie -static -Wl,--no-warn-rwx-segments -Wl,--build-id=none
-native_sim.compiler.zephyr.extra_ldflags=-lc -lgcc
+native_sim.compiler.zephyr.extra_cxxflags=-I{build.variant.path}/libstdc++/include -I{build.variant.path}/libstdc++/target
+native_sim.compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -nostdlib -no-pie -static -Wl,--no-warn-rwx-segments -Wl,-u,__cxa_allocate_exception -Wl,--build-id=none
+native_sim.compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++ -lc -lgcc

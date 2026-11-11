@@ -32,6 +32,11 @@ foreach(variant ${VARIANTS})
 	message(STATUS "Processing ${variant}")
 	include(${dir}/llext-edk/cmake.cflags)
 
+	if(variant MATCHES "^native_sim")
+		# sketches use the SDK libstdc++ instead of the minimal C++ library
+		list(FILTER LLEXT_ALL_INCLUDE_CFLAGS EXCLUDE REGEX "/lib/cpp/minimal/include$")
+	endif()
+
 	# Files forced with -include and system include directories are copied
 	# to the EDK, with a joined path inside it: make them relative to the
 	# variant, as the include directories.
@@ -92,6 +97,10 @@ foreach(variant ${VARIANTS})
 	list(FILTER LLEXT_BASE_CXXFLAGS EXCLUDE REGEX "-Wno-pointer-sign")
 	list(FILTER LLEXT_BASE_CXXFLAGS EXCLUDE REGEX "-Werror=implicit-int")
 	list(FILTER LLEXT_BASE_CXXFLAGS EXCLUDE REGEX "-std=c.*")
+	if(variant MATCHES "^native_sim")
+		# libstdc++ needs a hosted C++ environment (C code stays freestanding)
+		list(FILTER LLEXT_BASE_CXXFLAGS EXCLUDE REGEX "^-ffreestanding$")
+	endif()
 
 	# save flag files
 	list(JOIN LLEXT_MACHINE_FLAGS "\n" EDK_MACHINE_FLAGS)

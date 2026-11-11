@@ -74,6 +74,12 @@ TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do
   fi
   echo "$version $tc"
 done | sort -V)
+# native_sim sketches use the picolibc-based libstdc++ of the SDK toolchain
+# for the host, from the same SDK as the ARM one (native_sim is Linux only)
+if [ "$(uname -s)" = Linux ] && grep -q '^native_sim\.' boards.txt; then
+  version=$(echo "$TOOLCHAIN_VERSIONS" | awk '$2 == "arm-zephyr-eabi" { print $1 }')
+  TOOLCHAIN_VERSIONS+=$'\n'"$version $(uname -m)-zephyr-elf"
+fi
 
 for version in $(echo "$TOOLCHAIN_VERSIONS" | cut -d ' ' -f 1 | sort -u -V); do
   toolchains=$(echo "$TOOLCHAIN_VERSIONS" | awk -v v="$version" '$1 == v { print $2 }')

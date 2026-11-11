@@ -110,13 +110,26 @@ mkdir -p ${VARIANT_DIR} firmwares
 (set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
 rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
 if [[ $variant == native_sim* ]] ; then
-	# the EDK only exports *.h files: copy the minimal C++ library headers
-	# (cstdint, new, ...), which are used instead of the toolchain libstdc++
-	cp ${ZEPHYR_BASE}/lib/cpp/minimal/include/* \
-		${VARIANT_DIR}/llext-edk/include/zephyr/lib/cpp/minimal/include/
 	# no toolchain picolibc for the host gcc: static sketches link the one
 	# built for the loader, as ARM sketches link the toolchain one
 	cp ${BUILD_DIR}/modules/picolibc/libc.a ${VARIANT_DIR}/libc.a
+	# no picolibc-based libstdc++ for the host gcc either: use the one from
+	# the Zephyr SDK toolchain for the host architecture (also installed by
+	# bootstrap.sh)
+	host_tc=$(uname -m)-zephyr-elf
+	host_tc_dir=${ZEPHYR_SDK_INSTALL_DIR}/gnu/${host_tc}/${host_tc}
+	cxx_inc=$(ls -d ${host_tc_dir}/include/c++/*/ 2>/dev/null | sort -V | tail -n 1)
+	if [ -z "$cxx_inc" ] || [ ! -f ${host_tc_dir}/lib/libstdc++.a ] ; then
+		echo "No libstdc++ found in ${host_tc_dir}"
+		echo "Re-run extra/bootstrap.sh to install the ${host_tc} SDK toolchain"
+		exit 1
+	fi
+	cp ${host_tc_dir}/lib/libstdc++.a ${host_tc_dir}/lib/libsupc++.a ${VARIANT_DIR}/
+	rm -rf ${VARIANT_DIR}/libstdc++
+	mkdir -p ${VARIANT_DIR}/libstdc++
+	cp -r ${cxx_inc} ${VARIANT_DIR}/libstdc++/include
+	# target specific headers in a fixed path, for boards.txt
+	mv ${VARIANT_DIR}/libstdc++/include/${host_tc} ${VARIANT_DIR}/libstdc++/target
 fi
 
 # remove all inline comments in macro definitions

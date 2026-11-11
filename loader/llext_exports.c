@@ -483,6 +483,11 @@ EXPORT_AEABI_SYM(__gnu_thumb1_case_si);
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
 
+#if defined(CONFIG_ARCH_POSIX) && defined(CONFIG_PICOLIBC) && !defined(CONFIG_LIBC_ERRNO)
+/* errno accessor of the Zephyr SDK libstdc++ used by native_sim sketches */
+EXPORT_SYMBOL(z_errno_wrap);
+#endif
+
 #if defined(CONFIG_ARCH_POSIX)
 /* irq_lock()/irq_unlock(), and so k_spin_lock(), inline calls to these */
 EXPORT_SYMBOL(posix_irq_lock);
