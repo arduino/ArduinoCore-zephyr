@@ -287,18 +287,20 @@
 &i2c0 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c0_default>;
+	pinctrl-0 = <&empty_default>;
 	pinctrl-1 = <&empty_default>;
-	pinctrl-names = "default", "sleep";
+	pinctrl-2 = <&i2c0_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
 &i2c1 {
 	status = "okay";
 	zephyr,deferred-init;
-	pinctrl-0 = <&i2c1_default>;
+	pinctrl-0 = <&empty_default>;
 	pinctrl-1 = <&empty_default>;
-	pinctrl-names = "default", "sleep";
+	pinctrl-2 = <&i2c1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
@@ -309,5 +311,9 @@
 };
 &spi2 {
 	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&spi2_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 

@@ -131,6 +131,10 @@
 &i2c1 {
 	status = "okay";
 	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&empty_default>;
+	pinctrl-2 = <&i2c1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
 };
 
 / {

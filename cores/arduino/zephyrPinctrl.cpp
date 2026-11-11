@@ -5,8 +5,15 @@
  */
 
 #include <Arduino.h>
+#include <zephyrPinctrl.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/pinctrl.h>
+
+// Keep the public IDs independent of the driver header, but verify their mapping here.
+static_assert(static_cast<uint8_t>(arduino::PinctrlState::Standard) == PINCTRL_STATE_ARDUINO,
+			  "PinctrlState::Standard must match PINCTRL_STATE_ARDUINO");
+static_assert(static_cast<uint8_t>(arduino::PinctrlState::Alt1) == PINCTRL_STATE_ARDUINO_ALT,
+			  "PinctrlState::Alt1 must match PINCTRL_STATE_ARDUINO_ALT");
 
 namespace zephyr {
 namespace arduino {
@@ -68,9 +75,9 @@ static const struct pinctrl_dev_config *get_known_pcfg(const struct device *dev)
 	return nullptr;
 }
 
-static int init_device_with_dependencies(const struct device *dev) {
+static int init_device_with_dependencies(const struct device *dev, uint8_t state_id) {
 #if defined(CONFIG_DEVICE_DEPS)
-	// Recurse on all dependencies
+	// Recurse on all dependencies, always bringing them up in their own ARDUINO state.
 	size_t handle_count = 0;
 	const device_handle_t *handles = device_required_handles_get(dev, &handle_count);
 	if (handles != nullptr) {
@@ -79,7 +86,7 @@ static int init_device_with_dependencies(const struct device *dev) {
 			if (dep_dev == nullptr) {
 				continue;
 			}
-			int ret = init_device_with_dependencies(dep_dev);
+			int ret = init_device_with_dependencies(dep_dev, PINCTRL_STATE_ARDUINO);
 			if (ret < 0) {
 				return ret;
 			}
@@ -97,11 +104,16 @@ static int init_device_with_dependencies(const struct device *dev) {
 
 	/*
 	 * If the device is without pinctrl or pinctrl_apply_state returns -ENOENT because no pins where
-	 * defined in PINCTRL_STATE_DEFAULT this should not be treated as an error, so just continue.
+	 * defined in the requested state this should not be treated as an error, so just continue.
 	 */
 	const struct pinctrl_dev_config *pcfg = get_known_pcfg(dev);
 	if (pcfg != nullptr) {
-		int ret = pinctrl_apply_state(pcfg, PINCTRL_STATE_DEFAULT);
+		/* An unavailable routing falls back to the normal Arduino pins. */
+		const struct pinctrl_state *state;
+		if (pinctrl_lookup_state(pcfg, state_id, &state) == -ENOENT) {
+			state_id = PINCTRL_STATE_ARDUINO;
+		}
+		int ret = pinctrl_apply_state(pcfg, state_id);
 		if (ret < 0 && ret != -ENOENT) {
 			return ret;
 		}
@@ -167,18 +179,19 @@ int init_dev_apply_channel_pinctrl(const struct device *dev, size_t state_pin_id
 }
 
 /**
- * @brief Optimize peripheral transitions applying pinctrl state PINCTRL_STATE_DEFAULT.
- * Before initializing the device itself, also ensure its dependencies are initialized and apply the
- * pinctrl state to them as well if required.
+ * @brief Initialize a peripheral and apply the requested pinctrl state.
+ * Dependencies always use ARDUINO. If the requested state is absent, the target
+ * also falls back to ARDUINO. Devices already initialized are remuxed as well.
  *
- * @param dev Target peripheral device to acquire pin for
+ * @param dev Target peripheral device
+ * @param state Pinctrl state ID; defaults to ARDUINO
  */
-int init_dev_apply_pinctrl(const struct device *dev) {
+int init_dev_apply_pinctrl(const struct device *dev, ::arduino::PinctrlState state) {
 	if (dev == nullptr) {
 		return -EINVAL;
 	}
 
-	return init_device_with_dependencies(dev);
+	return init_device_with_dependencies(dev, static_cast<uint8_t>(state));
 }
 
 } // namespace arduino

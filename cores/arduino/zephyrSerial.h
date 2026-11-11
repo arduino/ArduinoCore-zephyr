@@ -74,6 +74,13 @@ public:
 		begin(baudrate, SERIAL_8N1);
 	}
 
+	/* Select a pinctrl state, falling back to Arduino if it is not defined. */
+	void begin(unsigned long baudrate, uint16_t config, PinctrlState state);
+
+	void begin(unsigned long baudrate, PinctrlState state) {
+		begin(baudrate, SERIAL_8N1, state);
+	}
+
 	void flush();
 
 	void end() {
