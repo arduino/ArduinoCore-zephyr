@@ -470,6 +470,7 @@ FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);
 FORCE_EXPORT_SYM(flash_area_erase);
 FORCE_EXPORT_SYM(flash_area_close);
+FORCE_EXPORT_SYM(flash_area_get_device);
 #endif
 
 #if defined(CONFIG_FILE_SYSTEM)
@@ -548,6 +549,7 @@ EXPORT_SYMBOL(settings_save_one);
 EXPORT_SYMBOL(settings_load_one);
 EXPORT_SYMBOL(settings_get_val_len);
 EXPORT_SYMBOL(settings_storage_get);
+EXPORT_SYMBOL(settings_load_subtree_direct);
 #endif
 
 #if defined(CONFIG_NVS)
@@ -556,3 +558,6 @@ EXPORT_SYMBOL(settings_storage_get);
 EXPORT_SYMBOL(nvs_clear);
 EXPORT_SYMBOL(nvs_mount);
 #endif
+
+#include <zephyr/sys/crc.h>
+EXPORT_SYMBOL(crc32_ieee_update);
