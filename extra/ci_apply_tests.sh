@@ -5,26 +5,29 @@
 
 # This script builds the per-board test list for GitHub Actions CI.
 # It consumes the pre-downloaded archives in test-data/ (produced by
-# ci_fetch_tests.sh) and populates ALL_TESTS and ALL_LIBRARIES in
-# $GITHUB_ENV for the current board variant.
+# ci_fetch_tests.sh) and writes the lists for the current board variant to
+# <list dir> as plain text files, one entry per line: tests.txt (sketch
+# directories) and libraries.txt (library dependencies).
 #
 # The core under test must be extracted in the 'ArduinoCore-zephyr'
 # subdirectory, and test-data/ must be present in the working directory.
 
 set -e
 
-if [ "$#" -lt 2 ]; then
-	echo "Usage: $0 <artifact> <variant>"
+if [ "$#" -ne 3 ]; then
+	echo "Usage: $0 <artifact> <variant> <list dir>"
 	exit 1
 fi
 
-if [ -z "$GITHUB_ENV" ] || [ ! -d ArduinoCore-zephyr/ ] || [ ! -d test-data/ ]; then
-	echo "Not in a Github CI run or missing prerequisites (ArduinoCore-zephyr/, test-data/)."
+if [ ! -d ArduinoCore-zephyr/ ] || [ ! -d test-data/ ]; then
+	echo "Missing prerequisites (ArduinoCore-zephyr/, test-data/)."
 	exit 1
 fi
 
 ARTIFACT=$1
 VARIANT="$2"
+LIST_DIR="$3"
+mkdir -p "$LIST_DIR"
 
 ALL_TESTS=$(mktemp)
 
@@ -113,21 +116,17 @@ search_for_sketches_in ArduinoCore-zephyr/examples/ >> "$ALL_TESTS"
 [ -f "variants/${VARIANT}/test_setup.sh" ] && \
 	. "variants/${VARIANT}/test_setup.sh"
 
-echo "ALL_LIBRARIES<<EOF" >> "$GITHUB_ENV"
 find ArduinoCore-zephyr/libraries/ -name library.properties | while read -r propfile; do
 	# Version constraints are ignored as they are not supported by compile-sketches
 	grep '^depends=' "$propfile" | cut -d= -f2- | tr ',' '\n' | \
 		sed -e 's/\s*(.*)\s*$//' | while read -r dep; do
-		[ -z "$dep" ] || printf " - name: \"%s\"\n" "$dep" >> "$GITHUB_ENV"
+		[ -z "$dep" ] || echo "$dep"
 	done
-done
-echo "EOF" >> "$GITHUB_ENV"
+done > "$LIST_DIR/libraries.txt"
 
 # output the collected test list for this variant to both the console and
-# the GITHUB_ENV file
+# the list file
 echo -e "\nCollected tests for ${VARIANT}:"
-echo "ALL_TESTS<<EOF" >> "$GITHUB_ENV"
 while read -r infile; do
-	printf " - \"%s\"\n" "$(dirname "$infile")"
-done < "$ALL_TESTS" | sort | tee -a "$GITHUB_ENV"
-echo "EOF" >> "$GITHUB_ENV"
+	dirname "$infile"
+done < "$ALL_TESTS" | sort | tee "$LIST_DIR/tests.txt"
