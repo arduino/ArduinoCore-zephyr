@@ -187,10 +187,14 @@ uart1: &scb1 {
 	status = "okay";
 	current-speed = <115200>;
 
-	clocks = <&peri0_group1_16bit_0>;
+	clocks = <&peri0_group8_16bit_0>;
 
 	pinctrl-0 = <&p9_2_scb1_uart_tx &p9_3_scb1_uart_rx>;
 	pinctrl-names = "default";
+};
+
+&peri0_group8_16bit_0 {
+	status = "okay";
 };
 
 &p9_2_scb1_uart_tx {
