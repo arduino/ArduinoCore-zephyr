@@ -60,15 +60,22 @@ arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg({0}), i2c_dev(
 }
 
 void arduino::ZephyrI2C::begin() {
+	begin(PinctrlState::Standard);
+}
 
-	/* Re-apply DEFAULT pinctrl state so shared pins
+void arduino::ZephyrI2C::begin(PinctrlState state) {
+	/* Init device or re-apply the pinctrl state so shared pins
 	 * are remuxed back to I2C after other peripherals have used them.
 	 */
-	(void)zephyr::arduino::init_dev_apply_pinctrl(i2c_dev);
+	(void)zephyr::arduino::init_dev_apply_pinctrl(i2c_dev, state);
 }
 
 void arduino::ZephyrI2C::begin(uint8_t slaveAddr) {
-	begin();
+	begin(slaveAddr, PinctrlState::Standard);
+}
+
+void arduino::ZephyrI2C::begin(uint8_t slaveAddr, PinctrlState state) {
+	begin(state);
 	i2c_cfg.address = slaveAddr;
 	i2c_cfg.callbacks = &target_callbacks;
 

@@ -52,6 +52,14 @@ enum uart_config_data_bits conf_data_bits(uint16_t conf) {
 } // anonymous namespace
 
 void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
+	begin(baud, conf, PinctrlState::Standard);
+}
+
+void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf, PinctrlState state) {
+	/* Init device or re-apply the pinctrl state so shared pins
+	 * are remuxed back to UART after other peripherals have used them.
+	 */
+	(void)zephyr::arduino::init_dev_apply_pinctrl(uart, state);
 	struct uart_config config = {
 		.baudrate = static_cast<uint32_t>(baud),
 		.parity = conf_parity(conf),
@@ -59,11 +67,6 @@ void arduino::ZephyrSerial::begin(unsigned long baud, uint16_t conf) {
 		.data_bits = conf_data_bits(conf),
 		.flow_ctrl = UART_CFG_FLOW_CTRL_NONE,
 	};
-
-	/* Re-apply DEFAULT pinctrl state so shared pins
-	 * are remuxed back to Serial after other peripherals have used them.
-	 */
-	(void)zephyr::arduino::init_dev_apply_pinctrl(uart);
 
 	uart_configure(uart, &config);
 	uart_irq_callback_user_data_set(uart, arduino::ZephyrSerial::IrqDispatch, this);
