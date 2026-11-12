@@ -574,10 +574,10 @@ static void dfu_update(void) {
 	k_sem_take(&dfu_update_sem, K_FOREVER);
 
 	/*
-	 * Add a short delay to allow the host (dfu-util) to request
-	 * and read the final DFU status before we kill the connection.
+	 * The completion message is published while the last GETSTATUS is
+	 * answered: only let that reply leave before dropping the connection.
 	 */
-	k_msleep(500);
+	k_msleep(50);
 
 	LOG_INF("DFU operation fulfilled. Deinitializing USB...");
 
