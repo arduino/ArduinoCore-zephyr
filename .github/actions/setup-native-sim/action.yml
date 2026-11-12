@@ -41,16 +41,43 @@ runs:
 
     - uses: arduino/setup-arduino-cli@v2
 
+    # The Board Manager core is installed as test-core does (from ci-builds,
+    # if possible) to get the exact set of tools the core recipes need. All
+    # test jobs install the same one: cache it by version. The latest cache
+    # is restored first, before arduino-cli installs its builtin tools, and
+    # the cache is saved again only if the core version changed.
+    - uses: actions/cache/restore@v5
+      id: cache
+      with:
+        path: ~/.arduino15/packages
+        key: native-sim-arduino15-${{ runner.os }}-${{ runner.arch }}-
+        restore-keys: native-sim-arduino15-${{ runner.os }}-${{ runner.arch }}-
+
     - name: Install core and tools
+      id: core
+      shell: bash
+      env:
+        CI_BUILDS_URL: ${{ inputs.ci-builds-url }}
+      run: |
+        arduino-cli core update-index ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+        VERSION=$(arduino-cli core search arduino:zephyr_main --format json ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL} |
+                  jq -r '.platforms[0].latest_version')
+        echo "key=native-sim-arduino15-${RUNNER_OS}-${RUNNER_ARCH}-${VERSION}" >> $GITHUB_OUTPUT
+        # (only downloads what the restored cache does not have)
+        arduino-cli core install arduino:zephyr_main@${VERSION} ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+
+    - uses: actions/cache/save@v5
+      if: ${{ steps.cache.outputs.cache-matched-key != steps.core.outputs.key }}
+      continue-on-error: true # parallel jobs may be saving the same key
+      with:
+        path: ~/.arduino15/packages
+        key: ${{ steps.core.outputs.key }}
+
+    - name: Install native_sim package
       shell: bash
       env:
         CORE_DIR: ${{ inputs.core-dir }}
-        CI_BUILDS_URL: ${{ inputs.ci-builds-url }}
       run: |
-        # install the Board Manager core as test-core does (from ci-builds,
-        # if possible) to get the exact set of tools the core recipes need
-        arduino-cli core update-index ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
-        arduino-cli core install arduino:zephyr_main ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
         # install the native_sim core package as a sketchbook platform
         mkdir -p $(dirname $CORE_DIR)
         tar --use-compress-program=unzstd -xpf native_sim-package/native_sim.tar.zst -C $(dirname $CORE_DIR)
