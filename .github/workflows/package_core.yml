@@ -501,8 +501,8 @@ jobs:
   #  - the API and per-board binaries
   #  - the artifact download URLs
 
-  cleanup-build:
-    name: Clean up intermediates
+  clean-build-temps:
+    name: Clean up build intermediates
     runs-on: ubuntu-latest
     needs:
       - build-board
@@ -673,7 +673,7 @@ jobs:
   # Clean up test results only if the verification actually passed, so that
   # they are still available for action re-runs in case of failure.
 
-  clean-temps:
+  clean-test-temps:
     name: Clean up test results
     runs-on: ubuntu-latest
     if: ${{ needs.verify-core.result == 'success' }}
