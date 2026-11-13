@@ -204,6 +204,17 @@
 	};
 };
 
+&timers15 {
+    status = "okay";
+    st,prescaler = <159>; /* Yields 1 MHz tick rate from 160MHz timer clock */
+
+    counter_audio: counter {
+        status = "okay";
+        compatible = "st,stm32-counter";
+        label = "AUDIO_TIMER";
+    };
+};
+
 &timers16 {
 	status = "okay";
 	st,prescaler = <4>;
