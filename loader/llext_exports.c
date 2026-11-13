@@ -274,9 +274,6 @@ FORCE_EXPORT_SYM(video_get_caps);
 FORCE_EXPORT_SYM(video_stream_start);
 FORCE_EXPORT_SYM(video_stream_stop);
 #endif
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-FORCE_EXPORT_SYM(video_register_user_buffer_ops);
-#endif
 
 #if defined(CONFIG_INPUT)
 FORCE_EXPORT_SYM(zephyr_input_register_callback);
@@ -285,9 +282,6 @@ FORCE_EXPORT_SYM(zephyr_input_register_callback);
 #if defined(CONFIG_SHARED_MULTI_HEAP)
 FORCE_EXPORT_SYM(shared_multi_heap_aligned_alloc);
 FORCE_EXPORT_SYM(shared_multi_heap_free);
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-FORCE_EXPORT_SYM(smh_region_video_init);
-#endif
 #endif
 
 #if defined(CONFIG_STM32_BACKUP_PROTECTION)

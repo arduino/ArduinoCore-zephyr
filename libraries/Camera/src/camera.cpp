@@ -20,10 +20,11 @@
 #include "Arduino.h"
 #include "camera.h"
 
+#include <stdlib.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree/port-endpoint.h>
-#include <zephyr/multi_heap/shared_multi_heap.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/video.h>
 #include <zephyrClockInit.hpp>
@@ -41,24 +42,27 @@ static const struct pwm_dt_spec CLOCK_PWM = PWM_DT_SPEC_GET(CLOCK_NODE);
 #define CAMERA_ENDPOINT_NODE DT_CHILD(CAMERA_PORT_NODE, endpoint)
 #define CAMERA_SENSOR_NODE   DT_NODE_REMOTE_DEVICE(CAMERA_ENDPOINT_NODE)
 
-#ifdef CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS
-extern "C" int smh_region_video_init(void);
-
+#ifdef ARDUINO_CAMERA_USE_MALLOC
+/*
+ * Video buffers allocated from the C library heap, so that malloc() knows they are in use.
+ * The block is over-allocated and aligned by hand (aligned_alloc() is not exported to
+ * sketches): `raw` is the pointer returned by malloc(), `data` the aligned buffer. Start and
+ * size are rounded to `align` (the cache line size) so that the cache maintenance done for the
+ * camera DMA never touches a line shared with other heap data.
+ */
 struct mem_block {
+	void *raw;
 	void *data;
 };
 
 static struct mem_block user_video_block[CONFIG_VIDEO_BUFFER_POOL_NUM_MAX];
 
-struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
-													 k_timeout_t timeout) {
+static struct video_buffer *camera_buffer_aligned_alloc(size_t size, size_t align) {
 	struct video_buffer *vbuf = NULL;
 	struct mem_block *block = NULL;
 	unsigned int i;
 
-	ARG_UNUSED(timeout);
-
-	if (size > CONFIG_VIDEO_BUFFER_POOL_HEAP_SIZE) {
+	if ((align & (align - 1)) != 0) {
 		return NULL;
 	}
 
@@ -73,14 +77,17 @@ struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
 		return NULL;
 	}
 
-	block->data = shared_multi_heap_aligned_alloc(SMH_REG_ATTR_CACHEABLE, align, size);
-	if (block->data == NULL) {
+	size = ROUND_UP(size, align);
+	block->raw = malloc(size + align - 1);
+	if (block->raw == NULL) {
 		return NULL;
 	}
+	block->data = (void *)ROUND_UP((uintptr_t)block->raw, align);
 
 	vbuf = video_import_buffer((uint8_t *)block->data, size);
 	if (vbuf == NULL) {
-		shared_multi_heap_free(block->data);
+		free(block->raw);
+		block->raw = NULL;
 		block->data = NULL;
 		return NULL;
 	}
@@ -95,7 +102,7 @@ struct video_buffer *user_video_buffer_aligned_alloc(size_t size, size_t align,
 	return vbuf;
 }
 
-int user_video_buffer_release(struct video_buffer *vbuf) {
+static int camera_buffer_release(struct video_buffer *vbuf) {
 	struct mem_block *block = NULL;
 	unsigned int i;
 
@@ -110,14 +117,18 @@ int user_video_buffer_release(struct video_buffer *vbuf) {
 		}
 	}
 
-	if (block && block->data) {
-		shared_multi_heap_free(block->data);
-		block->data = NULL;
+	if (block == NULL || block->raw == NULL) {
+		return -EINVAL;
 	}
 
-	vbuf->buffer = NULL;
-	vbuf->size = 0;
-	vbuf->bytesused = 0;
+	int ret = video_buffer_release(vbuf);
+	if (ret != 0) {
+		return ret;
+	}
+
+	free(block->raw);
+	block->raw = NULL;
+	block->data = NULL;
 
 	return 0;
 }
@@ -149,13 +160,6 @@ Camera::Camera() : byte_swap(false), yuv_to_gray(false), vdev(NULL) {
 }
 
 bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byte_swap) {
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-	if (smh_region_video_init() != 0) {
-		Serial.println("Failed to initialize camera shared heap region");
-		return false;
-	}
-#endif
-
 	if (zephyr::arduino::init_pwm_ref_clock(DEVICE_DT_GET(CLOCK_NODE), CLOCK_PWM) != 0) {
 		return false;
 	}
@@ -242,25 +246,34 @@ bool Camera::begin(uint32_t width, uint32_t height, uint32_t pixformat, bool byt
 		return false;
 	}
 
-#ifdef CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS
-	static const struct video_user_buffer_ops user_buffer_ops = {
-		.aligned_alloc = user_video_buffer_aligned_alloc,
-		.release = user_video_buffer_release,
-	};
-
-	if (video_register_user_buffer_ops(&user_buffer_ops) != 0) {
-		return false;
-	}
-#endif
-
 	// Allocate video buffers.
 	for (size_t i = 0; i < ARRAY_SIZE(this->vbuf); i++) {
+#ifdef ARDUINO_CAMERA_USE_MALLOC
+		this->vbuf[i] =
+			camera_buffer_aligned_alloc(fmt.pitch * fmt.height, CONFIG_VIDEO_BUFFER_POOL_ALIGN);
+#else
 		this->vbuf[i] = video_buffer_aligned_alloc(fmt.pitch * fmt.height,
 												   CONFIG_VIDEO_BUFFER_POOL_ALIGN, K_NO_WAIT);
+#endif
 		if (this->vbuf[i] == NULL) {
 			Serial.println("Failed to allocate video buffers number: " + String(i));
+			// No buffers have been queued yet, so these can be released safely.
+			for (size_t j = 0; j < i; j++) {
+#ifdef ARDUINO_CAMERA_USE_MALLOC
+				int release_ret = camera_buffer_release(this->vbuf[j]);
+#else
+				int release_ret = video_buffer_release(this->vbuf[j]);
+#endif
+				if (release_ret != 0) {
+					return false;
+				}
+				this->vbuf[j] = NULL;
+			}
 			return false;
 		}
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(this->vbuf); i++) {
 		this->vbuf[i]->type = VIDEO_BUF_TYPE_OUTPUT;
 		ret = video_enqueue(this->vdev, this->vbuf[i]);
 		if (ret != 0) {
