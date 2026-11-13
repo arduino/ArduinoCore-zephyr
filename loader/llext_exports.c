@@ -538,3 +538,9 @@ FORCE_EXPORT_SYM(regulator_disable);
 #endif
 
 EXPORT_SYMBOL(sketch_header_v1_verify);
+
+#ifdef CONFIG_BOARD_ARDUINO_OPTA
+#include <board.h>
+
+EXPORT_SYMBOL(opta_get_board_info);
+#endif
