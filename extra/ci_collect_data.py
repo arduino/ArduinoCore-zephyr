@@ -117,8 +117,10 @@ def job_succeeded(job_id):
 
 REGIONS_BY_SOC = defaultdict(set)     # { soc: set(regions) }
 
-# Import and process data for each board
-for board_data in ALL_BOARD_DATA.values():
+def process_board(board_data):
+    """
+    Collects the loader and test data of a board.
+    """
     # Extract common fields from board data
     artifact = board_data['artifact']
     board = board_data['board']
@@ -137,7 +139,7 @@ for board_data in ALL_BOARD_DATA.values():
         BOARD_LOADERS[board].status = FAILURE
     if BOARD_LOADERS[board].status == FAILURE:
         track_test(TestEntry.failure("Core data could not be read.", artifact, board))
-        continue
+        return
 
     # Get SoC-specific info from loader config
     soc = BOARD_LOADERS[board].config['CONFIG_SOC']
@@ -150,13 +152,13 @@ for board_data in ALL_BOARD_DATA.values():
     package_id = f"package-{artifact}"
     if job_failed(package_id):
         track_test(TestEntry.failure("Core package build failed.", artifact, board, JOB_URLS.get(package_id)))
-        continue
+        return
     # (tests that produced a report did run, and are always evaluated)
     if package_id not in JOB_STATUS \
        and not glob.glob(f"arduino-{subarch}-{board}-link_mode=*.json") \
        and any(not job_succeeded(b['id']) for b in ALL_BOARD_DATA.values() if b['artifact'] == artifact):
         track_test(TestEntry.skipped("Core package was not built, tests skipped.", artifact, board))
-        continue
+        return
 
     # Get list of expected errors for this board
     exceptions, warning_filters = load_known_issues(variant)
@@ -181,6 +183,11 @@ for board_data in ALL_BOARD_DATA.values():
 
             # Log the test result to all data structures
             track_test(TestEntry(artifact, board, sketch, link_mode, excepted, status, sketch_issues, job_link))
+
+
+# Import and process data for each board
+for board_data in ALL_BOARD_DATA.values():
+    process_board(board_data)
 
 ARTIFACTS = sorted(ARTIFACT_TESTS.keys())
 

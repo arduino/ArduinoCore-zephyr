@@ -32,7 +32,21 @@ foreach(variant ${VARIANTS})
 	message(STATUS "Processing ${variant}")
 	include(${dir}/llext-edk/cmake.cflags)
 
+	# Files forced with -include and system include directories are copied
+	# to the EDK, with a joined path inside it: make them relative to the
+	# variant, as the include directories.
+	# - forced files are found from the variant, which is in the include
+	#   path;
+	# - system include directories go with the include directories, after
+	#   the -iprefix that precedes them in the recipes.
+	list(TRANSFORM LLEXT_BASE_CFLAGS REPLACE "^-include${dir}/" "-include")
+	set(system_dirs ${LLEXT_BASE_CFLAGS})
+	list(FILTER system_dirs INCLUDE REGEX "^-isystem${dir}/")
+	list(FILTER LLEXT_BASE_CFLAGS EXCLUDE REGEX "^-isystem${dir}/")
+	list(TRANSFORM system_dirs REPLACE "^-isystem${dir}" "-iwithprefix")
+
 	list(TRANSFORM LLEXT_ALL_INCLUDE_CFLAGS REPLACE "-I${dir}" "-iwithprefixbefore")
+	list(APPEND LLEXT_ALL_INCLUDE_CFLAGS ${system_dirs})
 	list(JOIN LLEXT_ALL_INCLUDE_CFLAGS "\n" EDK_INCLUDES)
 	file(WRITE ${dir}/includes.txt "${EDK_INCLUDES}")
 
@@ -47,6 +61,13 @@ foreach(variant ${VARIANTS})
 
 	# exclude other problematic macros shared between C and C++
 	list(FILTER LLEXT_BASE_CFLAGS EXCLUDE REGEX "-fdiagnostics-color=always")
+
+	# no absolute EDK path must be left, or the core package cannot be moved
+	set(abs_flags ${LLEXT_ALL_INCLUDE_CFLAGS} ${LLEXT_BASE_CFLAGS})
+	list(FILTER abs_flags INCLUDE REGEX "${dir}")
+	if(abs_flags)
+		message(FATAL_ERROR "Absolute EDK paths in the flags of ${variant}: ${abs_flags}")
+	endif()
 
 	# get machine flags (-msomething) in a separate list
 	set(LLEXT_MACHINE_FLAGS ${LLEXT_BASE_CFLAGS})
