@@ -13,7 +13,7 @@ compiler.warning_flags=-w
 compiler.warning_flags.none=-w
 compiler.warning_flags.default=-Wno-type-limits -Wno-missing-field-initializers
 compiler.warning_flags.more=-Wall -Wno-type-limits -Wno-missing-field-initializers
-compiler.warning_flags.all=-Wall -Wextra
+compiler.warning_flags.all=-Wall -Wextra -Werror=return-type
 
 compiler.path={build.compiler_path}
 compiler.c.cmd={build.crossprefix}gcc
