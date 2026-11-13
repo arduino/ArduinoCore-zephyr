@@ -19,6 +19,7 @@
 menu.debug=Debug
 menu.link_mode=Link mode
 menu.wait_linux_boot=Startup mode
+menu.mimic=Simulated board
 
 ##########################################################################################
 
@@ -757,6 +758,9 @@ native_sim.build.artifact=native_sim
 native_sim.build.board=NATIVE_SIM
 native_sim.build.extra_flags=
 native_sim.build.link_mode=static
+# native_sim can pose as any other board, see extra/build.sh: this default
+# option keeps its own identity
+native_sim.menu.mimic.native_sim=Native Simulator
 # native_sim stands in for the llext boards: also check that sketches only
 # use the symbols exported by the loader, as the dynamic link mode does
 native_sim.build.check_command-static={build.check_command-dynamic}

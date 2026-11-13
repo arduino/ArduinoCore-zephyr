@@ -275,4 +275,14 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
+
+	if [ "$board" == "native_sim" ] ; then
+		# native_sim can pose as any other board, to build its sketches on
+		# the host with the same board define: add a 'mimic' menu option
+		# for each, with its name and its build.board
+		for mimic in $(grep -oP '^\w+(?=\.build\.board=)' boards.txt | grep -vx native_sim) ; do
+			update_local_field "menu.mimic.${mimic}" "$(sed -n -e "s/^${mimic}\.name=//p" boards.txt)"
+			update_local_field "menu.mimic.${mimic}.build.board" "$(sed -n -e "s/^${mimic}\.build\.board=//p" boards.txt)"
+		done
+	fi
 fi
