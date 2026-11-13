@@ -234,14 +234,44 @@ FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_DISCONNECT);
 FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_VERSION);
 #endif
 
+#if defined(CONFIG_NET_BUF)
+/*
+ * Generic network buffer API, used by every subsystem that hands net_bufs to a sketch
+ * (BT HCI raw, USB device stack next control transfers, ...). The net_buf_add_*(),
+ * net_buf_pull_*() and net_buf_remove_*() helpers are static inline wrappers of these.
+ */
+#if defined(CONFIG_NET_BUF_LOG)
+FORCE_EXPORT_SYM(net_buf_unref_debug);
+#else
+FORCE_EXPORT_SYM(net_buf_unref);
+#endif
+FORCE_EXPORT_SYM(net_buf_ref);
+FORCE_EXPORT_SYM(net_buf_reset);
+FORCE_EXPORT_SYM(net_buf_simple_reserve);
+FORCE_EXPORT_SYM(net_buf_simple_add);
+FORCE_EXPORT_SYM(net_buf_simple_add_mem);
+FORCE_EXPORT_SYM(net_buf_simple_add_u8);
+FORCE_EXPORT_SYM(net_buf_simple_add_le16);
+FORCE_EXPORT_SYM(net_buf_simple_add_be16);
+FORCE_EXPORT_SYM(net_buf_simple_add_le32);
+FORCE_EXPORT_SYM(net_buf_simple_add_be32);
+FORCE_EXPORT_SYM(net_buf_simple_pull);
+FORCE_EXPORT_SYM(net_buf_simple_pull_mem);
+FORCE_EXPORT_SYM(net_buf_simple_pull_u8);
+FORCE_EXPORT_SYM(net_buf_simple_pull_le16);
+FORCE_EXPORT_SYM(net_buf_simple_pull_be16);
+FORCE_EXPORT_SYM(net_buf_simple_pull_le32);
+FORCE_EXPORT_SYM(net_buf_simple_pull_be32);
+FORCE_EXPORT_SYM(net_buf_simple_push);
+FORCE_EXPORT_SYM(net_buf_simple_push_mem);
+FORCE_EXPORT_SYM(net_buf_simple_push_u8);
+FORCE_EXPORT_SYM(net_buf_simple_remove_mem);
+#endif
+
 #if defined(CONFIG_BT_HCI_RAW)
 FORCE_EXPORT_SYM(bt_enable_raw);
 FORCE_EXPORT_SYM(bt_send);
 FORCE_EXPORT_SYM(bt_buf_get_tx);
-FORCE_EXPORT_SYM(net_buf_simple_pull);
-FORCE_EXPORT_SYM(net_buf_simple_add_mem);
-FORCE_EXPORT_SYM(net_buf_simple_pull_mem);
-FORCE_EXPORT_SYM(net_buf_unref);
 #if defined(CONFIG_BT_HCI_SETUP)
 FORCE_EXPORT_SYM(bt_h4_vnd_setup);
 #endif
