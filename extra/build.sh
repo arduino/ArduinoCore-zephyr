@@ -188,7 +188,7 @@ EOF
 	fi
 
 	# update the actual field line
-	if grep -qE "^${match_regexp}" $file; then
+	if grep -qE "^${match_regexp}=" $file; then
 		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${value}/" $file
 	else
 		echo "${full_field_name}=${value}" >> $file
