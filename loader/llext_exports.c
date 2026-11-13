@@ -483,6 +483,12 @@ EXPORT_AEABI_SYM(__gnu_thumb1_case_si);
 FORCE_EXPORT_SYM(__cxa_pure_virtual);
 #endif
 
+#if defined(CONFIG_ARCH_POSIX)
+/* irq_lock()/irq_unlock(), and so k_spin_lock(), inline calls to these */
+EXPORT_SYMBOL(posix_irq_lock);
+EXPORT_SYMBOL(posix_irq_unlock);
+#endif
+
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 FORCE_EXPORT_SYM(matrixBegin);
 FORCE_EXPORT_SYM(matrixWrite);

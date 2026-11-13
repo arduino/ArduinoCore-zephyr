@@ -1,0 +1,13 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Files listed here will not be installed with this artifact.
+# This file has precedence over inclusion.
+
+libraries/Camera/
+libraries/Ethernet/
+libraries/OTA/
+libraries/PDM/
+libraries/Storage/
+libraries/WiFi/
+libraries/Zephyr_SDRAM/

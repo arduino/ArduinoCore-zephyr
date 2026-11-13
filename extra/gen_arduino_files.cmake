@@ -69,6 +69,19 @@ foreach(variant ${VARIANTS})
 		message(FATAL_ERROR "Absolute EDK paths in the flags of ${variant}: ${abs_flags}")
 	endif()
 
+	if(variant MATCHES "^native_sim")
+		# Zephyr forces -fPIC on 64-bit posix targets; static sketches are
+		# linked at a fixed address and must not need a GOT
+		list(FILTER LLEXT_BASE_CFLAGS EXCLUDE REGEX "^-fPIC$")
+		# char is unsigned on the Arduino boards (ARM), but signed on x86
+		list(APPEND LLEXT_BASE_CFLAGS "-funsigned-char")
+		cmake_host_system_information(RESULT host_arch QUERY OS_PLATFORM)
+		if(host_arch MATCHES "aarch64|arm64")
+			# outline atomics need glibc's __getauxval at runtime
+			list(APPEND LLEXT_BASE_CFLAGS "-mno-outline-atomics")
+		endif()
+	endif()
+
 	# get machine flags (-msomething) in a separate list
 	set(LLEXT_MACHINE_FLAGS ${LLEXT_BASE_CFLAGS})
 	list(FILTER LLEXT_MACHINE_FLAGS INCLUDE REGEX "-m.*")

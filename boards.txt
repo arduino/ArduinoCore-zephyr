@@ -742,3 +742,22 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##########################################################################################
+
+native_sim.name=Native Simulator (64-bit)
+native_sim.build.core=arduino
+native_sim.build.crossprefix=
+native_sim.build.compiler_path=
+native_sim.build.zephyr_target=native_sim/native/64
+native_sim.build.zephyr_args=-o native_runner_executable
+native_sim.build.zephyr_hals=picolibc
+native_sim.build.variant=native_sim_native_64
+native_sim.build.artifact=native_sim
+native_sim.build.board=NATIVE_SIM
+native_sim.build.extra_flags=
+native_sim.build.link_mode=static
+native_sim.upload.extension=bin-zsk.bin
+native_sim.upload.tool=
+native_sim.compiler.zephyr.common_ldflags=-fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-unwind-tables -fno-use-cxa-atexit -nostdlib -no-pie -static -Wl,--no-warn-rwx-segments -Wl,--build-id=none
+native_sim.compiler.zephyr.extra_ldflags=-lc -lgcc

@@ -46,6 +46,9 @@ target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
 
 if(CONFIG_ARCH_POSIX)
+    # native_sim/board_irq.h includes ../common/irq/board_irq.h: export that
+    # directory in the EDK too (it only exports the include directories)
+    zephyr_include_directories(${ZEPHYR_BASE}/boards/native/common)
     zephyr_linker_sources(NOINIT native_sim/llext_heap_noinit.ld)
     target_sources(app PRIVATE native_sim/sketch_native_impl.c)
     target_include_directories(app PRIVATE native_sim)

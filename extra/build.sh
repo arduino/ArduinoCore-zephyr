@@ -104,15 +104,20 @@ BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
 west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
-if [[ $variant == native_sim* ]] ; then
-	# the llext-edk target does not produce the host executable
-	west build -d ${BUILD_DIR}
-fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
 (set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
 rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+if [[ $variant == native_sim* ]] ; then
+	# the EDK only exports *.h files: copy the minimal C++ library headers
+	# (cstdint, new, ...), which are used instead of the toolchain libstdc++
+	cp ${ZEPHYR_BASE}/lib/cpp/minimal/include/* \
+		${VARIANT_DIR}/llext-edk/include/zephyr/lib/cpp/minimal/include/
+	# no toolchain picolibc for the host gcc: static sketches link the one
+	# built for the loader, as ARM sketches link the toolchain one
+	cp ${BUILD_DIR}/modules/picolibc/libc.a ${VARIANT_DIR}/libc.a
+fi
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
