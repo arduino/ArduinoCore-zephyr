@@ -27,3 +27,6 @@
 #define LSM6DS_INT     (27u) /* PA1 */
 
 #define SE05X_ENABLE_GPIO (28u) /* PG0 */
+
+/* Allocate camera buffers from the libc heap. */
+#define ARDUINO_CAMERA_USE_MALLOC

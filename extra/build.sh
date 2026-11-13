@@ -43,6 +43,7 @@ EOF
 	exit 0
 fi
 
+debug=false
 # try to find the board in boards.txt
 chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
 if ! [ -z "$chosen_board" ]; then
@@ -57,7 +58,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		args+=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		debug=true
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -76,6 +77,13 @@ fi
 
 # Save the build version to loader/VERSION and for later use in local files
 build_version=$(extra/get_core_version.sh loader/VERSION)
+
+# CMake arguments go after a '--' separator, which args may already contain
+[[ " ${args[*]} " == *" -- "* ]] || args+=(--)
+args+=(-DAPP_BUILD_VERSION=${build_version})
+if ${debug} ; then
+	args+=(-DEXTRA_CONF_FILE=../extra/debug.conf)
+fi
 
 echo
 echo "Build version: $build_version"
@@ -110,13 +118,14 @@ line_continuation='\\$' # match lines ending with '\'
 c_comment='\s*\/\*.*?\*\/' # match C-style comments and any preceding space
 perl -i -pe "s/${c_comment}//gs unless /${line_preproc_ok}/ || (/${line_comment_only}/ && !/${line_continuation}/)" $(find ${VARIANT_DIR}/llext-edk/include/ -type f)
 
-# Make k_sleep()/k_busy_wait() external gnu_inline in the exported EDK headers
-syscalls_hdr=${VARIANT_DIR}/llext-edk/include/zephyr/include/generated/zephyr/syscalls/kernel.h
-kernel_hdr=${VARIANT_DIR}/llext-edk/include/zephyr/include/zephyr/kernel.h
+# Make k_sleep_ticks()/k_busy_wait() external gnu_inline in the exported EDK headers
+edk_include=${VARIANT_DIR}/llext-edk/include/zephyr/include
+syscalls_hdrs="${edk_include}/generated/zephyr/syscalls/kernel.h ${edk_include}/generated/zephyr/syscalls/sleep.h"
+api_hdrs="${edk_include}/zephyr/kernel.h ${edk_include}/zephyr/sleep.h"
 edk_qual='extern inline __attribute__((always_inline, gnu_inline))'
-edk_funcs='int32_t k_sleep\(k_timeout_t timeout\)|void k_busy_wait\(uint32_t usec_to_wait\)'
-perl -0pi -e "s/__pinned_func\nstatic inline ($edk_funcs)/$edk_qual \$1/g" "$syscalls_hdr"
-perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" "$kernel_hdr"
+edk_funcs='k_ticks_t k_sleep_ticks\(k_timeout_t timeout\)|void k_busy_wait\(uint32_t usec_to_wait\)'
+perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" $syscalls_hdrs
+perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
