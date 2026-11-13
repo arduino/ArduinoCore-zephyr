@@ -169,11 +169,15 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
     """
 
     # Build the header row, which includes board names and board statuses.
-    # Headers have a link to the board's CI job, if available.
+    # Headers have a link to each CI test job of the board, if available,
+    # named after its link mode.
     header_row = f"<tr><th colspan='2'><code>{artifact}</code> {title}</th>"
     for board in artifact_boards:
         res = BOARD_TESTS[board]
         header_col = f"<code>{board}</code><br>{res.status.board_icon}"
+        job_links = sorted({ (t.link_mode, t.job_link) for t in res.tests if t.link_mode and t.job_link })
+        if job_links:
+            header_col += "<br><sub>" + " ".join(f"<a href='{link}'>{mode}</a>" for mode, link in job_links) + "</sub>"
         header_row += f"<th>{header_col}</th>"
     header_row += "</tr>"
 
