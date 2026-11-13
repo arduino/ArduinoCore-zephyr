@@ -234,9 +234,9 @@ jobs:
             ${{ env.ALL_LIBRARIES }}
           cli-compile-flags: |
             - '--build-property'
-            - 'compiler.c.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
+            - 'compiler.c.extra_flags=-Wno-type-limits -Wno-missing-field-initializers -Werror=return-type'
             - '--build-property'
-            - 'compiler.cpp.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
+            - 'compiler.cpp.extra_flags=-Wno-type-limits -Wno-missing-field-initializers -Werror=return-type'
           verbose: 'false'
           enable-deltas-report: 'false'
           enable-issues-report: 'true'
