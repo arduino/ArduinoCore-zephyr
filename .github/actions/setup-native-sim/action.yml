@@ -28,11 +28,19 @@ runs:
         sudo apt-get remove --purge man-db -y # skips the mandb triggers
         sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends gcc-14 g++-14 gdb
+        sudo apt-get install -y --no-install-recommends gcc-14 g++-14 gdb ccache
         # the SDK libstdc++ headers need gcc 14: make it the default host compiler
         for link in gcc:gcc g++:g++ cc:gcc c++:g++ cpp:cpp ; do
           sudo ln -sf /usr/bin/${link#*:}-14 /usr/local/bin/${link%:*}
         done
+        # the sketches are built with the host compiler from the PATH: build
+        # them through ccache (its directory comes first in the PATH, and
+        # calls the compiler above). Each sketch test runs in a directory of
+        # its own: do not hash it, or nothing would be shared.
+        echo "/usr/lib/ccache" >> $GITHUB_PATH
+        echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
+        echo "CCACHE_NOHASHDIR=1" >> $GITHUB_ENV
+        echo "CCACHE_MAXSIZE=500M" >> $GITHUB_ENV
 
     - uses: actions/download-artifact@v8
       with:

@@ -208,6 +208,14 @@ jobs:
           core-dir: ${{ env.CORE_DIR }}
           ci-builds-url: ${{ inputs.ci-builds-url }}
 
+      # sketch build cache of this test job, from its latest run (see
+      # setup-native-sim): most of the sketches and libraries do not change
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ccache
+          key: native-sim-ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.group }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: native-sim-ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.group }}-
+
       - uses: actions/download-artifact@v8
         if: ${{ matrix.group != 'loader' }}
         with:
