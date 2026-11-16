@@ -7,6 +7,7 @@
 #
 # Usage: run_sketches.sh [-r <report>] [-n <name root>] [-p <name prefix>]
 #                        [-l <libraries dir>]... [-j <jobs>]
+#                        [-u <unavailable list>]
 #                        <sketch dir>...
 #
 #   -r  write a compile-sketches style report to this JSON file (default:
@@ -15,6 +16,8 @@
 #   -p  prefix for the sketch names (default: none)
 #   -l  libraries directory for arduino-cli (repeatable)
 #   -j  number of sketches tested in parallel (default: the number of CPUs)
+#   -u  file listing sketch directories that are not available on native_sim
+#       (one per line): they are not built, only added to the report
 #
 # The expect script of a sketch is the first found of:
 #   - <sketch dir>/test.sh
@@ -36,23 +39,25 @@ usage() {
 
 REPORT=${SKETCH_REPORT:-}
 JOBS=$(nproc)
+UNAVAILABLE=
 NAME_ROOT=.
 NAME_PREFIX=
 # the warning flags of test_core
 CLI_ARGS=(--build-property "compiler.c.extra_flags=-Wno-type-limits -Wno-missing-field-initializers -Werror=return-type"
 	  --build-property "compiler.cpp.extra_flags=-Wno-type-limits -Wno-missing-field-initializers -Werror=return-type")
-while getopts "r:n:p:l:j:" opt ; do
+while getopts "r:n:p:l:j:u:" opt ; do
 	case $opt in
 		r) REPORT=$OPTARG ;;
 		n) NAME_ROOT=$OPTARG ;;
 		p) NAME_PREFIX=$OPTARG ;;
 		l) CLI_ARGS+=(--libraries "$(realpath "$OPTARG")") ;;
 		j) JOBS=$OPTARG ;;
+		u) UNAVAILABLE=$OPTARG ;;
 		*) usage ;;
 	esac
 done
 shift $((OPTIND - 1))
-[ $# -gt 0 ] || usage
+[ $# -gt 0 ] || [ -s "$UNAVAILABLE" ] || usage
 
 # expect_script <sketch dir> <sketch name>: print the expect script path,
 # if the sketch has one
@@ -183,6 +188,16 @@ done
 wait
 flush
 OUT=$BASE_OUT
+
+# the sketches that are not available, reported as such
+if [ -n "$UNAVAILABLE" ] ; then
+	while read -r dir ; do
+		[ -n "$dir" ] || continue
+		name=$NAME_PREFIX$(realpath -m --relative-to="$NAME_ROOT" "$dir")
+		echo "=== $name: not available on native_sim"
+		jq -n -c --arg name "$name" '{ name: $name, available: false }' >> "$OUT/sketches.jsonl"
+	done < "$UNAVAILABLE"
+fi
 
 echo "$SKETCH_FAILED of $TOTAL sketches failed"
 echo "$PASSED passed, $FAILED failed"

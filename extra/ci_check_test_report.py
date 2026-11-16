@@ -13,14 +13,16 @@
 # Each unexpected result is printed as a GitHub error annotation, followed by
 # a summary line. The script exits with an error if any test did not pass.
 #
-# Usage: ci_check_test_report.py <variant> <report_file>
-#  Must be run from a directory containing variants/<variant>/.
+# Usage: ci_check_test_report.py <variant> <report_file> [<board>]
+#  Must be run from a directory containing variants/<variant>/. For native_sim
+#  posing as a board, <board> adds the known issues of native_sim specific to
+#  that board (see known_issues_files() in ci_shared.py).
 
 import sys
 
 from ci_shared import (
     TestEntry,
-    load_known_issues, load_sketch_reports, evaluate_sketch,
+    load_known_issues, load_sketch_reports, evaluate_test,
 )
 
 def escape_data(s):
@@ -29,7 +31,7 @@ def escape_data(s):
 def escape_property(s):
     return escape_data(s).replace(':', '%3A').replace(',', '%2C')
 
-def check_report(variant, report_file):
+def check_report(variant, report_file, mimic=None):
     """
     Returns a tuple of (total_tests, list of TestEntry that did not pass).
     """
@@ -37,21 +39,20 @@ def check_report(variant, report_file):
     if error:
         return 0, [ TestEntry.failure(error) ]
 
-    exceptions, warning_filters = load_known_issues(variant)
+    exceptions, warning_filters = load_known_issues(variant, mimic)
     failed = []
     for report in reports:
-        sketch, excepted, status, issues = evaluate_sketch(report, exceptions, warning_filters)
-        test_entry = TestEntry('', '', sketch, '', excepted, status, issues, None)
+        test_entry = evaluate_test(report, exceptions, warning_filters)
         if not test_entry.status.passed:
             failed.append(test_entry)
 
     return len(reports), failed
 
-if len(sys.argv) != 3:
-    print("Usage: ci_check_test_report.py <variant> <report_file>")
+if len(sys.argv) not in (3, 4):
+    print("Usage: ci_check_test_report.py <variant> <report_file> [<board>]")
     sys.exit(1)
 
-total, failed = check_report(sys.argv[1], sys.argv[2])
+total, failed = check_report(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else None)
 
 for test in failed:
     message = test.status.legend

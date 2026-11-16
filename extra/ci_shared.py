@@ -38,9 +38,14 @@ class TestStatus(enum.IntEnum):
 # Module-level aliases so consumers can import status constants directly
 SKIP, PASS, WARNING, EXPECTED_ERROR, INVALID_EXCEPTION, ERROR, FAILURE = TestStatus
 
+# Icons for the sketches that were also run (native_sim), as variants of the
+# PASS and ERROR test icons: all their run checks passed, or some failed
+RAN_ICON = ":green_heart:"
+RUN_FAILED_ICON = ":broken_heart:"
+
 # Loader build status data structure, one per loader
 class LoaderEntry:
-    def __init__(self, artifact, board, variant, job_link):
+    def __init__(self, artifact, board, variant, job_link, need_meminfo=True):
         self.artifact = artifact
         self.board = board
         self.variant = variant
@@ -50,7 +55,8 @@ class LoaderEntry:
         self.config = self.read_config() # set of Kconfig settings
         self.meminfo = self.read_meminfo() # memory usage report
 
-        if not (self.config and self.meminfo):
+        # (boards with no memory regions, as native_sim, produce no meminfo)
+        if not self.config or (need_meminfo and not self.meminfo):
             self.status = FAILURE
         elif self.warnings:
             self.status = WARNING
@@ -141,7 +147,7 @@ class LoaderEntry:
 # Single test data structure, one per compilation test
 class TestEntry:
     def __init__(self, artifact, board, sketch, link_mode, excepted, status, issues, job_link,
-                 group=None, name=None):
+                 group=None, name=None, run_success=None):
         self.artifact = artifact
         self.board = board
         self.sketch = sketch
@@ -155,6 +161,8 @@ class TestEntry:
             self.status = status
         self.issues = issues
         self.job_link = job_link
+        # result of the sketch run checks (native_sim): None if not run
+        self.run_success = run_success
 
         if group is not None and name is not None:
             self.group = group
@@ -194,6 +202,8 @@ class TestEntry:
             'job_link': self.job_link,
             'group': self.group,
             'name': self.name,
+            # (only for the tests that ran, to keep the output small)
+            **({ 'run_success': self.run_success } if self.run_success is not None else {}),
         }
 
     @classmethod
@@ -209,6 +219,7 @@ class TestEntry:
             job_link=d['job_link'],
             group=d['group'],
             name=d['name'],
+            run_success=d.get('run_success'),
         )
 
 
@@ -242,17 +253,35 @@ class TestGroup:
         self.group_names.add((test_entry.group, test_entry.name))
 
 
-def load_known_issues(variant):
+def known_issues_files(variant, mimic=None):
     """
-    Read the list of known issues for a variant from its known_example_issues.txt file.
+    Returns the known issues files of a variant: its known_example_issues.txt
+    and, for native_sim posing as the board mimic, the
+    known_example_issues.<mimic>.txt of the variant, for the issues of
+    native_sim that are specific to that board.
+
+    (the known issues of the board itself are about the real board: its
+    sketches are not tested on native_sim, see ci_native_sim_lists.sh)
+    """
+    files = [ f"variants/{variant}/known_example_issues.txt" ]
+    if mimic:
+        files.append(f"variants/{variant}/known_example_issues.{mimic}.txt")
+    return files
+
+def load_known_issues(variant, mimic=None):
+    """
+    Read the list of known issues for a variant from its known issues files
+    (see known_issues_files()), all optional.
     Returns a tuple of:
      - exceptions: list of sketch patterns whose errors are expected
      - warning_filters: list of (sketch_pattern, warning_pattern) tuples for expected warnings
     """
     exceptions = []
     warning_filters = []
-    if os.path.exists(f"variants/{variant}/known_example_issues.txt"):
-        with open(f"variants/{variant}/known_example_issues.txt", 'r') as f:
+    for issues_file in known_issues_files(variant, mimic):
+        if not os.path.exists(issues_file):
+            continue
+        with open(issues_file, 'r') as f:
             for line in f:
                 line = line.split('#')[0].strip()
                 if not line:
@@ -295,7 +324,11 @@ def evaluate_sketch(report, exceptions, warning_filters):
     account for the exception (TestEntry does that).
     """
     sketch = report.get('name', 'unknown_sketch')
-    success = report.get('compilation_success', False)
+    if report.get('available') is False:
+        # not built, as it cannot be (native_sim)
+        return sketch, False, SKIP, [ "Not sim ready: not in the native_sim package." ]
+    # built and, if it has expect logic, run (native_sim only)
+    success = report.get('compilation_success', False) and report.get('run_success', True)
     issues = report.get('issues', [])
 
     # Replace long absolute paths with '...' for brevity.
@@ -318,3 +351,13 @@ def evaluate_sketch(report, exceptions, warning_filters):
 
     excepted = any(pattern.match(sketch) for pattern in exceptions)
     return sketch, excepted, status, sketch_issues
+
+def evaluate_test(report, exceptions, warning_filters):
+    """
+    Evaluate a single sketch report against the known issues, for the scripts
+    that check the reports of a single test job.
+    Returns its TestEntry, whose status accounts for the exception, with no
+    artifact, board, link mode or job link.
+    """
+    sketch, excepted, status, issues = evaluate_sketch(report, exceptions, warning_filters)
+    return TestEntry('', '', sketch, '', excepted, status, issues, None)

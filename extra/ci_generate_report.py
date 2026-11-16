@@ -11,9 +11,16 @@
 #  - <summary_file>: markdown summary report with overall results
 #  - <full_report_file>: full markdown report with detailed logs
 #
-# Usage: ci_generate_report.py <json_file> [<results_file> <summary_file> <full_report_file>]
+# Usage: ci_generate_report.py [--native-sim-summary <text>] <json_file> [<results_file> <summary_file> <full_report_file>]
 #  If output files are not specified, summary and full report are written to /dev/stdout
-#  and results to /dev/null.
+#  and results to /dev/null. The native_sim summary line (see below), if given,
+#  is printed after the summary title.
+#
+# Usage: ci_generate_report.py --native-sim <json_file> <summary_file> <full_report_file>
+#  For the native_sim tests only (collected with no other boards): write the
+#  short summary of the native_sim tests, a line linking to the report with
+#  the counts of its sketches, to the summary file, and the report itself to
+#  the full report file. Exits with an error if any native_sim test failed.
 
 from collections import defaultdict
 import json
@@ -23,6 +30,7 @@ import ci_shared
 from ci_shared import (
     TestStatus, SKIP, PASS, WARNING, EXPECTED_ERROR, INVALID_EXCEPTION, ERROR, FAILURE,
     LoaderEntry, TestEntry, TestGroup,
+    RAN_ICON, RUN_FAILED_ICON,
 )
 
 BASE_COLOR = 0x20               # darkest tone
@@ -66,6 +74,19 @@ def color_entry(values, full=True):
 # - Failed sketches (and ignored errors)
 RECAP_TABLE_HEADER = "<table>\n<tr><th>Artifact</th><th>Board</th><th>Core</th><th>Tests</th><th>RAM</th><th>Sketches</th><th>Warnings</th><th>Errors</th></tr>"
 
+def is_native_sim(board):
+    """
+    Returns True if the board is native_sim, or native_sim posing as a board.
+    """
+    return ALL_BOARD_DATA.get(board, {}).get('artifact') == 'native_sim'
+
+def board_label(board):
+    """
+    Returns the name a board is shown with: native_sim posing as a board is
+    shown with the name of that board, in the native_sim sections.
+    """
+    return ALL_BOARD_DATA.get(board, {}).get('mimic', board)
+
 def counts_text(res):
     """
     Returns the sketches, warnings and errors cells of a recap row.
@@ -80,14 +101,17 @@ def counts_text(res):
             errors_str += f" <i>(+{res.counts[EXPECTED_ERROR]}*)</i>"
     return f"<td align='right'>{tests_str}</td><td align='right'>{warnings_str}</td><td align='right'>{errors_str}</td>"
 
-def print_recap_rows(artifact):
+def print_recap_rows(artifact, ram=True):
     """
-    Prints the recap table rows of the boards of an artifact.
+    Prints the recap table rows of the boards of an artifact, with or without
+    the RAM column.
     """
+    extra_cols = 1 if ram else 0
     artifact_boards = sorted(ARTIFACT_TESTS[artifact].boards)
-    artifact_status = ARTIFACT_TESTS[artifact].status
+    artifact_status = max(BOARD_TESTS[board].status for board in artifact_boards)
 
-    first_row_text = f"<td rowspan='{len(artifact_boards)}'>{artifact_status.board_icon} <a href='{JOB_LINK_STEM}#user-content-{artifact}'><code>{artifact}</code></a></td>"
+    artifact_text = f"<a href='{JOB_LINK_STEM}#user-content-{artifact}'><code>{artifact}</code></a>"
+    first_row_text = f"<td rowspan='{len(artifact_boards)}'>{artifact_status.board_icon} {artifact_text}</td>"
     for board in artifact_boards:
         # Artifact name (multi-row)
         f_print(f"<tr>{first_row_text}")
@@ -96,13 +120,13 @@ def print_recap_rows(artifact):
         # Board name
         res = BOARD_LOADERS[board]
         if res.job_link:
-            f_print(f"<td><code><a href='{res.job_link}'>{board}</a></code>")
+            f_print(f"<td><code><a href='{res.job_link}'>{board_label(board)}</a></code>")
         else:
-            f_print(f"<td><code>{board}</code>")
+            f_print(f"<td><code>{board_label(board)}</code>")
 
         # Core build status + message on failure
         if res.status == FAILURE:
-            f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='6'>Core build failed for this variant!</td></tr>")
+            f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='{5 + extra_cols}'>Core build failed for this variant!</td></tr>")
             continue
 
         pin = f"{len(res.warnings)} :label:" if res.status == WARNING else ":green_book:"
@@ -112,13 +136,14 @@ def print_recap_rows(artifact):
         res = BOARD_TESTS[board]
         f_print(f"<td align='center'>{res.status.board_icon}</td>")
         if res.status in (FAILURE, SKIP):
-            f_print(f"<td colspan='5'>")
+            f_print(f"<td colspan='{4 + extra_cols}'>")
             f_print("<br>".join(test.issues[0] + (f" (<a href='{test.job_link}'>full log</a>)" if test.job_link else "") for test in res.tests if test.status == res.status and test.issues))
             f_print("</td></tr>")
             continue
 
         # Memory usage
-        f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo['RAM'], False)}\n\n</td>")
+        if ram:
+            f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo.get('RAM'), False)}\n\n</td>")
 
         # Test count summary
         f_print(f"{counts_text(res)}</tr>")
@@ -136,6 +161,8 @@ def print_summary():
         title = f"# [CI run]({JOB_LINK_STEM}#user-content-summary) FAILED: {', '.join(failed_boards)}\n"
     f_print("<a name='summary'></a>\n")
     f_print(title)
+    if native_sim_summary:
+        f_print(f"{native_sim_summary}\n")
 
     # Print the recap table, one line per board
     f_print(RECAP_TABLE_HEADER)
@@ -161,6 +188,66 @@ def print_summary():
             f_print("> [!CAUTION]")
             f_print(f"> `{artifact}` is blocked due to failures on {', '.join(failed_boards)}!\n")
 
+# native_sim sketch categories, in display order, with their icon and text
+NATIVE_SIM_CATEGORIES = {
+    'incomplete': (FAILURE.test_icon, "CI failure"),
+    'build_failed': (ERROR.test_icon, "build failed"),
+    'only_built': (PASS.test_icon, "compiled only"),
+    'ran': (RAN_ICON, "passed sim"),
+    'ran_failing': (RUN_FAILED_ICON, "failed sim"),
+    'known_issue': (EXPECTED_ERROR.test_icon, "known issues"),
+    'not_sim_ready': (SKIP.test_icon, "require libs not in native_sim"),
+}
+
+def native_sim_category(test):
+    """
+    Returns the category of a native_sim test (see NATIVE_SIM_CATEGORIES).
+    """
+    if test.status == FAILURE:
+        return 'incomplete'
+    if test.status == SKIP:
+        return 'not_sim_ready'
+    if test.status in (EXPECTED_ERROR, ERROR):
+        if test.run_success is False:
+            return 'ran_failing'
+        return 'known_issue' if test.status == EXPECTED_ERROR else 'build_failed'
+    return 'only_built' if test.run_success is None else 'ran'
+
+def native_sim_title(name):
+    """
+    Returns the title line of the native_sim tests: the number of sketches
+    and the given name in bold, then their counts in each category (and the
+    incomplete test jobs).
+    """
+    totals = defaultdict(int)
+    for test in ALL_TESTS:
+        totals[native_sim_category(test)] += 1
+    parts = { cat: f"{icon} {totals[cat]} {text}" for cat, (icon, text) in NATIVE_SIM_CATEGORIES.items() if totals[cat] }
+    counts = ", ".join(part for cat, part in parts.items() if cat != 'not_sim_ready')
+    if 'not_sim_ready' in parts:
+        counts += "; " + parts['not_sim_ready']
+    sketches = sum(totals.values()) - totals['incomplete']
+    return f"<b>{sketches} {name}</b>: {counts}"
+
+def print_native_sim_summary():
+    """
+    Prints the short summary of the native_sim tests: their title line,
+    linking to their report.
+    """
+    f_print(native_sim_title(f"<a href='{JOB_LINK_STEM}#user-content-native_sim_summary'>native_sim tests</a>"))
+
+def print_native_sim_report():
+    """
+    Prints the report of the native_sim tests: the overall result, then the
+    details in a collapsible section with their title line.
+    """
+    result = 'PASSED :green_circle:' if native_sim_passed else 'FAILED :red_circle:'
+    f_print("<a name='native_sim_summary'></a>\n")
+    f_print(f"### native_sim tests {result}\n")
+    f_print(f"<details><summary>{native_sim_title('native_sim tests')}</summary><blockquote><br>\n")
+    print_details()
+    f_print("</blockquote></details>")
+
 def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: True):
     """
     Prints a matrix of test results for a given artifact and its boards. The
@@ -174,7 +261,7 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
     header_row = f"<tr><th colspan='2'><code>{artifact}</code> {title}</th>"
     for board in artifact_boards:
         res = BOARD_TESTS[board]
-        header_col = f"<code>{board}</code><br>{res.status.board_icon}"
+        header_col = f"<code>{board_label(board)}</code><br>{res.status.board_icon}"
         job_links = sorted({ (t.link_mode, t.job_link) for t in res.tests if t.link_mode and t.job_link })
         if job_links:
             header_col += "<br><sub>" + " ".join(f"<a href='{link}'>{mode}</a>" for mode, link in job_links) + "</sub>"
@@ -214,7 +301,14 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
                 status = max( [ t.status for t in res.tests if t.board == board ], default=TestStatus.SKIP)
                 if status == INVALID_EXCEPTION:
                     invalid_exceptions[board].add(sample)
-                row_data += f"<td align='center'>{status.test_icon}</td>"
+                # sketches that also ran successfully get their own icon
+                runs = [ t.run_success for t in res.tests if t.board == board ]
+                icon = status.test_icon
+                if status == PASS and True in runs:
+                    icon = RAN_ICON
+                elif status == ERROR and False in runs:
+                    icon = RUN_FAILED_ICON
+                row_data += f"<td align='center'>{icon}</td>"
 
             row_data += "</tr>"
             data_rows.append(row_data)
@@ -234,7 +328,7 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
         f_print("<blockquote><br><table><tr><th>Board</th><th>Sketch</th></tr>")
         for board in sorted(invalid_exceptions.keys()):
             sketches = sorted(invalid_exceptions[board])
-            first_row_text = f"<td rowspan={len(sketches)}><code>{board}</code></td>"
+            first_row_text = f"<td rowspan={len(sketches)}><code>{board_label(board)}</code></td>"
             for sketch in sketches:
                 f_print(f"<tr>{first_row_text}<td><code>{sketch}</code></td></tr>")
                 first_row_text = ""
@@ -256,7 +350,8 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
             # Test logs by board, group similar messages
             boards_by_issues = defaultdict(list)   # { issues: list of boards }
             for test in sorted(res.tests_with_issues, key=lambda x: x.status, reverse=True):
-                test_text = f"<code>{test.board}:{test.link_mode}</code>"
+                test_text = f"<code>{board_label(test.board)}</code>" if is_native_sim(test.board) \
+                            else f"<code>{test.board}:{test.link_mode}</code>"
                 if test.job_link:
                     test_text += f" (<a href='{test.job_link}'>full log</a>)"
                 test_text = f"{test.status.test_icon} {test_text}"
@@ -355,21 +450,119 @@ def print_mem_report(artifact, artifact_boards):
     if extra_data_present:
         f_print("</blockquote></details>")
 
+def print_details():
+    """
+    Prints the details of each artifact: its test matrices and memory usage.
+    """
+    # native_sim: the recap of all the boards it poses as, by artifact (see
+    # the main logic), as in the summary of the core artifacts
+    if native_sim_mode:
+        f_print(RECAP_TABLE_HEADER.replace("<th>RAM</th>", ""))
+        for artifact in ARTIFACTS:
+            print_recap_rows(artifact, ram=False)
+        f_print("</table>\n")
+
+    # native_sim has no real hardware, so many sketches are known not to
+    # build there: list them with the successful tests, not as issues
+    first_issue = INVALID_EXCEPTION if native_sim_mode else EXPECTED_ERROR
+
+    # Print the test matrix sections, per artifact
+    for artifact in ARTIFACTS:
+        # boards with test results (a failed test job does not hide the
+        # results of the other jobs; with native_sim, also the boards with
+        # only sketches that are not sim ready)
+        artifact_boards = sorted([ board for board in ARTIFACT_TESTS[artifact].boards
+                                   if any(t.status != FAILURE and (native_sim_mode or t.status != SKIP)
+                                          for t in BOARD_TESTS[board].tests) ])
+
+        if not artifact_boards:
+            continue
+
+        f_print(f"<a name='{artifact}'></a>")
+        f_print("\n---\n")
+
+        # print loader build warnings, if any
+        if any(BOARD_LOADERS[board].status != PASS for board in artifact_boards):
+            summary = f"<code>{artifact}</code> loader build warnings"
+            f_print(f"<details><summary>{summary}</summary><blockquote><br>\n")
+            f_print("<table>")
+            f_print("<tr><th>Board</th><th>Warnings</th></tr>")
+            for board in artifact_boards:
+                if BOARD_LOADERS[board].status == PASS:
+                    continue
+                f_print(f"<tr><td><code>{board_label(board)}</code></td><td><pre>")
+                for warning in BOARD_LOADERS[board].warnings:
+                    f_print(warning)
+                f_print("</pre></td></tr>")
+            f_print("</table>\n")
+            f_print("</blockquote></details>\n")
+
+        # print failed tests matrix
+        print_test_matrix(artifact, artifact_boards, "issues", sketch_filter=lambda res: res.status >= first_issue)
+
+        # print successful tests matrix in a collapsible section
+        counts = ARTIFACT_TESTS[artifact].counts
+        successful_tests = counts[PASS] + counts[WARNING]
+        warning_tests = counts[WARNING]
+        expected_tests = counts[EXPECTED_ERROR] if native_sim_mode else 0
+        if successful_tests or expected_tests:
+            summary = f"{successful_tests} successful <code>{artifact}</code> tests hidden"
+            details = []
+            if warning_tests:
+                details.append(f"{warning_tests} with warnings")
+            if expected_tests:
+                details.append(f"{expected_tests} known failures")
+            if details:
+                summary += f" ({', '.join(details)})"
+
+            f_print(f"<details><summary>{summary}</summary><blockquote><br>\n")
+            print_test_matrix(artifact, artifact_boards, "tests", sketch_filter=lambda res: res.status < first_issue and res.status != SKIP)
+            f_print("</blockquote></details>\n")
+
+        # print the native_sim sketches that are not sim ready (the same for
+        # all boards: not in the native_sim package)
+        if native_sim_mode:
+            skipped = sorted({ t.sketch for t in ARTIFACT_TESTS[artifact].tests if t.status == SKIP })
+            if skipped:
+                f_print(f"<details><summary>{len(skipped)} <code>{artifact}</code> sketches not sim ready</summary><blockquote><br>\n")
+                for sketch in skipped:
+                    f_print(f"- <code>{sketch}</code>")
+                f_print("\n</blockquote></details>\n")
+
+        # print memory usage report in a collapsible section, if there is one
+        if not any(BOARD_LOADERS[board].meminfo for board in artifact_boards):
+            continue
+        f_print(f"<details><summary>Memory usage report for <code>{artifact}</code></summary><blockquote><br>")
+        print_mem_report(artifact, artifact_boards)
+        f_print("</blockquote></details>")
+
 # ---------------------------------------------------------------------------
 # Main Logic
 # ---------------------------------------------------------------------------
 
-if not len(sys.argv) in (2, 5):
-    print("Usage: ci_generate_report.py <json_file> [<results_file> <summary_file> <full_report_file>]")
+# (--native-sim-summary: the short summary of the native_sim tests, added
+# to the summary of the other boards, see package_core.yml)
+native_sim_summary = None
+if sys.argv[1:2] == ['--native-sim-summary'] and len(sys.argv) > 2:
+    native_sim_summary = sys.argv.pop(2).strip()
+    sys.argv.pop(1)
+# (--native-sim: the short summary of the native_sim tests, then their
+# details, see test_native_sim.yml)
+native_sim_mode = sys.argv[1:2] == ['--native-sim']
+if len(sys.argv) != (5 if native_sim_mode else 2) and (native_sim_mode or len(sys.argv) != 5):
+    print("Usage: ci_generate_report.py [--native-sim-summary <text>] <json_file> [<results_file> <summary_file> <full_report_file>]")
+    print("       ci_generate_report.py --native-sim <json_file> <summary_file> <full_report_file>")
     sys.exit(1)
 
-json_file = sys.argv[1]
-
-if len(sys.argv) == 5:
+if native_sim_mode:
+    json_file, summary_file, full_report_file = sys.argv[2:5]
+elif len(sys.argv) == 5:
+    json_file = sys.argv[1]
     results_file = sys.argv[2]
     summary_file = sys.argv[3]
     full_report_file = sys.argv[4]
 else:
+    json_file = sys.argv[1]
     results_file = "/dev/null"
     summary_file = full_report_file = "/dev/stdout"
 
@@ -392,6 +585,13 @@ BOARD_LOADERS = {
 # Reconstruct all test entries and rebuild groups via track()
 ALL_TESTS = [TestEntry.from_dict(t) for t in data['all_tests']]
 
+# native_sim: report the boards it poses as by the artifact of each board,
+# as the boards of the core artifacts (the loader tests stay as native_sim)
+if native_sim_mode:
+    for t in ALL_TESTS:
+        t.artifact = ALL_BOARD_DATA.get(t.board, {}).get('mimic_artifact', t.artifact)
+    ARTIFACTS = sorted({ t.artifact for t in ALL_TESTS }, key=lambda a: (a == 'native_sim', a))
+
 ARTIFACT_TESTS = defaultdict(TestGroup)
 BOARD_TESTS = defaultdict(TestGroup)
 SKETCH_TESTS = defaultdict(lambda: defaultdict(TestGroup))
@@ -399,6 +599,16 @@ for t in ALL_TESTS:
     ARTIFACT_TESTS[t.artifact].track(t)
     BOARD_TESTS[t.board].track(t)
     SKETCH_TESTS[t.artifact][t.sketch].track(t)
+
+if native_sim_mode:
+    native_sim_passed = ci_run_passed and bool(ALL_TESTS)
+    with open(summary_file, 'w') as f:
+        f_print = lambda *args, **kwargs: print(*args, file=f, **kwargs)
+        print_native_sim_summary()
+    with open(full_report_file, 'w') as f:
+        f_print = lambda *args, **kwargs: print(*args, file=f, **kwargs)
+        print_native_sim_report()
+    sys.exit(0 if native_sim_passed else 1)
 
 # Update the results file
 with open(results_file, 'w') as f:
@@ -415,48 +625,4 @@ with open(summary_file, 'w') as f:
 with open(full_report_file, 'w') as f:
     f_print = lambda *args, **kwargs: print(*args, file=f, **kwargs)
 
-    # Print the test matrix sections, per artifact
-    for artifact in ARTIFACTS:
-        artifact_boards = sorted([ board for board in ARTIFACT_TESTS[artifact].boards if BOARD_TESTS[board].status not in (FAILURE, SKIP) ])
-
-        if not artifact_boards:
-            continue
-
-        f_print(f"<a name='{artifact}'></a>")
-        f_print("\n---\n")
-
-        # print loader build warnings, if any
-        if any(BOARD_LOADERS[board].status != PASS for board in artifact_boards):
-            summary = f"<code>{artifact}</code> loader build warnings"
-            f_print(f"<details><summary>{summary}</summary><blockquote><br>\n")
-            f_print("<table>")
-            f_print("<tr><th>Board</th><th>Warnings</th></tr>")
-            for board in artifact_boards:
-                if BOARD_LOADERS[board].status == PASS:
-                    continue
-                f_print(f"<tr><td><code>{board}</code></td><td><pre>")
-                for warning in BOARD_LOADERS[board].warnings:
-                    f_print(warning)
-                f_print("</pre></td></tr>")
-            f_print("</table>\n")
-            f_print("</blockquote></details>\n")
-
-        # print failed tests matrix
-        print_test_matrix(artifact, artifact_boards, "issues", sketch_filter=lambda res: res.status >= EXPECTED_ERROR)
-
-        # print successful tests matrix in a collapsible section
-        successful_tests = ARTIFACT_TESTS[artifact].counts[PASS] + ARTIFACT_TESTS[artifact].counts[WARNING]
-        warning_tests = ARTIFACT_TESTS[artifact].counts[WARNING]
-        if successful_tests:
-            summary = f"{successful_tests} successful <code>{artifact}</code> tests hidden"
-            if warning_tests:
-                summary += f" ({warning_tests} with warnings)"
-
-            f_print(f"<details><summary>{summary}</summary><blockquote><br>\n")
-            print_test_matrix(artifact, artifact_boards, "tests", sketch_filter=lambda res: res.status.built)
-            f_print("</blockquote></details>\n")
-
-        # print memory usage report in a collapsible section
-        f_print(f"<details><summary>Memory usage report for <code>{artifact}</code></summary><blockquote><br>")
-        print_mem_report(artifact, artifact_boards)
-        f_print("</blockquote></details>")
+    print_details()
