@@ -58,16 +58,24 @@
 	num-isoout-endpoints = <0>;
 };
 
-/*
- * The RAK4631 LEDs are active high: green on P1.03 (D7),
- * blue on P1.04 (D8). The base board declares them active low.
- */
-&green_led {
-	gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+/* The board's own CDC-ACM port would be a fourth one. */
+&board_cdc_acm_uart {
+	status = "disabled";
 };
 
-&blue_led {
-	gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+/* The RAK4631 LEDs: green on P1.03 (D7), blue on P1.04 (D8). */
+/ {
+	leds {
+		compatible = "gpio-leds";
+
+		blue_led: led_2 {
+			gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		green_led: led_1 {
+			gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		};
+	};
 };
 
 /*
@@ -94,6 +102,19 @@
 
 /* RTC backend for the Arduino RTC library */
 &rtc2 {
+	status = "okay";
+};
+
+/* 'Serial1', 'Serial2' and 'Wire' (zephyr,user below) */
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&i2c0 {
 	status = "okay";
 };
 
