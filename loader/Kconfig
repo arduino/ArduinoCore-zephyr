@@ -81,12 +81,6 @@ config LOADER_DFU_BOOT_MODE
 	hex "Retention boot mode value requesting the loader DFU mode"
 	default 0x4c
 
-config LOADER_DFU_PID
-	hex "USB product ID of the loader DFU mode"
-	default 0x0
-	help
-	  0 uses USB_DEVICE_PID + 0x100.
-
 endif
 
 config APP_WATCHDOG_ENFORCED

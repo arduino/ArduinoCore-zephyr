@@ -463,8 +463,7 @@ USBD_DFU_DEFINE_IMG(sketch_image, "sketch", &dfu_state, NULL, dynamic_flash_writ
 /* +++ DFU USB CONFIGURATION and FUNCTIONS +++ */
 
 USBD_DEVICE_DEFINE(dfu_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), CONFIG_USB_DEVICE_VID,
-				   CONFIG_LOADER_DFU_PID ? CONFIG_LOADER_DFU_PID
-							 : CONFIG_USB_DEVICE_PID + 0x0100);
+				   CONFIG_USB_DEVICE_PID);
 
 USBD_DESC_LANG_DEFINE(sample_lang);
 USBD_DESC_CONFIG_DEFINE(fs_cfg_desc, "DFU FS Configuration");
