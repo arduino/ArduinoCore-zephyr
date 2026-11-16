@@ -186,6 +186,7 @@ recipe.output.save_file={build.project_name}.{build.variant}.{upload.extension}
 # ---------------------------------
 pluggable_discovery.required.0=builtin:serial-discovery
 pluggable_discovery.required.1=builtin:mdns-discovery
+pluggable_discovery.required.2=builtin:dfu-discovery
 pluggable_monitor.required.serial=builtin:serial-monitor
 
 
@@ -288,6 +289,27 @@ tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
 tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
+
+# Boards with a loader USB DFU (1200-bps touch) and an MCUboot USB DFU (double
+# tap), e.g. Nano XL Link. The board lists MCUboot's DFU as upload_port.1 and
+# the loader's as upload_port.2, defaults upload.port.properties.pid to "none"
+# (serialNumber and configuration to empty), and sets upload.tool.serial=dfu-util,
+# upload.tool.dfu=dfu-util-port, tools.dfu-util.upload.pattern={tools.dfu-util.dual_dfu.pattern}.
+# - Serial port, as on mezza: the loader DFU gets the full image (alt 0,
+#   complete_image) when the running loader's version (USB configuration
+#   string) differs from {version}, else only the sketch (alt 1).
+# - No port (no -p): MCUboot's DFU, no wait, fails fast if it is not there.
+# - DFU port: alt 0, the full image, of that very device (dfu-util-port).
+tools.dfu-util.dual_dfu.full.cmd="{path}/{cmd}" --device ,{upload_port.2.vid}:{upload_port.2.pid} -S ,{upload.port.properties.serialNumber} -D "{upload.artifacts.sketch}" -a0 -w
+tools.dfu-util.dual_dfu.sketch.cmd="{path}/{cmd}" --device ,{upload_port.2.vid}:{upload_port.2.pid} -S ,{upload.port.properties.serialNumber} -D "{upload.artifacts.sketch}" -a1 -w
+tools.dfu-util.dual_dfu.mcuboot.cmd="{path}/{cmd}" --device ,{upload_port.1.vid}:{upload_port.1.pid} -D "{upload.artifacts.sketch}" -a0
+tools.dfu-util.dual_dfu.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.mcuboot.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {tools.dfu-util.dual_dfu.full.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" not {flash-loader-condition} {tools.dfu-util.dual_dfu.sketch.cmd}
+
+tools.dfu-util-port.path={runtime.tools.dfu-util.path}
+tools.dfu-util-port.cmd=dfu-util
+tools.dfu-util-port.upload.params.verbose=-d
+tools.dfu-util-port.upload.params.quiet=
+tools.dfu-util-port.upload.pattern="{path}/{cmd}" --device ,{upload.port.properties.vid}:{upload.port.properties.pid} -S ,{upload.port.properties.serial} -a 0 -D "{upload.artifacts.sketch}"
 
 
 #
