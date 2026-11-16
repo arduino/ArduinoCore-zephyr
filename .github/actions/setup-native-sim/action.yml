@@ -1,0 +1,63 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Prepare a job to compile and run sketches on native_sim: install the host
+# compiler and arduino-cli with the tools of the Board Manager core, then
+# install the native_sim core package built by the build job of
+# test_native_sim.yml as a sketchbook platform, also available under the
+# core architecture names (zephyr, zephyr_main, ...) via symlinks.
+
+name: Set up native_sim
+description: Install the native_sim core package and its tools
+
+inputs:
+  core-dir:
+    description: Directory to install the core package to, in the sketchbook hardware folder
+    required: true
+  ci-builds-url:
+    description: Additional Board Manager index URL for the tools (optional)
+    default: ''
+
+runs:
+  using: composite
+  steps:
+
+    - name: Install host compiler
+      shell: bash
+      run: |
+        sudo apt-get remove --purge man-db -y # skips the mandb triggers
+        sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends gcc-14 g++-14 gdb
+        # the SDK libstdc++ headers need gcc 14: make it the default host compiler
+        for link in gcc:gcc g++:g++ cc:gcc c++:g++ cpp:cpp ; do
+          sudo ln -sf /usr/bin/${link#*:}-14 /usr/local/bin/${link%:*}
+        done
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: native_sim-package
+        path: native_sim-package/
+
+    - uses: arduino/setup-arduino-cli@v2
+
+    - name: Install core and tools
+      shell: bash
+      env:
+        CORE_DIR: ${{ inputs.core-dir }}
+        CI_BUILDS_URL: ${{ inputs.ci-builds-url }}
+      run: |
+        # install the Board Manager core as test-core does (from ci-builds,
+        # if possible) to get the exact set of tools the core recipes need
+        arduino-cli core update-index ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+        arduino-cli core install arduino:zephyr_main ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+        # install the native_sim core package as a sketchbook platform
+        mkdir -p $(dirname $CORE_DIR)
+        tar --use-compress-program=unzstd -xpf native_sim-package/native_sim.tar.zst -C $(dirname $CORE_DIR)
+        mv $(dirname $CORE_DIR)/ArduinoCore-zephyr $CORE_DIR
+        # arduino-cli rejects the libraries that do not declare the board
+        # architecture: make the same core available under the name of each
+        # core architecture
+        for arch in $(jq -r '.architecture | select(. != "" and . != "native_sim")' extra/artifacts/*.json | sort -u) ; do
+          ln -sfn $(basename $CORE_DIR) $(dirname $CORE_DIR)/$arch
+        done

@@ -47,6 +47,8 @@ jobs:
       CORE_HASH: ${{ env.CORE_HASH }}
       # JSON describing all boards to build, collected by get_board_details.sh
       ALL_BOARD_DATA: ${{ env.ALL_BOARD_DATA }}
+      # native_sim entry of get_board_details.sh, with its build job id
+      NATIVE_SIM_BOARD_DATA: ${{ env.NATIVE_SIM_BOARD_DATA }}
       # Extended version of ALL_BOARD_DATA with link_mode alternatives added
       ALL_BOARD_FQBNS: ${{ env.ALL_BOARD_FQBNS }}
       # List of artifacts to produce, including the "zephyr" umbrella artifact
@@ -148,6 +150,22 @@ jobs:
           archive: false
           overwrite: true
           retention-days: 1
+
+
+
+  # Build, package and test native_sim on the host, without waiting for the
+  # other boards. See test_native_sim.yml.
+
+  test-native-sim:
+    name: Native
+    needs:
+      - build-env
+    uses: ./.github/workflows/test_native_sim.yml
+    with:
+      core-version: ${{ needs.build-env.outputs.CORE_VER }}
+      core-tag: ${{ needs.build-env.outputs.CORE_TAG }}
+      ci-builds-url: ${{ needs.build-env.outputs.CI_BUILDS_URL }}
+      native-sim-board-data: ${{ needs.build-env.outputs.NATIVE_SIM_BOARD_DATA }}
 
 
 
@@ -502,9 +520,11 @@ jobs:
       - build-board
       - package-core
       - package-index
+      - test-native-sim
     # package-index only runs on PRs, do not skip cleanup when it is skipped;
-    # keep everything if any board failed, as it is needed to re-run that build
-    if: ${{ !cancelled() && needs.build-board.result == 'success' && contains(fromJSON('["success", "skipped"]'), needs.package-core.result) }}
+    # keep everything if any board or the native_sim build failed (no test
+    # matrix), as it is needed to re-run that build
+    if: ${{ !cancelled() && needs.build-board.result == 'success' && contains(fromJSON('["success", "skipped"]'), needs.package-core.result) && needs.test-native-sim.outputs.matrix != '' }}
     steps:
 
       # only needs the delete-artifacts action
@@ -533,7 +553,11 @@ jobs:
     needs:
       - build-env
       - package-core
-    if: ${{ !cancelled() && needs.build-env.result == 'success' }}
+      - test-native-sim
+    # (also runs if some packages failed, to test the others; boards whose
+    # native_sim tests failed are skipped, as they are faster and catch most
+    # issues; all of them if native_sim could not be built)
+    if: ${{ !cancelled() && needs.build-env.result == 'success' && needs.test-native-sim.outputs.matrix != '' }}
     permissions:
       contents: read
       actions: read
@@ -542,6 +566,7 @@ jobs:
       core-run-id: ${{ github.run_id }}
       core-version: ${{ needs.build-env.outputs.CORE_VER }}
       min-attempt: ${{ needs.build-env.outputs.BUILD_ATTEMPT }}
+      native-sim-matrix: ${{ needs.test-native-sim.outputs.matrix }}
 
 
 
@@ -554,9 +579,14 @@ jobs:
       - build-env
       - package-core
       - test-core
+      - test-native-sim
     if: ${{ !cancelled() }}
     env:
       ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
+      NATIVE_SIM_BOARD_DATA: ${{ needs.build-env.outputs.NATIVE_SIM_BOARD_DATA }}
+      NATIVE_SIM_MATRIX: ${{ needs.test-native-sim.outputs.matrix }}
+      # (not reported if native_sim could not be built)
+      NATIVE_SIM_SUMMARY: ${{ needs.test-native-sim.outputs.summary || format('[native_sim tests]({0}/{1}/actions/runs/{2}) FAILED :fire:', github.server_url, github.repository, github.run_id) }}
       CORE_VER: ${{ needs.build-env.outputs.CORE_VER }}
     steps:
 
@@ -583,10 +613,14 @@ jobs:
       - name: Generate workflow summary
         run: |
           # Archive the input set of reports for later inspection
-          tar -I "zstd -T0 -19 --long=27" -chf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst zephyr-* arduino-*.json
+          shopt -s nullglob
+          tar -I "zstd -T0 -19 --long=27" -chf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst zephyr-* arduino-*.json native_sim-sketches-*.json
+          shopt -u nullglob
           # Collect all CI data into a JSON file, then generate the report
-          extra/ci_collect_data.py build_info.json
-          extra/ci_generate_report.py build_info.json result summary full_log
+          # (native_sim is reported by its own workflow, and never published:
+          # keep it out of the report and of the ci-builds metadata)
+          extra/ci_collect_data.py --exclude-artifact native_sim build_info.json
+          extra/ci_generate_report.py --native-sim-summary "$NATIVE_SIM_SUMMARY" build_info.json result summary full_log
           cat result
 
           # Display the summary and full log in the step summary
@@ -703,6 +737,8 @@ jobs:
             prereq-build-*
             prereq-package-*
             prereq-test-*
+            native_sim-package
+            native_sim-test-list
           failOnError: false
 
 
