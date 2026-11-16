@@ -93,6 +93,11 @@ static void loader_usb_msg_cb(struct usbd_context *const ctx, const struct usbd_
 			k_work_schedule(&bootloader_reset_work, K_MSEC(100));
 		}
 	}
+
+	/* DFU DETACH on the run-time interface: same as the 1200-bps touch. */
+	if (msg->type == USBD_MSG_DFU_APP_DETACH) {
+		k_work_schedule(&bootloader_reset_work, K_MSEC(100));
+	}
 }
 
 int loader_usb_enable(void) {

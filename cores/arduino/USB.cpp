@@ -47,6 +47,13 @@ void arduino::SerialUSB_::usbd_next_cb(struct usbd_context *const ctx, const str
 		uart_line_ctrl_get(SerialUSB.uart, UART_LINE_CTRL_BAUD_RATE, &baudrate);
 		SerialUSB.baudChangeHandler(nullptr, baudrate);
 	}
+
+	/* DFU DETACH on the run-time interface (dfu-util with a run-time and a
+	 * DFU-mode vid:pid): same as the 1200-bps touch. Zephyr publishes it
+	 * from a delayed work item, after the control transfer. */
+	if (msg->type == USBD_MSG_DFU_APP_DETACH) {
+		_on_1200_bps();
+	}
 }
 
 int arduino::SerialUSB_::enable_usb_device_next(void) {

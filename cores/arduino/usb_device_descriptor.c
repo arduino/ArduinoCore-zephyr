@@ -18,13 +18,10 @@
 
 #ifdef CONFIG_USB_DEVICE_STACK_NEXT
 
-/* By default, do not register the USB DFU class DFU mode instance. */
+/* By default, do not register the USB DFU class DFU mode instance; the
+ * run-time instance (CONFIG_USBD_DFU) stays for DFU DETACH. */
 static const char *const blocklist[] = {
 	"dfu_dfu",
-#if defined(CONFIG_LOADER_DFU_MODE)
-	/* DFU mode has its own device (loader/dfu_flash_updates.c), no run-time interface. */
-	"dfu_runtime",
-#endif
 #if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)
 	"cdc_acm_0",
 #endif
