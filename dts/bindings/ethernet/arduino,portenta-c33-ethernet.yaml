@@ -1,0 +1,12 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+description: Arduino Portenta C33 Ethernet
+
+compatible: "arduino,portenta-c33-ethernet"
+
+include: renesas,ra-ethernet.yaml
+
+properties:
+  phy-handle:
+    dependency-mode: child-ignore

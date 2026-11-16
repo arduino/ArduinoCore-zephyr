@@ -15,6 +15,7 @@
 &w25q512jvfiq {
 	partitions {
 		user_sketch: partition@323000 {
+			compatible = "zephyr,mapped-partition";
 			reg = <0x00323000 (DT_SIZE_M(3) - 0x3000)>;
 		};
 	};

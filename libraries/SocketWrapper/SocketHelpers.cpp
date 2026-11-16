@@ -149,20 +149,26 @@ void NetworkInterface::setLocalIP(const IPAddress ip) {
 		LOG_ERR("Failed to set local IP address");
 		return;
 	}
+	local_ip = addr;
 	LOG_INF("Local IP address set: %s", ip.toString().c_str());
 }
 
 void NetworkInterface::setSubnetMask(const IPAddress subnet) {
 	struct in_addr netmask_addr;
 	netmask_addr.s_addr = subnet;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-	// TODO: store the address that was manually set and replace this call
-	// with net_if_ipv4_set_netmask_by_addr
-	net_if_ipv4_set_netmask(netif, &netmask_addr);
-#pragma GCC diagnostic pop
+
+	// The netmask is bound to an address: use the one set with setLocalIP(),
+	// or the current primary one (e.g. assigned by DHCP), as localIP() does
+	struct in_addr addr = local_ip;
+	if (addr.s_addr == 0 && netif->config.ip.ipv4 != nullptr) {
+		addr = netif->config.ip.ipv4->unicast[0].ipv4.address.in_addr;
+	}
+
+	if (addr.s_addr == 0 || !net_if_ipv4_set_netmask_by_addr(netif, &addr, &netmask_addr)) {
+		LOG_ERR("Failed to set subnet mask: no IPv4 address on the interface");
+		return;
+	}
 	LOG_INF("Subnet mask set: %s", subnet.toString().c_str());
-	return;
 }
 
 void NetworkInterface::setGatewayIP(const IPAddress gateway) {

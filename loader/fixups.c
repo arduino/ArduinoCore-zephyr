@@ -133,52 +133,6 @@ INPUT_CALLBACK_DEFINE(NULL, zephyr_input_callback, NULL);
 #include <zephyr/devicetree.h>
 #include <zephyr/multi_heap/shared_multi_heap.h>
 
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-#include <zephyr/linker/linker-defs.h>
-#include <zephyr/sys/util.h>
-
-int smh_region_video_init(void) {
-	uintptr_t ram_free_start = ROUND_UP((uintptr_t)_end, CONFIG_VIDEO_BUFFER_POOL_ALIGN);
-	uintptr_t ram_free_end = (uintptr_t)__kernel_ram_end;
-
-	if (ram_free_end <= ram_free_start) {
-		return -ENOMEM;
-	}
-
-	uintptr_t ram_free_size = ram_free_end - ram_free_start;
-	uintptr_t split_size = ROUND_DOWN(ram_free_size / 2U, CONFIG_VIDEO_BUFFER_POOL_ALIGN);
-
-	if (split_size == 0U) {
-		return -ENOMEM;
-	}
-
-	struct shared_multi_heap_region smh_ram_a = {
-		.attr = SMH_REG_ATTR_CACHEABLE,
-		.addr = ram_free_start,
-		.size = split_size,
-	};
-	struct shared_multi_heap_region smh_ram_b = {
-		.attr = SMH_REG_ATTR_CACHEABLE,
-		.addr = ram_free_start + split_size,
-		.size = ram_free_end - (ram_free_start + split_size),
-	};
-
-	int ret = shared_multi_heap_add(&smh_ram_a, NULL);
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (smh_ram_b.size > 0U) {
-		ret = shared_multi_heap_add(&smh_ram_b, NULL);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
-	return 0;
-}
-#endif
-
 int smh_init(void) {
 	int ret = 0;
 	ret = shared_multi_heap_pool_init();

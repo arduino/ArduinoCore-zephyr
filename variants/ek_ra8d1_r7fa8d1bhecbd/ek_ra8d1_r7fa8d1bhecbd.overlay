@@ -14,7 +14,13 @@
 	status = "okay";
 };
 
-&flash0 {
+/{
+	aliases {
+		flash0 = &code_flash;
+	};
+};
+
+&code_flash {
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;

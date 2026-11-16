@@ -166,6 +166,7 @@ FORCE_EXPORT_SYM(log_dynamic_sketch)
 #endif
 
 #if defined(CONFIG_NETWORKING)
+FORCE_EXPORT_SYM(net_if_init);
 FORCE_EXPORT_SYM(net_if_foreach);
 FORCE_EXPORT_SYM(net_if_down);
 FORCE_EXPORT_SYM(net_if_up);
@@ -175,7 +176,6 @@ FORCE_EXPORT_SYM(net_if_ipv4_maddr_add);
 FORCE_EXPORT_SYM(net_if_ipv4_maddr_join);
 FORCE_EXPORT_SYM(net_if_ipv4_set_gw);
 FORCE_EXPORT_SYM(net_if_ipv4_addr_add);
-FORCE_EXPORT_SYM(net_if_ipv4_set_netmask);
 FORCE_EXPORT_SYM(net_if_ipv4_set_netmask_by_addr);
 #endif
 FORCE_EXPORT_SYM(net_if_lookup_by_dev);
@@ -234,14 +234,44 @@ FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_DISCONNECT);
 FORCE_EXPORT_SYM(net_mgmt_NET_REQUEST_WIFI_VERSION);
 #endif
 
+#if defined(CONFIG_NET_BUF)
+/*
+ * Generic network buffer API, used by every subsystem that hands net_bufs to a sketch
+ * (BT HCI raw, USB device stack next control transfers, ...). The net_buf_add_*(),
+ * net_buf_pull_*() and net_buf_remove_*() helpers are static inline wrappers of these.
+ */
+#if defined(CONFIG_NET_BUF_LOG)
+FORCE_EXPORT_SYM(net_buf_unref_debug);
+#else
+FORCE_EXPORT_SYM(net_buf_unref);
+#endif
+FORCE_EXPORT_SYM(net_buf_ref);
+FORCE_EXPORT_SYM(net_buf_reset);
+FORCE_EXPORT_SYM(net_buf_simple_reserve);
+FORCE_EXPORT_SYM(net_buf_simple_add);
+FORCE_EXPORT_SYM(net_buf_simple_add_mem);
+FORCE_EXPORT_SYM(net_buf_simple_add_u8);
+FORCE_EXPORT_SYM(net_buf_simple_add_le16);
+FORCE_EXPORT_SYM(net_buf_simple_add_be16);
+FORCE_EXPORT_SYM(net_buf_simple_add_le32);
+FORCE_EXPORT_SYM(net_buf_simple_add_be32);
+FORCE_EXPORT_SYM(net_buf_simple_pull);
+FORCE_EXPORT_SYM(net_buf_simple_pull_mem);
+FORCE_EXPORT_SYM(net_buf_simple_pull_u8);
+FORCE_EXPORT_SYM(net_buf_simple_pull_le16);
+FORCE_EXPORT_SYM(net_buf_simple_pull_be16);
+FORCE_EXPORT_SYM(net_buf_simple_pull_le32);
+FORCE_EXPORT_SYM(net_buf_simple_pull_be32);
+FORCE_EXPORT_SYM(net_buf_simple_push);
+FORCE_EXPORT_SYM(net_buf_simple_push_mem);
+FORCE_EXPORT_SYM(net_buf_simple_push_u8);
+FORCE_EXPORT_SYM(net_buf_simple_remove_mem);
+#endif
+
 #if defined(CONFIG_BT_HCI_RAW)
 FORCE_EXPORT_SYM(bt_enable_raw);
 FORCE_EXPORT_SYM(bt_send);
 FORCE_EXPORT_SYM(bt_buf_get_tx);
-FORCE_EXPORT_SYM(net_buf_simple_pull);
-FORCE_EXPORT_SYM(net_buf_simple_add_mem);
-FORCE_EXPORT_SYM(net_buf_simple_pull_mem);
-FORCE_EXPORT_SYM(net_buf_unref);
 #if defined(CONFIG_BT_HCI_SETUP)
 FORCE_EXPORT_SYM(bt_h4_vnd_setup);
 #endif
@@ -268,9 +298,11 @@ FORCE_EXPORT_SYM(video_buffer_release);
 FORCE_EXPORT_SYM(video_import_buffer);
 FORCE_EXPORT_SYM(video_set_ctrl);
 FORCE_EXPORT_SYM(video_enqueue);
-#endif
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-FORCE_EXPORT_SYM(video_register_user_buffer_ops);
+FORCE_EXPORT_SYM(video_dequeue);
+FORCE_EXPORT_SYM(video_set_format);
+FORCE_EXPORT_SYM(video_get_caps);
+FORCE_EXPORT_SYM(video_stream_start);
+FORCE_EXPORT_SYM(video_stream_stop);
 #endif
 
 #if defined(CONFIG_INPUT)
@@ -280,9 +312,6 @@ FORCE_EXPORT_SYM(zephyr_input_register_callback);
 #if defined(CONFIG_SHARED_MULTI_HEAP)
 FORCE_EXPORT_SYM(shared_multi_heap_aligned_alloc);
 FORCE_EXPORT_SYM(shared_multi_heap_free);
-#if defined(CONFIG_VIDEO_BUFFER_POOL_ALLOC_OPS)
-FORCE_EXPORT_SYM(smh_region_video_init);
-#endif
 #endif
 
 #if defined(CONFIG_STM32_BACKUP_PROTECTION)
@@ -328,6 +357,7 @@ FORCE_EXPORT_SYM(usbd_can_detect_vbus);
 FORCE_EXPORT_SYM(usbd_enable);
 FORCE_EXPORT_SYM(usbd_disable);
 FORCE_EXPORT_SYM(usbd_device_register_vreq);
+FORCE_EXPORT_SYM(usbd_ep_ctrl_data_in_alloc);
 #endif
 
 #if defined(CONFIG_SHARED_MULTI_HEAP)
@@ -379,8 +409,6 @@ EXPORT_SYMBOL(stderr);
 EXPORT_SYMBOL(ring_buf_get);
 EXPORT_SYMBOL(ring_buf_peek);
 EXPORT_SYMBOL(ring_buf_put);
-EXPORT_SYMBOL(ring_buf_area_claim);
-EXPORT_SYMBOL(ring_buf_area_finish);
 #endif
 
 EXPORT_SYMBOL(sys_clock_cycle_get_32);
@@ -469,7 +497,6 @@ FORCE_EXPORT_SYM(flash_area_open);
 FORCE_EXPORT_SYM(flash_area_read);
 FORCE_EXPORT_SYM(flash_area_write);
 FORCE_EXPORT_SYM(flash_area_erase);
-FORCE_EXPORT_SYM(flash_area_close);
 #endif
 
 #if defined(CONFIG_FILE_SYSTEM)

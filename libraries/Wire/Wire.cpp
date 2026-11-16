@@ -51,10 +51,15 @@ static struct i2c_target_callbacks target_callbacks = {
 	.read_requested = i2c_target_read_requested_cb,
 	.write_received = i2c_target_write_received_cb,
 	.read_processed = i2c_target_read_processed_cb,
+#if defined(CONFIG_I2C_TARGET_BUFFER_MODE)
+	.buf_write_received = nullptr,
+	.buf_read_requested = nullptr,
+#endif
 	.stop = i2c_target_stop_cb,
+	.error = nullptr,
 };
 
-arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg({0}), i2c_dev(i2c) {
+arduino::ZephyrI2C::ZephyrI2C(const struct device *i2c) : i2c_cfg{}, i2c_dev(i2c) {
 	ring_buf_init(&txRingBuffer.rb, sizeof(txRingBuffer.buffer), txRingBuffer.buffer);
 	ring_buf_init(&rxRingBuffer.rb, sizeof(rxRingBuffer.buffer), rxRingBuffer.buffer);
 }
@@ -112,15 +117,13 @@ void arduino::ZephyrI2C::beginTransmission(uint8_t address) {
 uint8_t arduino::ZephyrI2C::endTransmission(bool stopBit) {
 	int ret = -EIO;
 	uint8_t *buf = NULL;
-	size_t max = ring_buf_capacity_get(&txRingBuffer.rb);
-	size_t len = ring_buf_get_claim(&txRingBuffer.rb, &buf, max);
+	size_t len = ring_buf_get_ptr(&txRingBuffer.rb, &buf, 0);
 
 	ARG_UNUSED(stopBit);
 
 	ret = i2c_write(i2c_dev, buf, len, _address);
 
-	// Must be called even if 0 bytes claimed.
-	ring_buf_get_finish(&txRingBuffer.rb, len);
+	ring_buf_consume(&txRingBuffer.rb, len);
 
 	return ret ? 1 : 0;
 }
@@ -150,19 +153,18 @@ size_t arduino::ZephyrI2C::requestFrom(uint8_t address, size_t len_in, bool stop
 	// requestFrom() replaces the RX buffer following legacy cores behavior
 	ring_buf_reset(&rxRingBuffer.rb);
 
-	// This claims MIN(len_in, capacity).
-	len = ring_buf_put_claim(&rxRingBuffer.rb, &buf, len_in);
+	// The buffer was just reset, so the whole capacity is contiguous.
+	len = MIN(len_in, ring_buf_put_ptr(&rxRingBuffer.rb, &buf, 0));
 	if (len && buf) {
 		ret = i2c_read(i2c_dev, buf, len, address);
 	}
 
 	if (ret != 0) {
-		// In case i2c_read fails don't claim space in the ring buffer
+		// In case i2c_read fails don't commit space in the ring buffer
 		len = 0;
 	}
 
-	// Must be called even if 0 bytes claimed.
-	ring_buf_put_finish(&rxRingBuffer.rb, len);
+	ring_buf_commit(&rxRingBuffer.rb, len);
 
 	return len;
 }

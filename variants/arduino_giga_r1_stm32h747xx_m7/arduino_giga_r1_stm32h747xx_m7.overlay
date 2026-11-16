@@ -232,6 +232,7 @@
 &spi1 {
 	status = "okay";
 	zephyr,deferred-init;
+	st,gpio-control;
 	pinctrl-0 = <&spi1_sck_pb3
 		     &spi1_miso_pg9 &spi1_mosi_pd7>;
 	pinctrl-names = "default";
@@ -240,9 +241,16 @@
 &spi5 {
 	status = "okay";
 	zephyr,deferred-init;
+	st,gpio-control;
 	pinctrl-0 = <&spi5_sck_ph6
 		     &spi5_miso_pj11 &spi5_mosi_pj10>;
 	pinctrl-names = "default";
+};
+
+&adc12_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
 };
 
 &adc1 {
@@ -262,8 +270,6 @@
 		&adc1_inp18_pa4
 		&adc1_inp19_pa5>;
 	pinctrl-names = "default", "sleep", "arduino";
-	st,adc-clock-source = "SYNC";
-	st,adc-prescaler = <4>;
 	status = "okay";
 
 	#address-cells = <1>;
@@ -356,14 +362,18 @@
 	};
 };
 
+&adc3_common {
+	st,adc-prescaler = <4>;
+	st,adc-clock-source = "SYNC";
+	status = "okay";
+};
+
 &adc3 {
 	zephyr,deferred-init;
 	pinctrl-0 = <>;
 	pinctrl-1 = <>;
 	pinctrl-2 = <&adc3_inp0_pc2_c &adc3_inp1_pc3_c>;
 	pinctrl-names = "default", "sleep", "arduino";
-	st,adc-clock-source = "SYNC";
-	st,adc-prescaler = <4>;
 	status = "okay";
 
 	#address-cells = <1>;
@@ -424,11 +434,13 @@
 
 	partitions {
 		slot0_partition: partition@40000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00040000 0x000A0000>;
 		};
 
 		user_sketch: partition@e0000 {
+			compatible = "zephyr,mapped-partition";
 			label = "user_sketch";
 			reg = <0x000E0000 0x00120000>;
 		};
