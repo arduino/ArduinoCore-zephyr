@@ -23,7 +23,7 @@ manifest:
   projects:
     - name: zephyr
       remote: arduino
-      revision: nano-chandler
+      revision: 44a6478e5a5e1cbb42c7f8792165c8b4bf2995b4
       import:
         name-allowlist:
           - cmsis
@@ -53,7 +53,7 @@ manifest:
 
     - name: mcuboot
       remote: mcu-tools
-      revision: 1fa4c4ea9904c73f872e7ae2192f90882587f258
+      revision: ff16fed9f298adc06aa7a1261bb73f3c70481b82
       path: bootloader/mcuboot
 
     - name: hal_microchip
