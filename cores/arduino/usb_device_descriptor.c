@@ -21,6 +21,10 @@
 /* By default, do not register the USB DFU class DFU mode instance. */
 static const char *const blocklist[] = {
 	"dfu_dfu",
+#if defined(CONFIG_LOADER_DFU_MODE)
+	/* DFU mode has its own device (loader/dfu_flash_updates.c), no run-time interface. */
+	"dfu_runtime",
+#endif
 #if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)
 	"cdc_acm_0",
 #endif

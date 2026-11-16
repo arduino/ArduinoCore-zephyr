@@ -32,13 +32,13 @@ BOOT_LOG_MODULE_DECLARE(mcuboot);
  * skips DFU for a pending update: that swap must run, and a request left set
  * would send a later, unrelated reset into DFU.
  */
-static bool dfu_requested(void)
-{
+static bool dfu_requested(void) {
 	static int requested = -1;
 
 	if (requested < 0) {
 		requested = bootmode_check(BOOT_MODE_TYPE_BOOTLOADER) == 1;
-		if (bootmode_clear() != 0) {
+		/* Other values (the loader's own DFU mode) are for the image. */
+		if (requested && bootmode_clear() != 0) {
 			BOOT_LOG_ERR("Unable to clear boot mode");
 		}
 	}
@@ -57,8 +57,7 @@ static K_THREAD_STACK_DEFINE(fade_led_stack, 1024);
 static struct k_thread fade_led_thread;
 static atomic_t fade_led_running;
 
-static void fade_led_loop(void *p1, void *p2, void *p3)
-{
+static void fade_led_loop(void *p1, void *p2, void *p3) {
 	const uint32_t step = fade_led.period / FADE_STEPS;
 	uint32_t pulse = 0;
 	bool rising = true;
@@ -87,30 +86,30 @@ static void fade_led_loop(void *p1, void *p2, void *p3)
 	(void)pwm_set_pulse_dt(&fade_led, 0);
 }
 
-static void fade_led_start(void)
-{
+static void fade_led_start(void) {
 	if (!pwm_is_ready_dt(&fade_led)) {
 		BOOT_LOG_ERR("PWM device %s is not ready", fade_led.dev->name);
 		return;
 	}
 	atomic_set(&fade_led_running, 1);
 	k_thread_create(&fade_led_thread, fade_led_stack, K_THREAD_STACK_SIZEOF(fade_led_stack),
-			fade_led_loop, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
+					fade_led_loop, NULL, NULL, NULL, 1, 0, K_NO_WAIT);
 }
 
-static void fade_led_stop(void)
-{
+static void fade_led_stop(void) {
 	if (atomic_clear(&fade_led_running)) {
 		k_thread_join(&fade_led_thread, K_FOREVER);
 	}
 }
 #else
-static inline void fade_led_start(void) {}
-static inline void fade_led_stop(void) {}
+static inline void fade_led_start(void) {
+}
+
+static inline void fade_led_stop(void) {
+}
 #endif
 
-fih_ret boot_go_hook(struct boot_rsp *rsp)
-{
+fih_ret boot_go_hook(struct boot_rsp *rsp) {
 	int rc;
 
 	ARG_UNUSED(rsp);
@@ -136,13 +135,12 @@ fih_ret boot_go_hook(struct boot_rsp *rsp)
 	FIH_RET(FIH_BOOT_HOOK_REGULAR);
 }
 
-void mcuboot_status_change(mcuboot_status_type_t status)
-{
+void mcuboot_status_change(mcuboot_status_type_t status) {
 	/* Enter DFU through boot_go_hook(), which installs the download in the
 	 * same boot (upstream NO_APPLICATION panics after it).
 	 */
 	if (status == MCUBOOT_STATUS_NO_BOOTABLE_IMAGE_FOUND &&
-	    bootmode_set(BOOT_MODE_TYPE_BOOTLOADER) == 0) {
+		bootmode_set(BOOT_MODE_TYPE_BOOTLOADER) == 0) {
 		sys_reboot(SYS_REBOOT_WARM);
 	}
 }

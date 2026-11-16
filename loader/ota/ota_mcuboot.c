@@ -15,11 +15,12 @@
 #include <errno.h>
 #include <zephyr/dfu/flash_img.h>
 #include <zephyr/dfu/mcuboot.h>
-#include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/sys/reboot.h>
 
 #include <ota.h>
+
+#include "../slot1_trailer.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ota_mcuboot, CONFIG_OTA_LOG_LEVEL);
@@ -33,22 +34,6 @@ static size_t expected;
 static size_t received;
 static bool writing;
 static bool staged;
-
-/* Erase the trailer page(s): boot_request_upgrade() writes there, and
- * progressive erase only clears the pages the image itself covers. */
-static int erase_trailer(const struct flash_area *fa) {
-	struct flash_pages_info page;
-	off_t off = boot_get_trailer_status_offset(fa->fa_size);
-	int rc;
-
-	rc = flash_get_page_info_by_offs(flash_area_get_device(fa), fa->fa_off + off, &page);
-	if (rc) {
-		return rc;
-	}
-
-	off = page.start_offset - fa->fa_off;
-	return flash_area_erase(fa, off, fa->fa_size - off);
-}
 
 int ota_write_begin(enum ota_type type, size_t size) {
 	const struct flash_area *fa;
@@ -72,14 +57,13 @@ int ota_write_begin(enum ota_type type, size_t size) {
 	img_start = boot_get_image_start_offset(SLOT1_ID);
 
 	/* The image must end before the trailer MCUboot keeps at the slot's end. */
-	if (size == 0 ||
-	    img_start + size > (size_t)boot_get_trailer_status_offset(fa->fa_size)) {
+	if (size == 0 || img_start + size > (size_t)slot1_trailer_offset(fa)) {
 		LOG_ERR("image of %u bytes does not fit slot1", (unsigned)size);
 		flash_area_close(fa);
 		return -EFBIG;
 	}
 
-	rc = erase_trailer(fa);
+	rc = slot1_erase_trailer(fa);
 	flash_area_close(fa);
 	if (rc) {
 		LOG_ERR("trailer erase failed: %d", rc);

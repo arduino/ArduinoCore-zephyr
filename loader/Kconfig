@@ -66,6 +66,29 @@ config LOADER_TRIAL_WINDOW_MS
 	  reboots and MCUboot swaps the previous image back. A hang that
 	  stops the thread is caught by the watchdog itself.
 
+config LOADER_DFU_MODE
+	bool "Loader USB DFU mode entered by the 1200-bps touch"
+	depends on USB_DEVICE_STACK_NEXT && MCUBOOT_IMG_MANAGER && RETENTION_BOOT_MODE
+	select USBD_DFU
+	help
+	  The 1200-bps touch reboots into the loader's own DFU mode (instead
+	  of MCUboot's), with a "complete_image" and a "sketch" alternate; both
+	  write slot1 and request a permanent MCUboot update.
+
+if LOADER_DFU_MODE
+
+config LOADER_DFU_BOOT_MODE
+	hex "Retention boot mode value requesting the loader DFU mode"
+	default 0x4c
+
+config LOADER_DFU_PID
+	hex "USB product ID of the loader DFU mode"
+	default 0x0
+	help
+	  0 uses USB_DEVICE_PID + 0x100.
+
+endif
+
 config APP_WATCHDOG_ENFORCED
     bool "Hardware watchdog enforced by Sysbuild (MCU Boot required)"
     default n

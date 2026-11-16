@@ -479,6 +479,13 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
+#ifdef CONFIG_LOADER_DFU_MODE
+	bool check_dfu_mode_requested(void);
+	void wait_for_dfu_update(void);
+	if (check_dfu_mode_requested()) {
+		wait_for_dfu_update();
+	}
+#endif
 	loader(NULL);
 	return 0;
 }
