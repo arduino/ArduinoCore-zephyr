@@ -74,7 +74,7 @@ compile() {
 	build=$OUT/build-$(sketch_id "$dir")
 	SKETCH=$build/$name.ino.bin-zsk.bin
 	# shellcheck disable=SC2086 # ARDUINO_CLI_FLAGS is a list of arguments
-	if arduino-cli compile --no-color -b "$FQBN" ${ARDUINO_CLI_FLAGS:-} "$@" --output-dir "$build" "$dir" \
+	if arduino-cli compile --no-color -b "$FQBN" ${ARDUINO_CLI_FLAGS:-} "$@" --build-path "$build" "$dir" \
 			> "$OUT/compile.log" 2>&1 ; then
 		report pass "$name: compile"
 	else
