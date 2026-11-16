@@ -275,7 +275,7 @@
                             <&gpioe 3 GPIO_ACTIVE_HIGH>, /* D23 LEDR */
                             <&gpioc 13 GPIO_ACTIVE_HIGH>, /* D24 LEDG */
                             <&gpiof 4 GPIO_ACTIVE_HIGH>, /* D25 LEDB */
-                            <&gpioa 0 GPIO_ACTIVE_HIGH>, /* D26 PA0 */
+                            <&gpio_invalid 7 GPIO_ACTIVE_HIGH>, /* D26 PA0 */
                             <&gpioa 1 GPIO_ACTIVE_HIGH>, /* D27 IMU interrupt */
                             <&gpiog 0 GPIO_ACTIVE_HIGH>, /* D28 SE05X_EN */
                             <&gpio_invalid 2 GPIO_ACTIVE_HIGH>, /* D29 Reserved */
