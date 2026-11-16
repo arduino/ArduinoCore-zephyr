@@ -776,3 +776,67 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##############################################################################################################
+
+nanoxllink.name=Arduino Nano XL Link
+nanoxllink.build.core=arduino
+nanoxllink.build.crossprefix=arm-zephyr-eabi-
+nanoxllink.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nanoxllink.menu.link_mode.dynamic=Dynamic
+nanoxllink.menu.link_mode.static=Static
+nanoxllink.menu.link_mode.static.build.link_mode=static
+nanoxllink.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+nanoxllink.build.zephyr_target=arduino_nano_xl_link
+nanoxllink.build.zephyr_args=
+nanoxllink.build.zephyr_hals=hal_microchip
+nanoxllink.build.zephyr_toolchain=arm-zephyr-eabi
+nanoxllink.build.artifact=zephyr_main
+nanoxllink.build.variant=arduino_nano_xl_link_pic32ck2051sg01144
+nanoxllink.build.extra_flags=
+nanoxllink.build.board=NANO_XL_LINK
+
+# Loader and sketch squashed into one ECDSA-P256 signed MCUboot image;
+# build.certificate and build.image_version (the core version from
+# loader/VERSION) come from boards.local.txt (extra/build.sh).
+nanoxllink.build.image_version=0.0.0.0
+nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.certificate}" --erase_flash_dim 4096 --dfu_offset 4096 --image_version {build.image_version}
+
+nanoxllink.vid.0=0x2341
+nanoxllink.pid.0=0x007e
+nanoxllink.upload_port.0.vid=0x2341
+nanoxllink.upload_port.0.pid=0x007e
+# MCUboot USB DFU (double tap, no valid image) and loader USB DFU (DFU DETACH or
+# 1200-bps touch; same PID as the sketch, told apart by the DFU interface),
+# listed by dfu-discovery; the dfu-util recipes use these PIDs.
+nanoxllink.upload_port.1.vid=0x2341
+nanoxllink.upload_port.1.pid=0x017e
+nanoxllink.upload_port.2.vid=0x2341
+nanoxllink.upload_port.2.pid=0x007e
+
+# Both DFUs write slot1, then MCUboot overwrites slot0 (no swap). The .dfu image
+# starts one erased sector early because swap-using-offset expects the update
+# one sector into slot1. Recipes: platform.txt, "dual_dfu".
+nanoxllink.upload.tool=dfu-util
+nanoxllink.upload.tool.default=dfu-util
+nanoxllink.upload.tool.serial=dfu-util
+nanoxllink.upload.tool.dfu=dfu-util-port
+nanoxllink.upload.protocol=
+nanoxllink.upload.transport=
+# No touch: dfu-util sends DFU DETACH on the serial port's run-time interface
+# and waits for the loader DFU. The DFU devices have no serial port, so
+# arduino-cli's wait for one would always time out (10 s).
+nanoxllink.upload.use_1200bps_touch=false
+nanoxllink.upload.wait_for_upload_port=false
+nanoxllink.upload.native_usb=true
+nanoxllink.upload.artifacts.sketch={build.path}/{build.project_name}.signed.dfu.{upload.extension}
+# Stand-ins for the port properties when no port is detected.
+nanoxllink.upload.port.properties.pid=none
+nanoxllink.upload.port.properties.serialNumber=
+nanoxllink.upload.port.properties.configuration=
+nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.dual_dfu.pattern}
+
+# No burn-bootloader: MCUboot is updated over SWD only.
+

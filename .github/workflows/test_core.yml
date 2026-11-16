@@ -226,6 +226,8 @@ jobs:
             ${{ env.ALL_LIBRARIES }}
           cli-compile-flags: |
             - '--build-property'
+            - 'build.zsk_args.squash='
+            - '--build-property'
             - 'compiler.c.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
             - '--build-property'
             - 'compiler.cpp.extra_flags=-Wno-type-limits -Wno-missing-field-initializers'
