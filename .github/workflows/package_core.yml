@@ -316,16 +316,17 @@ jobs:
         with:
           persist-credentials: false
           sparse-checkout: |
+            extra/ci_download_artifacts.sh
             extra/ci_filter_matrix.sh
           sparse-checkout-cone-mode: false
 
       # build markers, and package markers of earlier attempts
-      - uses: actions/download-artifact@v8
-        continue-on-error: true # nothing to download if all builds failed
-        with:
-          path: prereqs/
-          pattern: prereq-*
-          merge-multiple: true
+      - name: Download job markers
+        continue-on-error: true # no markers, no packages to create
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh prereqs/ 'prereq-*'
 
       - name: Select packages
         id: select
@@ -368,12 +369,11 @@ jobs:
           persist-credentials: false
           fetch-tags: true
 
-      # Get all built binaries
-      - uses: actions/download-artifact@v8
-        with:
-          path: .
-          pattern: binaries-*
-          merge-multiple: true
+      - name: Download board binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . 'binaries-*'
 
       - name: Package core
         run: |
@@ -440,17 +440,11 @@ jobs:
           persist-credentials: false
           fetch-tags: true
 
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: ArduinoCore-*.tar.bz2
-          path: .
-          merge-multiple: true
-
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: artifact-id-*
-          path: .
-          merge-multiple: true
+      - name: Download core packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.bz2' 'artifact-id-*'
 
       - name: Prepare PR package index
         run: |
@@ -564,19 +558,19 @@ jobs:
           persist-credentials: false
           fetch-tags: true
 
-      - uses: actions/download-artifact@v8
-        with:
-          path: .
-          pattern: "*-report-*"
-          merge-multiple: true
+      - name: Download reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . '*-report-*'
 
       # job completion markers, with the links to each job log
-      - uses: actions/download-artifact@v8
+      - name: Download job markers
         continue-on-error: true # links are optional
-        with:
-          path: prereqs/
-          pattern: prereq-*
-          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh prereqs/ 'prereq-*'
 
       - name: Generate workflow summary
         run: |
@@ -711,18 +705,21 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read # to download the artifacts
     steps:
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@v6
         with:
-          path: .
-          pattern: ArduinoCore-*
-          merge-multiple: true
+          persist-credentials: false
+          sparse-checkout: |
+            extra/ci_download_artifacts.sh
+          sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@v8
-        with:
-          path: .
-          pattern: size-reports-*.tar.bz2
+      - name: Download core packages and size reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*' 'size-reports-*.tar.bz2'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -760,11 +757,11 @@ jobs:
           persist-credentials: false
           fetch-tags: true
 
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: ArduinoCore-*.tar.bz2
-          path: .
-          merge-multiple: true
+      - name: Download core packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.bz2'
 
       - uses: actions/download-artifact@v8
         with:

@@ -100,24 +100,21 @@ jobs:
 
       # package markers of the run holding the core packages; those of another
       # run cannot change during this one
-      - uses: actions/download-artifact@v8
+      - name: Download package markers
         if: ${{ env.CORE_RUN_ID != '' }}
-        continue-on-error: true # nothing to download if all packages failed
-        with:
-          path: ${{ env.CORE_RUN_ID != github.run_id && 'prereqs-ext/' || 'prereqs/' }}
-          pattern: prereq-package-*
-          merge-multiple: true
-          run-id: ${{ env.CORE_RUN_ID }}
-          # a token is only needed to access artifacts of other runs
-          github-token: ${{ env.CORE_RUN_ID != github.run_id && github.token || '' }}
+        continue-on-error: true # no markers, no packages to test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh -r $CORE_RUN_ID ${{ env.CORE_RUN_ID != github.run_id && 'prereqs-ext/' || 'prereqs/' }} 'prereq-package-*'
 
       # test markers of earlier attempts of this run
-      - uses: actions/download-artifact@v8
-        continue-on-error: true # nothing to download on the first attempt
-        with:
-          path: prereqs/
-          pattern: prereq-test-*
-          merge-multiple: true
+      - name: Download test markers
+        continue-on-error: true # no markers, all tests run again
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh prereqs/ 'prereq-test-*'
 
       - name: Select tests
         env:
