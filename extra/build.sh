@@ -372,6 +372,23 @@ if [ ! -z "$board" ]; then
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	# Boards squashing the sketch after the loader into one MCUboot slot0 image
+	# (build.zsk_args.squash in boards.txt): _sketch_max_size is slot0 minus the
+	# loader and two erase blocks. The sketch actually loses the loader padding
+	# to an erase block, the image TLVs and MCUboot's trailer erase block.
+	if [ -n "$SQUASH_ARGS" ]; then
+		ERASE_DIM=$USED_FLASH_ERASE_DIM
+		TLV_MAX=512
+		LOADER_PAD=$(( (ERASE_DIM - size_bytes % ERASE_DIM) % ERASE_DIM ))
+		CODE_SIZE=$(( CODE_SIZE + 2 * ERASE_DIM - LOADER_PAD - TLV_MAX - ERASE_DIM ))
+		# Swap-using-offset: the update sits one sector into slot1, and the
+		# swap trailer is larger than the overwrite-only one.
+		CONFIG=firmwares/zephyr-${variant}.config
+		if grep -q '^CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y' $CONFIG; then
+			FOOTER=$(get_value_from_text_file $CONFIG 'CONFIG_MCUBOOT_UPDATE_FOOTER_SIZE')
+			CODE_SIZE=$(( CODE_SIZE - ${FOOTER:-0} ))
+		fi
+	fi
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
