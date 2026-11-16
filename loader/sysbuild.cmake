@@ -7,7 +7,6 @@ if(SB_CONFIG_ENFORCE_SECURE_WATCHDOG)
     # Enable the startup features in MCUBoot
     set_config_bool(mcuboot CONFIG_BOOT_WATCHDOG_SETUP_AT_BOOT y)
     set_config_bool(mcuboot CONFIG_BOOT_WATCHDOG_INSTALL_TIMEOUT_AT_BOOT y)
-    set_config_bool(mcuboot CONFIG_BOOT_USB_DFU_AVOID_WATCHDOG y)
     
     # Inject the timing value into MCUBoot
     set_config_int(mcuboot CONFIG_BOOT_WATCHDOG_TIMEOUT_MS ${SB_CONFIG_SECURE_WATCHDOG_TIMEOUT_MS})
@@ -30,7 +29,7 @@ if(EXISTS ${arduino_variant_dir}/mcuboot.overlay)
         CACHE INTERNAL "MCUboot devicetree overlay of this variant")
 endif()
 
-# MCUboot hooks shared by the variants; built only when a variant's
-# mcuboot.conf sets CONFIG_BOOT_IMAGE_ACCESS_HOOKS.
+# MCUboot hooks shared by the variants (DFU boot mode, update policy);
+# each is built only when the variant's mcuboot.conf turns it on.
 set(mcuboot_EXTRA_ZEPHYR_MODULES ${APP_DIR}/mcuboot_hooks
     CACHE INTERNAL "Arduino MCUboot hooks")

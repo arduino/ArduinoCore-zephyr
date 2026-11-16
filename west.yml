@@ -17,6 +17,8 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: mcu-tools
+      url-base: https://github.com/mcu-tools
 
   projects:
     - name: zephyr
@@ -48,3 +50,9 @@ manifest:
       path: modules/lib/cannectivity
       url: https://github.com/CANnectivity/cannectivity.git
       revision: main
+
+    - name: mcuboot
+      remote: mcu-tools
+      revision: 1fa4c4ea9904c73f872e7ae2192f90882587f258
+      path: bootloader/mcuboot
+
