@@ -1,0 +1,19 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+config ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	bool "USB DFU on a retention boot mode request"
+	depends on MCUBOOT && BOOT_USB_DFU && RETENTION_BOOT_MODE
+	select BOOT_GO_HOOKS
+	select MCUBOOT_ACTION_HOOKS
+	select REBOOT
+	help
+	  When the bootloader boot mode is set (1200-bps touch, double tap),
+	  wait in USB DFU without a timeout; MCUboot keeps feeding the
+	  watchdog. Without a bootable image, reboot into the same mode.
+
+config ARDUINO_MCUBOOT_DFU_FADE_LED
+	bool "Fade the mcuboot-fade-led0 LED while waiting in USB DFU"
+	depends on ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	depends on $(dt_alias_enabled,mcuboot-fade-led0)
+	select PWM

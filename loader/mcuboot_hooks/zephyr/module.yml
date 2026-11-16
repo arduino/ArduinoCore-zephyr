@@ -1,3 +1,4 @@
 name: arduino_mcuboot_hooks
 build:
   cmake: .
+  kconfig: Kconfig
