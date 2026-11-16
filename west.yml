@@ -53,7 +53,7 @@ manifest:
 
     - name: mcuboot
       remote: mcu-tools
-      revision: 1fa4c4ea9904c73f872e7ae2192f90882587f258
+      revision: ff16fed9f298adc06aa7a1261bb73f3c70481b82
       path: bootloader/mcuboot
 
     - name: hal_microchip
