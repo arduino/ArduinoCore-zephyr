@@ -67,6 +67,7 @@ private:
 	static void wifiScanEventHandler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 									 struct net_if *iface);
 	void registerScanEventCallback();
+	struct net_if *staIface();
 
 	inline bool isNetworkFound() const {
 		return (wifiState.flags & WIFI_FLAG_NETWORK_FOUND) != 0u;
@@ -78,7 +79,6 @@ private:
 		struct wifi_connect_req_params ap_config;
 		struct wifi_connect_req_params sta_config;
 		struct wifi_iface_status sta_state = {0};
-		char fw_version[26] = {0};
 		std::vector<struct wifi_scan_result> scanResults;
 		uint8_t resultCount = 0u;
 		uint8_t flags = 0u;
