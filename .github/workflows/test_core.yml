@@ -128,6 +128,8 @@ jobs:
           echo "TEST_FQBNS=$(extra/ci_filter_matrix.sh -m $MIN_ATTEMPT -x prereqs-ext/ prereqs/ "$ALL_BOARD_FQBNS")" >> "$GITHUB_ENV"
 
       - name: Download test data
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           extra/ci_fetch_tests.sh
 
