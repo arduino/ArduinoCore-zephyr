@@ -356,6 +356,14 @@ if [ ! -z "$board" ]; then
 	board="" update_local_field "version" "$build_version"
 	update_local_field "version" "$build_version"
 
+	# MCUboot image version (major.minor.revision.build) of the squashed
+	# loader+sketch image, as Zephyr signs the loader alone: from loader/VERSION.
+	image_version=$(awk -F' *= *' '
+		$1 == "VERSION_MAJOR" { ma = $2 } $1 == "VERSION_MINOR" { mi = $2 }
+		$1 == "PATCHLEVEL" { pl = $2 } $1 == "VERSION_TWEAK" { tw = $2 }
+		END { printf "%d.%d.%d.%d", ma, mi, pl, tw }' loader/VERSION)
+	update_local_field "build.image_version" "$image_version"
+
 	# sketch load address: start of sketch partition, hex (exact)
 	CODE_ADDR=$(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_start')
 	if [ -z "$upload_offset" ] ; then
