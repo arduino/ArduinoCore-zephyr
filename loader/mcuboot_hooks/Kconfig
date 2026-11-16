@@ -12,6 +12,16 @@ config ARDUINO_MCUBOOT_DFU_BOOT_MODE
 	  wait in USB DFU without a timeout; MCUboot keeps feeding the
 	  watchdog. Without a bootable image, reboot into the same mode.
 
+config ARDUINO_MCUBOOT_DOUBLE_TAP
+	bool "Double tap of the reset button into USB DFU"
+	depends on ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	depends on $(dt_nodelabel_enabled,retained_ram)
+	help
+	  A second reset-button press within 500 ms sets the bootloader boot
+	  mode. The cookie lives at offset 0 of the retained_ram node; set
+	  CONFIG_RETAINED_MEM_INIT_PRIORITY=0 so it is armed before clock
+	  bring-up.
+
 config ARDUINO_MCUBOOT_DFU_FADE_LED
 	bool "Fade the mcuboot-fade-led0 LED while waiting in USB DFU"
 	depends on ARDUINO_MCUBOOT_DFU_BOOT_MODE
