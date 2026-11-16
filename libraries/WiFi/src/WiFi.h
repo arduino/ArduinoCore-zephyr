@@ -55,6 +55,7 @@ public:
 	uint8_t encryptionType(std::optional<uint8_t> networkItem = std::nullopt);
 
 	const char *firmwareVersion();
+	const char *driverVersion();
 
 	bool disconnect() override;
 
@@ -77,6 +78,7 @@ private:
 		struct wifi_connect_req_params ap_config;
 		struct wifi_connect_req_params sta_config;
 		struct wifi_iface_status sta_state = {0};
+		char fw_version[26] = {0};
 		std::vector<struct wifi_scan_result> scanResults;
 		uint8_t resultCount = 0u;
 		uint8_t flags = 0u;
