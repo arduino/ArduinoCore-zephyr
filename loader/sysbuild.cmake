@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # <app_root>/sysbuild.cmake
+if(SB_CONFIG_BOOTLOADER_MCUBOOT)
+    set_config_bool(mcuboot CONFIG_BUILD_OUTPUT_HEX y)
+endif()
+
 if(SB_CONFIG_ENFORCE_SECURE_WATCHDOG)
     set_config_bool(mcuboot CONFIG_WATCHDOG y)
     # Enable the startup features in MCUBoot

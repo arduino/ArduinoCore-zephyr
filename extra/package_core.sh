@@ -80,8 +80,8 @@ for variant in $INCLUDED_VARIANTS ; do
 		log_msg error "No firmware for '${variant}' found."
 		RET=3
 	fi
-	# boards with a separate bootloader also need the bootloader updater
-	if [ -f bootloaders/${variant}/bootloader.hex ] && [ ! -f bootloaders/${variant}/updater.bin ] ; then
+	# Prebuilt bootloaders also need an updater; sysbuild's MCUboot uses SWD.
+	if [ -f bootloaders/${variant}/bootloader.hex ] && [ ! -f variants/${variant}/sysbuild.conf ] && [ ! -f bootloaders/${variant}/updater.bin ] ; then
 		log_msg error "No bootloader updater for '${variant}' found."
 		RET=3
 	fi

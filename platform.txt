@@ -420,6 +420,9 @@ tools.jlink.upload.params.verbose=-v
 tools.jlink.upload.params.quiet=
 tools.jlink.upload.pattern="{path}/{cmd}" -CommanderScript "{build.path}/flasher.jlink"
 
+tools.jlink.burn.pattern=sh -c "cd '{bootloader.dir}' && exec '{tools.jlink.cmd}' -device {bootloader.target} -if SWD -speed 4000 -AutoConnect 1 -NoGui 1 -ExitOnError 1 -CommandFile '{runtime.platform.path}/debugger/flash_bootloader.jlink'"
+tools.jlink.burn.pattern.windows=cmd /c cd /d "{bootloader.dir}" && "{tools.jlink.cmd}" -device {bootloader.target} -if SWD -speed 4000 -AutoConnect 1 -NoGui 1 -ExitOnError 1 -CommandFile "{runtime.platform.path}/debugger/flash_bootloader.jlink"
+
 
 #
 # Debugger
