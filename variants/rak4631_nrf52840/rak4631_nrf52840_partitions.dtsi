@@ -19,11 +19,8 @@
 
 &flash0 {
 	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
 		boot_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
 			label = "mcuboot";
 			reg = <0x00000000 0x00010000>;
 			read-only;
@@ -31,6 +28,7 @@
 
 		/* Loader; the MCUboot image header takes its first 0x200 bytes. */
 		slot0_partition: code_partition: partition@10000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00010000 0x00070000>;
 			read-only;
@@ -41,6 +39,7 @@
 		 * makes it "image 2" for mcumgr direct uploads.
 		 */
 		slot1_partition: user_sketch: partition@80000 {
+			compatible = "zephyr,mapped-partition";
 			label = "image-1";
 			reg = <0x00080000 0x00078000>;
 		};
@@ -50,6 +49,7 @@
 		 * if enabled.
 		 */
 		storage_partition: partition@f8000 {
+			compatible = "zephyr,mapped-partition";
 			label = "storage";
 			reg = <0x000f8000 0x00008000>;
 		};
