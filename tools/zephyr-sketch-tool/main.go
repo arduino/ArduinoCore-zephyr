@@ -6,12 +6,7 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/binary"
-	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
@@ -57,7 +52,7 @@ const (
 )
 
 func main() {
-	var output = flag.String("output", "", "Output to a specific file (default: add -zsk.bin suffix)")
+	var output = flag.String("output", "", "Output file (required with --sign; default: add -zsk.bin suffix)")
 	var debug = flag.Bool("debug", false, "Enable debugging mode")
 	var immediate = flag.Bool("immediate", false, "Start sketch immediately [UNO Q]")
 	var wait_for_app = flag.Bool("wait_for_app", false, "Wait for the app to start [UNO Q]")
@@ -72,6 +67,10 @@ func main() {
 	var otaOffset = flag.String("ota-offset", "", "[ota] sketch offset in merged binary (hex)")
 	var otaMagic = flag.String("ota-magic", "", "[ota] board magic number (hex, 32-bit)")
 
+	var sign = flag.Bool("sign", false, "Sign a standalone MCUboot image with a reserved header")
+	var headerSize = flag.Uint("header_size", 0, "[sign] Reserved MCUboot header size in bytes")
+	var slotSize = flag.Uint("slot_size", 0, "[sign] Maximum signed image size in bytes")
+
 	// Squash / Sign flags
 	var squash = flag.Bool("squash", false, "Squash the loader and sketch, then sign the image")
 	var loader_bin = flag.String("loader_bin", "", "Path to the binary loader to be used")
@@ -81,6 +80,16 @@ func main() {
 	var dfu_offset = flag.Uint("dfu_offset", 0, "[squash] Also write a .signed.dfu copy starting with this many 0xFF bytes")
 
 	flag.Parse()
+
+	if *sign {
+		if *squash || *ota || flag.NArg() != 1 || *output == "" {
+			log.Fatal("--sign requires one input file and --output, and cannot be combined with --squash or --ota")
+		}
+		if err := signStandalone(flag.Arg(0), *output, *pem_file, *image_version, *headerSize, *slotSize); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	if *ota {
 		// Note: runOTA is assumed to be defined elsewhere in the package.
@@ -366,45 +375,6 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		pos += copy(image[pos:], sketch_bin)
 	}
 
-	/* LOAD AND PARSE THE PRIVATE KEY */
-	if pemFile == "" {
-		log.Fatalf("Failed to read key: PEM file path is empty")
-	}
-	keyFile, err := os.ReadFile(pemFile)
-	if err != nil {
-		log.Fatalf("Failed to read key: %v", err)
-	}
-
-	block, _ := pem.Decode(keyFile)
-	if block == nil {
-		log.Fatalf("Failed to parse PEM block")
-	}
-
-	privKey, err := x509.ParseECPrivateKey(block.Bytes)
-	if err != nil {
-		log.Fatalf("Failed to parse ECDSA key: %v", err)
-	}
-
-	/* CONSTRUCT IMAGE HEADER */
-	imgVersion := parseVersionString(versionStr)
-	header := ImageHeader{
-		Magic:     ImageMagic,
-		LoadAddr:  0x0,
-		HdrSize:   HeaderSize,
-		PTLVSize:  0,
-		ImageSize: uint32(len(image)) - uint32(HeaderSize),
-		Flags:     0x0,
-		Version:   imgVersion,
-	}
-
-	/* OVERWRITE THE FIRST 32 BYTE OF THE IMAGE WITH THE NEW HEADER */
-	var headerBuf bytes.Buffer
-	err = binary.Write(&headerBuf, binary.LittleEndian, header)
-	if err != nil {
-		log.Fatalf("Failed to write header: %v", err)
-	}
-	copy(image[0:32], headerBuf.Bytes())
-
 	/* WRITE INTO THE PADDING THE INFORMATION */
 	binary.LittleEndian.PutUint32(image[32:36], sketch_offset)
 	binary.LittleEndian.PutUint32(image[36:40], uint32(eraseFlashDim))
@@ -421,28 +391,12 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		binary.LittleEndian.PutUint32(image[44:48], 1)
 	}
 
-	/*
-	 * CALCULATE THE HASH OF THE WHOLE IMAGE
-	 */
-	imgHash := sha256.Sum256(image)
-
-	/* Calculate the KEYHASH (SHA-256 of the DER-encoded Public Key) */
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+	// Squash prepares the sketch metadata; signing is shared with --sign.
+	signed, err := signMCUbootImage(image, pemFile, HeaderSize, parseVersionString(versionStr))
 	if err != nil {
-		log.Fatalf("Failed to marshal public key: %v", err)
+		log.Fatal(err)
 	}
-	keyHash := sha256.Sum256(pubKeyBytes)
-
-	/* Generate ECDSA P-256 Signature */
-	signature, err := ecdsa.SignASN1(rand.Reader, privKey, imgHash[:])
-	if err != nil {
-		log.Fatalf("Failed to sign payload: %v", err)
-	}
-
-	// Buffer for final output
-	var finalImg bytes.Buffer
-	finalImg.Write(image)
-	appendTLVs(&finalImg, keyHash[:], imgHash[:], signature)
+	finalImg := bytes.NewBuffer(signed)
 
 	// Size Validation & Save
 	totalImageSize := finalImg.Len()
