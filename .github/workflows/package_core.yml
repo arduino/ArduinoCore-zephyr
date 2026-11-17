@@ -575,7 +575,7 @@ jobs:
       - name: Generate workflow summary
         run: |
           # Archive the input set of reports for later inspection
-          tar jchf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 zephyr-* arduino-*.json
+          tar -I "zstd -T0 -19 --long=27" -chf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst zephyr-* arduino-*.json
           # Collect all CI data into a JSON file, then generate the report
           extra/ci_collect_data.py build_info.json
           extra/ci_generate_report.py build_info.json result summary full_log
@@ -596,7 +596,7 @@ jobs:
 
           # Prepare latest size artifact file on push events
           if [ "${{ github.event_name }}" == "push" ]; then
-            tar jchf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 arduino-*.json
+            tar -I "zstd -T0 -19 --long=27" -chf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst arduino-*.json
           fi
 
       - name: Compute code size changes
@@ -640,8 +640,8 @@ jobs:
         uses: actions/upload-artifact@v7
         if: ${{ github.event_name == 'push' }}
         with:
-          name: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
-          path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          name: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
+          path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -650,8 +650,8 @@ jobs:
       - name: Archive input test reports
         uses: actions/upload-artifact@v7
         with:
-          name: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
-          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          name: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
+          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -719,7 +719,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          extra/ci_download_artifacts.sh . 'ArduinoCore-*' 'size-reports-*.tar.bz2'
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.zst' 'size-reports-*.tar.zst'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -732,7 +732,7 @@ jobs:
           for f in ArduinoCore-*.tar.zst ; do
             aws s3 cp $f s3://${{ secrets.S3_BUCKET }}/
           done
-          aws s3 cp size-reports-*.tar.bz2 s3://${{ secrets.S3_BUCKET }}/size-reports/
+          aws s3 cp size-reports-*.tar.zst s3://${{ secrets.S3_BUCKET }}/size-reports/
 
 
 

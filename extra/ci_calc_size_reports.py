@@ -26,47 +26,53 @@ from pathlib import Path
 import requests
 import re
 import sys
-import tarfile
+import subprocess
 
-def extract_url(url, file_pattern, sha, local_path):
+def extract_url(url, file_patterns, sha, local_path):
     """
-    Download and extract a tar.bz2 archive from a URL, trying with truncated
-    versions of the SHA until a match is found. The archive is expected to
-    contain size reports in JSON format. The extracted files will be placed in
-    the specified local path. If no archive is found for the given SHA, a
-    FileNotFoundError is raised.
+    Download and extract a tar archive from a URL, trying with truncated
+    versions of the SHA until a match is found. For each SHA, the file
+    patterns are tried in order; the archive is extracted according to the
+    extension of the one found (.tar.zst or .tar.bz2). The archive is
+    expected to contain size reports in JSON format. The extracted files will
+    be placed in the specified local path. If no archive is found for the
+    given SHA, a FileNotFoundError is raised.
     """
 
     session = requests.Session()
+    os.makedirs(local_path, exist_ok=True)
 
     # try with the input SHA, then with truncated versions
     # until we find a match or run out of characters
-    while len(sha) > 6:
-        file = file_pattern.format(sha)
-        archive_url = f"{url}/{file}"
-        archive_path = Path(local_path) / file
-        try:
-            os.makedirs(local_path, exist_ok=True)
-            response = session.get(archive_url)
-            if response.status_code == 404:
-                sha = sha[:-1]
-                continue
-            # raise other errors
-            response.raise_for_status()
+    archive_path = None
+    while len(sha) > 6 and not archive_path:
+        for file_pattern in file_patterns:
+            file = file_pattern.format(sha)
+            archive_url = f"{url}/{file}"
+            try:
+                response = session.get(archive_url)
+                if response.status_code == 404:
+                    continue
+                # raise other errors
+                response.raise_for_status()
+            except Exception as e:
+                print(f"Error downloading {archive_url}: {e}")
+                raise
+            archive_path = Path(local_path) / file
             with open(archive_path, 'wb') as f:
                 f.write(response.content)
             print(f"Downloaded {archive_url}")
             break
-        except Exception as e:
-            print(f"Error downloading {url}: {e}")
-            raise
+        else:
+            sha = sha[:-1]
 
-    if not archive_path.exists():
+    if not archive_path:
         raise FileNotFoundError(f"Could not find size archive for SHA {sha}")
 
+    # Python's tarfile only supports zstd from 3.14
+    decompress = ['-I', 'unzstd'] if archive_path.name.endswith('.tar.zst') else ['-j']
     try:
-        with tarfile.open(archive_path, 'r:bz2') as tar:
-            tar.extractall(path=local_path)
+        subprocess.run(['tar', *decompress, '-xf', archive_path, '-C', local_path], check=True)
         print(f"Extracted {archive_path} to {local_path}")
     except Exception as e:
         print(f"Error extracting {archive_path}: {e}")
@@ -133,7 +139,7 @@ name_regexp = re.compile(r'(libraries|examples)/([^/]+)/(examples/|extras/)?(.*)
 
 # get the previous data to the output folder
 extract_url("https://downloads.arduino.cc/cores/zephyr/size-reports",
-            "size-reports-{}.tar.bz2", prev_sha, output_folder)
+            [ "size-reports-{}.tar.zst", "size-reports-{}.tar.bz2" ], prev_sha, output_folder)
 
 # find every JSON file in the output folder
 old_jsons = []
