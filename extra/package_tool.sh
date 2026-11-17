@@ -42,13 +42,11 @@ build_for_arch() {
 
 	if [ "$os" == "windows" ]; then
 		app_ext=".exe"
-		pkg_ext=".zip"
-		pkg_cmd="zip -qr"
 	else
 		app_ext=""
-		pkg_ext=".tar.gz"
-		pkg_cmd="tar -czf"
 	fi
+	# same compression as the core packages, on all OSes
+	local pkg_ext=".tar.zst"
 
 	local tool_stem="$DIR/$TOOL_NAME-$VERSION"
 	local build_dir="$tool_stem/$plat"
@@ -58,7 +56,7 @@ build_for_arch() {
 	echo "Building $TOOL_NAME for $os/$arch ($plat)"
 	mkdir -p "$build_dir"
 	(cd $TOOL_DIR && GOOS="$os" GOARCH="$arch" go build -o "$build_dir/$build_file")
-	(cd "$tool_stem" && $pkg_cmd "$package_file" $plat/)
+	(cd "$tool_stem" && tar -I "zstd -T0 -19 --long=27" -cf "$package_file" $plat/)
 	hash_file $plat "$package_file" > $build_dir.json
 }
 
