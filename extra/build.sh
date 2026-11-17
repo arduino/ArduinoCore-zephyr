@@ -84,7 +84,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		debug_args=(-- -DEXTRA_CONF_FILE=../extra/debug.conf)
+		debug=true
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -176,13 +176,12 @@ if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	echo "sysbuild key configuration argument: ${key_args[@]}"
 
 	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
-		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" -- "${key_args[@]}"
+		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${key_args[@]}"
 	cmake --build ${IMAGE_DIR} --target llext-edk
 else
 	IMAGE_DIR=${BUILD_DIR}
 	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
 fi
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
@@ -216,9 +215,18 @@ cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
 cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
 
 # The MCUboot companion image (sysbuild builds only)
-rm -f firmwares/mcuboot-$variant.bin
-if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin ]; then
-    cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin firmwares/mcuboot-$variant.bin
+for ext in bin hex; do
+    rm -f firmwares/mcuboot-$variant.$ext
+    if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.$ext ]; then
+        cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.$ext firmwares/mcuboot-$variant.$ext
+    fi
+done
+
+# Sysbuild's MCUboot is the board's bootloader; package the freshly built image.
+BOOTLOADER_DIR=bootloaders/${variant}
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/.config ]; then
+    mkdir -p "${BOOTLOADER_DIR}"
+    cp "${BUILD_DIR}/mcuboot/zephyr/zephyr.hex" "${BOOTLOADER_DIR}/bootloader.hex"
 fi
 
 SQUASH_ARGS=
@@ -237,9 +245,9 @@ if [[ ! -z $SQUASH_ARGS ]]; then
 	fi
 fi
 
-# Build the bootloader updater for boards with a separate bootloader
-BOOTLOADER_DIR=bootloaders/${variant}
-if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
+# Build the updater for prebuilt bootloaders. Sysbuild's MCUboot is flashed
+# through a hardware programmer instead.
+if [ -f ${BOOTLOADER_DIR}/bootloader.hex ] && [ ! -f ${BUILD_DIR}/mcuboot/zephyr/.config ]; then
 	UPDATER_BUILD_DIR=build/updater-${variant}
 	west build -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}"
 	cp ${UPDATER_BUILD_DIR}/zephyr/zephyr.bin ${BOOTLOADER_DIR}/updater.bin

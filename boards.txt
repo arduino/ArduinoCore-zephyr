@@ -838,5 +838,9 @@ nanoxllink.upload.port.properties.serialNumber=
 nanoxllink.upload.port.properties.configuration=
 nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.dual_dfu.pattern}
 
-# No burn-bootloader: MCUboot is updated over SWD only.
+# MCUboot is built by sysbuild and updated over SWD through J-Link Commander.
+# zephyr_loader / in-application bootloader recovery is not supported.
+nanoxllink.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nanoxllink.bootloader.target=PIC32CK2051SG
+nanoxllink.bootloader.burn_pattern={tools.jlink.burn.pattern}
 
