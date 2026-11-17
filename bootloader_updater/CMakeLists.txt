@@ -9,6 +9,8 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} COMPONENTS yaml boards)
 set(DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.overlay)
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
+# Zephyr configures signing while find_package() processes its build system.
+set(SIGNING_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/signing.cmake)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(bootloader_updater LANGUAGES C)
@@ -36,3 +38,29 @@ add_custom_command(
 generate_inc_file_for_target(app ${bootloader_bin} ${gen_dir}/bootloader.bin.inc)
 
 target_sources(app PRIVATE src/main.c)
+
+# Always export updater.bin, ready for the board's upload recipe.
+set(updater_image ${ZEPHYR_BINARY_DIR}/${KERNEL_NAME}.bin)
+set(updater_padding 0)
+if(CONFIG_BOOTLOADER_MCUBOOT)
+	set(updater_image ${ZEPHYR_BINARY_DIR}/${KERNEL_NAME}.signed.bin)
+	if(CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET)
+		# MCUboot USB DFU writes from the start of slot1; the image must
+		# begin at its second sector. The loader DFU also accepts this padding.
+		dt_nodelabel(slot1_partition NODELABEL slot1_partition REQUIRED)
+		get_filename_component(partitions ${slot1_partition} DIRECTORY)
+		get_filename_component(slot1_flash ${partitions} DIRECTORY)
+		dt_prop(updater_padding PATH ${slot1_flash} PROPERTY erase-block-size REQUIRED)
+		dt_reg_size(slot1_size PATH ${slot1_partition})
+		set(updater_size_args ${slot1_size})
+	endif()
+endif()
+
+add_custom_command(
+	OUTPUT ${ZEPHYR_BINARY_DIR}/updater.bin
+	COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/prepare_updater.py
+		${updater_image} ${ZEPHYR_BINARY_DIR}/updater.bin ${updater_padding} ${updater_size_args}
+	DEPENDS zephyr_final ${updater_image} ${CMAKE_CURRENT_LIST_DIR}/scripts/prepare_updater.py
+	VERBATIM
+)
+add_custom_target(updater ALL DEPENDS ${ZEPHYR_BINARY_DIR}/updater.bin)

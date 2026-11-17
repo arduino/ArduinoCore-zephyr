@@ -11,6 +11,12 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/storage/flash_map.h>
 
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
+#include <zephyr/drivers/flash.h>
+#include <zephyr/drivers/flash/mchp_nvmctrl_g3.h>
+#include <soc.h>
+#endif
+
 static const uint8_t bootloader[] = {
 #include "bootloader.bin.inc"
 };
@@ -48,6 +54,84 @@ static bool bootloader_matches(const struct flash_area *fa)
 	return true;
 }
 
+static int rewrite_bootloader(const struct flash_area *fa)
+{
+	int rc;
+
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
+	uint32_t protection[] = {FCW_REGS->FCW_LBWP, FCW_REGS->FCW_UBWP};
+	struct bfm_exop wp = {.wp_page = FCW_LBWP_LBWP_Msk};
+
+	/* A local lock cannot be cleared until reset. Check before erasing anything. */
+	if ((protection[0] & FCW_LBWP_LBWPLOCK_Msk) != 0 ||
+	    (protection[1] & FCW_UBWP_UBWPLOCK_Msk) != 0) {
+		return -EACCES;
+	}
+
+	for (size_t bank = 0; bank < ARRAY_SIZE(protection); bank++) {
+		wp.boot_bank = bank == 0 ? BOOT_FLASH_BANK_1 : BOOT_FLASH_BANK_2;
+		rc = flash_ex_op(fa->fa_dev, FLASH_EX_OP_BFM_WRITE_PROTECT_DISABLE,
+				 (uintptr_t)&wp, NULL);
+		if (rc != 0) {
+			goto out;
+		}
+	}
+	if ((FCW_REGS->FCW_LBWP & FCW_LBWP_LBWP_Msk) != 0 ||
+	    (FCW_REGS->FCW_UBWP & FCW_UBWP_UBWP_Msk) != 0) {
+		rc = -EACCES;
+		goto out;
+	}
+#endif
+
+	rc = flash_area_erase(fa, 0, fa->fa_size);
+	if (rc != 0) {
+		printk("Erase failed: %d\n", rc);
+		goto out;
+	}
+
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
+	/* PIC32CK row programming reads its source through the SRAM bus. */
+	static uint8_t buf[DT_PROP(DT_NODELABEL(flash0), write_block_size_row)] __aligned(4);
+
+	for (size_t off = 0; off < sizeof(bootloader); off += sizeof(buf)) {
+		size_t len = MIN(sizeof(buf), sizeof(bootloader) - off);
+
+		memcpy(buf, &bootloader[off], len);
+		rc = flash_area_write(fa, off, buf, len);
+		if (rc != 0) {
+			break;
+		}
+	}
+#else
+	rc = flash_area_write(fa, 0, bootloader, sizeof(bootloader));
+#endif
+	if (rc != 0) {
+		printk("Write failed: %d\n", rc);
+	}
+
+out:
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
+	/* Restore both regions, including after a failed erase or write. */
+	for (size_t bank = 0; bank < ARRAY_SIZE(protection); bank++) {
+		wp.boot_bank = bank == 0 ? BOOT_FLASH_BANK_1 : BOOT_FLASH_BANK_2;
+		wp.wp_page = protection[bank] & FCW_LBWP_LBWP_Msk;
+		int restore_rc = flash_ex_op(fa->fa_dev, FLASH_EX_OP_BFM_WRITE_PROTECT_ENABLE,
+					   (uintptr_t)&wp, NULL);
+
+		if (rc == 0) {
+			rc = restore_rc;
+		}
+	}
+	if (FCW_REGS->FCW_LBWP != protection[0] || FCW_REGS->FCW_UBWP != protection[1]) {
+		printk("Failed to restore BFM write protection\n");
+		if (rc == 0) {
+			rc = -EIO;
+		}
+	}
+#endif
+	return rc;
+}
+
 static int update_bootloader(void)
 {
 	const struct flash_area *fa;
@@ -72,14 +156,8 @@ static int update_bootloader(void)
 	}
 
 	printk("Updating bootloader (%u bytes)...\n", (unsigned int)sizeof(bootloader));
-	rc = flash_area_erase(fa, 0, fa->fa_size);
+	rc = rewrite_bootloader(fa);
 	if (rc) {
-		printk("Erase failed: %d\n", rc);
-		goto out;
-	}
-	rc = flash_area_write(fa, 0, bootloader, sizeof(bootloader));
-	if (rc) {
-		printk("Write failed: %d\n", rc);
 		goto out;
 	}
 	if (!bootloader_matches(fa)) {

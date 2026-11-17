@@ -13,7 +13,7 @@ if [ ! -f platform.txt ]; then
   exit 2
 fi
 
-REQUIRED_TOOLS="cmake curl git jq ninja pip3 python3 wget zip"
+REQUIRED_TOOLS="cmake curl git go jq ninja pip3 python3 wget zip"
 MISSING_TOOLS=""
 for tool in $REQUIRED_TOOLS; do
   if ! command -v "$tool" >/dev/null 2>&1; then
