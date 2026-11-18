@@ -230,16 +230,27 @@ int WiFiClass::status() {
 		return WL_NO_SHIELD;
 	}
 
+	/* WIFI_STATE_UNKNOWN sorts *above* WIFI_STATE_COMPLETED in the enum, so it
+	   must be rejected before the ordered comparison below. The esp_at driver
+	   leaves the state at UNKNOWN whenever "AT+CWJAP?" reports no AP, i.e. any
+	   time the module is not associated. */
+	if (if_status.state == WIFI_STATE_UNKNOWN) {
+		return WL_DISCONNECTED;
+	}
+
+	if (if_status.state == WIFI_STATE_INTERFACE_DISABLED) {
+		return WL_DISCONNECTED;
+	}
+
 	if (if_status.iface_mode != WIFI_MODE_AP) {
 		memcpy(&wifiState.sta_state, &if_status, sizeof(wifiState.sta_state));
 	}
 
 	if (if_status.state >= WIFI_STATE_ASSOCIATED) {
 		return WL_CONNECTED;
-	} else {
-		return WL_DISCONNECTED;
 	}
-	return WL_NO_SHIELD;
+
+	return WL_DISCONNECTED;
 }
 
 int8_t WiFiClass::scanNetworks() {
