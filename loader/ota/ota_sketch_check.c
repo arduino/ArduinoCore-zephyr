@@ -53,13 +53,13 @@ static int perform_ota(const struct flash_area *fa, struct fs_file_t *file,
 
 	uint8_t chunk[CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE];
 	__ASSERT(wbs < CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE,
-			 "OTA internal buffer is smaller(%d) than write block size(%d)",
+			 "OTA internal buffer is smaller(%d) than write block size(%zu)",
 			 CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE, wbs);
 
 	__ASSERT(CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE % wbs == 0,
 			 "OTA internal buffer(%d) is not multiple of write block "
-			 "size(%d)" CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE,
-			 wbs);
+			 "size(%zu)",
+			 CONFIG_OTA_TRANSCRIPTION_CHUNK_SIZE, wbs);
 
 	off_t offset = 0;
 	size_t remaining = hdr->len;
