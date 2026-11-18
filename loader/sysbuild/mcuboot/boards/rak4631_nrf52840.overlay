@@ -41,11 +41,11 @@
 		compatible = "gpio-leds";
 
 		blue_led: led_2 {
-			gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+			gpios = <&wisblock_io WISBLOCK_IO_LED2 GPIO_ACTIVE_HIGH>;
 		};
 
 		green_led: led_1 {
-			gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+			gpios = <&wisblock_io WISBLOCK_IO_LED1 GPIO_ACTIVE_HIGH>;
 		};
 	};
 };
