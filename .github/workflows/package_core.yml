@@ -128,8 +128,8 @@ jobs:
           # runner (including the west cache in runner.temp).
           TOPDIR=$(realpath --relative-to=$HOME $(west topdir))
           (cd && tar cphf - --exclude-from=build-env.exclude .cmake $TOPDIR zephyr-sdk-* \
-                | zstd -T0 -9 --long=27 > build-env.tar.zstd)
-          ls -lh ~/build-env.tar.zstd
+                | zstd -T0 -9 --long=27 > build-env.tar.zst)
+          ls -lh ~/build-env.tar.zst
 
       # Caches saved by other branches and PRs are only visible to them, so
       # only main saves a new west cache, shared with all the others.
@@ -143,8 +143,8 @@ jobs:
       - name: Archive build environment
         uses: actions/upload-artifact@v7
         with:
-          name: build-env.tar.zstd
-          path: ~/build-env.tar.zstd
+          name: build-env.tar.zst
+          path: ~/build-env.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -180,7 +180,7 @@ jobs:
         timeout-minutes: 10 # early error on Github network issues
         with:
           path: /home/runner
-          name: build-env.tar.zstd
+          name: build-env.tar.zst
 
       - name: Restore build environment
         id: restore-env
@@ -190,7 +190,7 @@ jobs:
           sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache device-tree-compiler
-          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zstd && rm build-env.tar.zstd)
+          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zst && rm build-env.tar.zst)
 
       - name: ccache
         uses: actions/cache@v5
@@ -249,7 +249,7 @@ jobs:
 
           # Preprare an archive of the built binaries (and build dir on failure).
           # Prefix the name with 'failed-' if the build failed, so that it is not removed.
-          BINARIES_FILE=binaries-${ARTIFACT_TAG}.tar.zstd
+          BINARIES_FILE=binaries-${ARTIFACT_TAG}.tar.zst
           if [ "${{ job.status }}" == "failure" ] ; then
             FULL_BUILD_DIR="build/${{ matrix.variant }}/"
             BINARIES_FILE=failed-${BINARIES_FILE}
@@ -379,7 +379,7 @@ jobs:
         run: |
           # Extract the board binaries in place
           # (each will also include the same copy of the API)
-          for f in binaries-*.tar.zstd ; do
+          for f in binaries-*.tar.zst ; do
             tar --use-compress-program=unzstd -xpf $f
           done
           cat $(ls boards.local_*.txt | sort) >> boards.local.txt
@@ -510,9 +510,9 @@ jobs:
       - uses: geekyeggo/delete-artifact@v6
         with:
           name: |
-            arduino-api.tar.zstd
+            arduino-api.tar.zst
             binaries-*
-            build-env.tar.zstd
+            build-env.tar.zst
             artifact-id-*
           failOnError: false
 

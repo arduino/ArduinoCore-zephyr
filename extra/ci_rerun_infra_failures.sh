@@ -68,7 +68,7 @@ skip() {
 [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ] || skip "already at attempt $ATTEMPT of $MAX_ATTEMPTS."
 
 if [ "$(jq 'map(select(.name | startswith("Build for"))) | length' <<< "$JOBS")" -gt 0 ]; then
-	BUILD_ENV=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=build-env.tar.zstd" --jq '[.artifacts[] | select(.expired | not)] | length')
+	BUILD_ENV=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts?name=build-env.tar.zst" --jq '[.artifacts[] | select(.expired | not)] | length')
 	[ "$BUILD_ENV" -gt 0 ] || skip "the build environment has expired, all jobs must be re-run."
 fi
 
