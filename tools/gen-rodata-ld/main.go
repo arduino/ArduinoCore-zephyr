@@ -10,9 +10,13 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/arduino/ArduinoCore-zephyr/tools/lib/cli"
 )
 
 func main() {
+	cli.Init("gen-rodata-ld")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <input.elf> [output_script.ld] [link_mode]\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Analyzes an ELF file and generates a linker script fragment that\n")
@@ -22,10 +26,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nIf link_mode is 'static', generates an empty linker script.\n")
 	}
 
-	flag.Parse()
+	cli.ParseFlags()
 	if flag.NArg() < 1 {
 		flag.Usage()
-		os.Exit(1)
+		cli.Fatal("missing input file")
 	}
 
 	inputFile := flag.Arg(0)
@@ -44,8 +48,7 @@ func main() {
 	if linkMode == "static" {
 		out, err := os.Create(outputFile)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			cli.Fatal("%v", err)
 		}
 		defer out.Close()
 
@@ -56,8 +59,7 @@ func main() {
 
 	f, err := elf.Open(inputFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("%v", err)
 	}
 	defer f.Close()
 
@@ -102,8 +104,7 @@ func main() {
 	// Generate linker script
 	out, err := os.Create(outputFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("%v", err)
 	}
 	defer out.Close()
 

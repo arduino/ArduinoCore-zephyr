@@ -9,9 +9,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/arduino/ArduinoCore-zephyr/tools/lib/cli"
 )
 
 func main() {
+	cli.Init("zephyr-check-size")
+
 	if len(os.Args) != 5 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <link_mode> <config_path> <upload_file> <elf_file>\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Computes sketch size for Arduino IDE.\n\n")
@@ -19,8 +23,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  link_mode    'static' or 'dynamic'\n")
 		fmt.Fprintf(os.Stderr, "  config_path  Path to Zephyr .config file\n")
 		fmt.Fprintf(os.Stderr, "  upload_file  Path to upload binary (for flash size)\n")
-		fmt.Fprintf(os.Stderr, "  elf_file     Path to ELF file (for section analysis)\n")
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "  elf_file     Path to ELF file (for section analysis)\n\n")
+		cli.Fatal("expected 4 arguments, got %d", len(os.Args)-1)
 	}
 
 	linkMode := os.Args[1]
@@ -31,15 +35,13 @@ func main() {
 	// Flash size = filesystem size of the upload file
 	flashSize, err := fileSize(uploadFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading upload file: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("reading upload file: %v", err)
 	}
 
 	// Heap size = sum of relevant ELF sections
 	heapSize, err := computeHeapSize(elfFile, linkMode, configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error computing heap size: %v\n", err)
-		os.Exit(1)
+		cli.Fatal("computing heap size: %v", err)
 	}
 
 	fmt.Printf(".text %12d\n", flashSize)

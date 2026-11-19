@@ -8,11 +8,11 @@ OUTPUT_FILE=${1:-$BASE_DIR/.github/dependabot.yml}
 
 dependabot_rule_for() {
 	local ecosystem=$1
-	local tool=$(basename $2)
+	local dir=${2#$BASE_DIR}
 	cat << EOF
 
   - package-ecosystem: "$ecosystem"
-    directory: "/tools/$tool"
+    directory: "$dir"
     schedule:
       interval: "weekly"
 EOF
