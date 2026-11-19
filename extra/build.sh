@@ -127,9 +127,21 @@ edk_funcs='k_ticks_t k_sleep_ticks\(k_timeout_t timeout\)|void k_busy_wait\(uint
 perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" $syscalls_hdrs
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
+# board.cmake may redirect which hex file 'west flash' uses (e.g. a signed
+# image for TrustZone-secure cores, see kit_pse84_ai's board.cmake); Zephyr
+# records the resolved choice per build in runners.yaml, so read it from
+# there instead of guessing, to stay in sync with 'west flash' for every
+# board without hardcoding board-specific logic here.
+hex_file=zephyr.hex
+if [ -f "${BUILD_DIR}/zephyr/runners.yaml" ]; then
+	hex_file=$(sed -n 's/^[[:space:]]*hex_file:[[:space:]]*//p' "${BUILD_DIR}/zephyr/runners.yaml")
+fi
+
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
+    if [ "$ext" = "hex" ] && [ -f "${BUILD_DIR}/zephyr/${hex_file}" ]; then
+        cp "${BUILD_DIR}/zephyr/${hex_file}" firmwares/zephyr-$variant.hex
+    elif [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
         cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done

@@ -64,6 +64,12 @@ west config manifest.project-filter -- "$HAL_FILTER"
 west update $WEST_MODULES_CACHE "$@"
 west zephyr-export
 pip3 install -r ../zephyr/scripts/requirements-base.txt
+# imgtool (invoked directly by hal_infineon's pse84_metadata.cmake during the
+# PSE84 build, to sign the image) needs these. hal_infineon's own attempt to
+# pip-install them at CMake-configure time only warns on failure instead of
+# aborting the build, so install them explicitly here to avoid a confusing
+# "ModuleNotFoundError: No module named 'cryptography'" failure later.
+pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt
 log_msg "endgroup"
 
 TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do

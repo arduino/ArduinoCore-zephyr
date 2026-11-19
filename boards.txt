@@ -742,3 +742,61 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##############################################################################################################
+
+kit_pse84_ai.name=Infineon KIT-PSE84-AI (PSOC Edge E84)
+kit_pse84_ai.build.core=arduino
+kit_pse84_ai.build.crossprefix=arm-zephyr-eabi-
+kit_pse84_ai.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+kit_pse84_ai.menu.debug.false=Standard
+kit_pse84_ai.menu.debug.true=Debug
+kit_pse84_ai.menu.debug.true.build.zsk_args.debug=-debug
+
+kit_pse84_ai.menu.link_mode.dynamic=Dynamic
+kit_pse84_ai.menu.link_mode.static=Static
+kit_pse84_ai.menu.link_mode.static.build.link_mode=static
+kit_pse84_ai.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+kit_pse84_ai.build.zephyr_target=kit_pse84_ai/pse846gps2dbzc4a/m33
+kit_pse84_ai.build.zephyr_args=
+kit_pse84_ai.build.zephyr_hals=hal_infineon
+kit_pse84_ai.build.variant=kit_pse84_ai_pse846gps2dbzc4a_m33
+kit_pse84_ai.build.mcu=cortex-m33
+kit_pse84_ai.build.fpu=-mfpu=fpv5-sp-d16
+kit_pse84_ai.build.architecture=cortex-m33
+kit_pse84_ai.build.float-abi=-mfloat-abi=hard
+kit_pse84_ai.compiler.zephyr.specs=
+kit_pse84_ai.build.extra_flags=
+kit_pse84_ai.build.specs=
+kit_pse84_ai.build.link_command="{compiler.path}{compiler.c.elf.cmd}" "-L{build.path}" "-L{build.variant.path}" {compiler.c.elf.flags} {compiler.c.elf.extra_flags} {build.extra_flags} {build.extra_ldflags} {compiler.zephyr.common_ldflags} {compiler.ldflags} {object_files} -Wl,--start-group "{build.path}/{archive_file}" {compiler.zephyr.extra_ldflags} {compiler.libraries.ldflags} -Wl,--end-group {build.link_args.{build.link_mode}}
+kit_pse84_ai.build.postbuild.cmd="{tools.openocd.path}/{tools.openocd.cmd}" exit
+kit_pse84_ai.build.board=KIT_PSE84_AI
+kit_pse84_ai.upload.address=0x60200000
+kit_pse84_ai.upload.target=pse84
+kit_pse84_ai.upload.tool=openocd
+kit_pse84_ai.upload.tool.default=openocd
+kit_pse84_ai.tools.openocd.path={runtime.tools.openocd.path}
+kit_pse84_ai.tools.openocd.cmd=bin/openocd
+kit_pse84_ai.tools.openocd.cmd.windows=bin/openocd.exe
+kit_pse84_ai.programmer.default=cmsis-dap
+kit_pse84_ai.tools.openocd.upload.pattern="{path}/{cmd}" {upload.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase {{build.path}/{build.project_name}.{upload.extension}} {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase {{build.path}/{build.project_name}.{upload.extension}} {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; program {{runtime.platform.path}/firmwares/zephyr-{build.variant}.hex}; reset run; shutdown"
+kit_pse84_ai.tools.openocd.upload.pattern.windows=cmd /C cd /D "{build.path}" && "{path}/{cmd}" {upload.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set sketch_file [list {build.project_name}.{upload.extension}]; telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase $sketch_file {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.tools.openocd.program.pattern.windows=cmd /C cd /D "{build.path}" && "{path}/{cmd}" {program.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set sketch_file [list {build.project_name}.{upload.extension}]; telnet_port disabled; init; reset init; halt; adapter speed 10000; flash write_image erase $sketch_file {upload.address} bin; reset run; shutdown"
+kit_pse84_ai.upload.protocol=
+kit_pse84_ai.upload.transport=
+kit_pse84_ai.upload.interface=0
+kit_pse84_ai.upload.use_1200bps_touch=false
+kit_pse84_ai.upload.wait_for_upload_port=false
+kit_pse84_ai.upload.native_usb=false
+kit_pse84_ai.upload.maximum_size=1047552
+kit_pse84_ai.upload.maximum_data_size=135168
+kit_pse84_ai.bootloader.tool=openocd
+kit_pse84_ai.bootloader.tool.default=openocd
+kit_pse84_ai.tools.openocd.bootloader.pattern.windows=cmd /C cd /D "{runtime.platform.path}/firmwares" && "{path}/{cmd}" {bootloader.verbose} -s "{path}/scripts/" -s "{path}/share/openocd/scripts/" -s "{runtime.platform.path}/variants/{build.variant}/" -f "{runtime.platform.path}/variants/{build.variant}/openocd.cfg" -c "set bootloader_file [list zephyr-{build.variant}.hex]; telnet_port disabled; init; reset init; halt; adapter speed 10000; program $bootloader_file; reset run; shutdown"
+kit_pse84_ai.bootloader.target=pse84
+
+##############################################################################################################
