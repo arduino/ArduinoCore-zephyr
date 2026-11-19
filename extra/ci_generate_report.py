@@ -55,6 +55,74 @@ def color_entry(values, full=True):
     else:
         return f"{'' if percent < 0.85 else ':warning:'} ${{{color_cmd(percent)}{percent*100:0.1f}\\\\%}}$"
 
+# Recap table header, 8 columns:
+# - Artifact name (multi-row for boards under the same artifact)
+# - Board name
+# - Core compilation status (ok, number of warnings)
+# - Overall sketch compilation status for the core
+# - Used RAM percent
+# - Sketches tested
+# - Sketches with warnings
+# - Failed sketches (and ignored errors)
+RECAP_TABLE_HEADER = "<table>\n<tr><th>Artifact</th><th>Board</th><th>Core</th><th>Tests</th><th>RAM</th><th>Sketches</th><th>Warnings</th><th>Errors</th></tr>"
+
+def counts_text(res):
+    """
+    Returns the sketches, warnings and errors cells of a recap row.
+    """
+    tests_str = len(res.tests) or "-"
+    warnings_str = res.counts[WARNING] or "-"
+    errors_str = f"<b>{res.counts[ERROR]}</b>" if res.counts[ERROR] else "-"
+    if res.counts[EXPECTED_ERROR]:
+        if errors_str == "-": # only expected errors
+            errors_str = f"<i>({res.counts[EXPECTED_ERROR]}*)</i>"
+        else: # both actual and expected errors
+            errors_str += f" <i>(+{res.counts[EXPECTED_ERROR]}*)</i>"
+    return f"<td align='right'>{tests_str}</td><td align='right'>{warnings_str}</td><td align='right'>{errors_str}</td>"
+
+def print_recap_rows(artifact):
+    """
+    Prints the recap table rows of the boards of an artifact.
+    """
+    artifact_boards = sorted(ARTIFACT_TESTS[artifact].boards)
+    artifact_status = ARTIFACT_TESTS[artifact].status
+
+    first_row_text = f"<td rowspan='{len(artifact_boards)}'>{artifact_status.board_icon} <a href='{JOB_LINK_STEM}#user-content-{artifact}'><code>{artifact}</code></a></td>"
+    for board in artifact_boards:
+        # Artifact name (multi-row)
+        f_print(f"<tr>{first_row_text}")
+        first_row_text = ""
+
+        # Board name
+        res = BOARD_LOADERS[board]
+        if res.job_link:
+            f_print(f"<td><code><a href='{res.job_link}'>{board}</a></code>")
+        else:
+            f_print(f"<td><code>{board}</code>")
+
+        # Core build status + message on failure
+        if res.status == FAILURE:
+            f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='6'>Core build failed for this variant!</td></tr>")
+            continue
+
+        pin = f"{len(res.warnings)} :label:" if res.status == WARNING else ":green_book:"
+        f_print(f"</td><td align='center'>{pin}</td>")
+
+        # Sketch build status + message on failure or if tests were skipped
+        res = BOARD_TESTS[board]
+        f_print(f"<td align='center'>{res.status.board_icon}</td>")
+        if res.status in (FAILURE, SKIP):
+            f_print(f"<td colspan='5'>")
+            f_print("<br>".join(test.issues[0] + (f" (<a href='{test.job_link}'>full log</a>)" if test.job_link else "") for test in res.tests if test.status == res.status and test.issues))
+            f_print("</td></tr>")
+            continue
+
+        # Memory usage
+        f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo['RAM'], False)}\n\n</td>")
+
+        # Test count summary
+        f_print(f"{counts_text(res)}</tr>")
+
 def print_summary():
     """
     Prints the summary section of the report, including overall status and a recap table.
@@ -69,65 +137,10 @@ def print_summary():
     f_print("<a name='summary'></a>\n")
     f_print(title)
 
-    # Print the recap table, one line per board.
-    # 8 columns:
-    # - Artifact name (multi-row for boards under the same artifact)
-    # - Board name
-    # - Core compilation status (ok, number of warnings)
-    # - Overall sketch compilation status for the core
-    # - Used RAM percent
-    # - Sketches tested
-    # - Sketches with warnings
-    # - Failed sketches (and ignored errors)
-    f_print("<table>\n<tr><th>Artifact</th><th>Board</th><th>Core</th><th>Tests</th><th>RAM</th><th>Sketches</th><th>Warnings</th><th>Errors</th></tr>")
-
+    # Print the recap table, one line per board
+    f_print(RECAP_TABLE_HEADER)
     for artifact in ARTIFACTS:
-        artifact_boards = sorted(ARTIFACT_TESTS[artifact].boards)
-        artifact_status = ARTIFACT_TESTS[artifact].status
-
-        first_row_text = f"<td rowspan='{len(artifact_boards)}'>{artifact_status.board_icon} <a href='{JOB_LINK_STEM}#user-content-{artifact}'><code>{artifact}</code></a></td>"
-        for board in artifact_boards:
-            # Artifact name (multi-row)
-            f_print(f"<tr>{first_row_text}")
-            first_row_text = ""
-
-            # Board name
-            res = BOARD_LOADERS[board]
-            if res.job_link:
-                f_print(f"<td><code><a href='{res.job_link}'>{board}</a></code>")
-            else:
-                f_print(f"<td><code>{board}</code>")
-
-            # Core build status + message on failure
-            if res.status == FAILURE:
-                f_print(f"<td align='center'>{res.status.board_icon}</td><td colspan='6'>Core build failed for this variant!</td></tr>")
-                continue
-
-            pin = f"{len(res.warnings)} :label:" if res.status == WARNING else ":green_book:"
-            f_print(f"</td><td align='center'>{pin}</td>")
-
-            # Sketch build status + message on failure or if tests were skipped
-            res = BOARD_TESTS[board]
-            f_print(f"<td align='center'>{res.status.board_icon}</td>")
-            if res.status in (FAILURE, SKIP):
-                f_print(f"<td colspan='5'>")
-                f_print("<br>".join(test.issues[0] + (f" (<a href='{test.job_link}'>full log</a>)" if test.job_link else "") for test in res.tests if test.status == res.status and test.issues))
-                f_print("</td></tr>")
-                continue
-
-            # Memory usage
-            f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo['RAM'], False)}\n\n</td>")
-
-            # Test count summary
-            tests_str = len(res.tests) or "-"
-            warnings_str = res.counts[WARNING] or "-"
-            errors_str = f"<b>{res.counts[ERROR]}</b>" if res.counts[ERROR] else "-"
-            if res.counts[EXPECTED_ERROR]:
-                if errors_str == "-": # only expected errors
-                    errors_str = f"<i>({res.counts[EXPECTED_ERROR]}*)</i>"
-                else: # both actual and expected errors
-                    errors_str += f" <i>(+{res.counts[EXPECTED_ERROR]}*)</i>"
-            f_print(f"<td align='right'>{tests_str}</td><td align='right'>{warnings_str}</td><td align='right'>{errors_str}</td></tr>")
+        print_recap_rows(artifact)
     f_print("</table>\n")
 
     # Print the legend
@@ -156,11 +169,15 @@ def print_test_matrix(artifact, artifact_boards, title, sketch_filter=lambda x: 
     """
 
     # Build the header row, which includes board names and board statuses.
-    # Headers have a link to the board's CI job, if available.
+    # Headers have a link to each CI test job of the board, if available,
+    # named after its link mode.
     header_row = f"<tr><th colspan='2'><code>{artifact}</code> {title}</th>"
     for board in artifact_boards:
         res = BOARD_TESTS[board]
         header_col = f"<code>{board}</code><br>{res.status.board_icon}"
+        job_links = sorted({ (t.link_mode, t.job_link) for t in res.tests if t.link_mode and t.job_link })
+        if job_links:
+            header_col += "<br><sub>" + " ".join(f"<a href='{link}'>{mode}</a>" for mode, link in job_links) + "</sub>"
         header_row += f"<th>{header_col}</th>"
     header_row += "</tr>"
 

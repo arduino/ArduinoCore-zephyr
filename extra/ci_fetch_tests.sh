@@ -12,6 +12,7 @@
 #
 # This script is intended to run once per workflow, before the per-board
 # test jobs. Run from the repository root (needs extra/ and variants/).
+# GH_TOKEN (or GITHUB_TOKEN), if set, authenticates the GitHub API requests.
 
 set -e
 
@@ -39,11 +40,20 @@ get_latest_release() {
 	local file="${DOWNLOAD_DIR}/${key}.tar.gz"
 	[ -f "${file}" ] && return # already downloaded
 
-	local url=$(curl -s "https://api.github.com/repos/${repo}/releases/latest" | jq -r '.tarball_url')
-	[ $url == "null" ] && echo "::error::No releases found for ${repo}" 2>&1 && exit 1
+	# (authenticated if a token is available: anonymous API requests are
+	# rate limited per IP, shared by many runners)
+	local token=${GH_TOKEN:-${GITHUB_TOKEN:-}}
+	local release=$(curl -sS --retry 3 ${token:+-H "Authorization: Bearer $token"} "https://api.github.com/repos/${repo}/releases/latest")
+	local url=$(jq -r '.tarball_url // empty' <<< "$release" 2>/dev/null)
+	if [ -z "$url" ] ; then
+		echo "::error::No releases found for ${repo}: $(jq -r '.message // empty' <<< "$release" 2>/dev/null)"
+		exit 1
+	fi
 
+	# (the tarball URL is an API one too; the token is not sent on the
+	# redirect to the download host)
 	echo "::group::Downloading latest release of ${repo}"
-	wget -nv "$url" -O "${file}"
+	curl -sSfL --retry 3 ${token:+-H "Authorization: Bearer $token"} -o "${file}" "$url"
 	echo "::endgroup::"
 }
 
