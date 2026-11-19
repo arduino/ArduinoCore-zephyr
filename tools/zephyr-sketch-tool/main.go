@@ -6,12 +6,8 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/sha256"
-	"crypto/x509"
+	"crypto/elliptic"
 	"encoding/binary"
-	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
@@ -21,6 +17,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/arduino/ArduinoCore-zephyr/tools/lib/cli"
 )
 
 // MCUboot Header & Configuration Constants
@@ -63,7 +61,9 @@ const (
 )
 
 func main() {
-	var output = flag.String("output", "", "Output to a specific file (default: add -zsk.bin suffix)")
+	cli.Init("zephyr-sketch-tool")
+
+	var output = flag.String("output", "", "Output file (required with --sign; default: add -zsk.bin suffix)")
 	var debug = flag.Bool("debug", false, "Enable debugging mode")
 	var immediate = flag.Bool("immediate", false, "Start sketch immediately [UNO Q]")
 	var wait_for_app = flag.Bool("wait_for_app", false, "Wait for the app to start [UNO Q]")
@@ -78,6 +78,11 @@ func main() {
 	var otaOffset = flag.String("ota-offset", "", "[ota] sketch offset in merged binary (hex)")
 	var otaMagic = flag.String("ota-magic", "", "[ota] board magic number (hex, 32-bit)")
 
+	// Standalone MCUboot signing, without sketch processing.
+	var sign = flag.Bool("sign", false, "Sign a standalone MCUboot image with a reserved header")
+	var headerSize = flag.Uint("header_size", 0, "[sign] Reserved MCUboot header size in bytes")
+	var slotSize = flag.Uint("slot_size", 0, "[sign] Maximum signed image size in bytes")
+
 	// Squash / Sign flags
 	var squash = flag.Bool("squash", false, "Squash the loader and sketch, then sign the image")
 	var loader_bin = flag.String("loader_bin", "", "Path to the binary loader to be used")
@@ -85,13 +90,22 @@ func main() {
 	var erase_flash_dim = flag.Uint("erase_flash_dim", 0, "Minimum erasing flash sector dimension in bytes")
 	var image_version = flag.String("image_version", "1.0.0.0", "Image version for the header (default 1.0.0.0)")
 
-	flag.Parse()
+	cli.ParseFlags()
+
+	if *sign {
+		if *squash || *ota || flag.NArg() != 1 || *output == "" {
+			cli.Fatal("--sign requires one input file and --output, and cannot be combined with --squash or --ota")
+		}
+		if err := signStandalone(flag.Arg(0), *output, *pem_file, *image_version, *headerSize, *slotSize); err != nil {
+			cli.Fatal("%v", err)
+		}
+		return
+	}
 
 	if *ota {
 		// Note: runOTA is assumed to be defined elsewhere in the package.
 		if err := runOTA(*otaLoader, *otaSketch, *otaOffset, *otaMagic, *otaSketch); err != nil {
-			fmt.Printf("OTA error: %v\n", err)
-			os.Exit(1)
+			cli.Fatal("%v", err)
 		}
 		return
 	}
@@ -99,7 +113,7 @@ func main() {
 	// Intercept empty sketch with --squash enabled
 	if *squash && flag.NArg() == 0 {
 		if *loader_bin == "" {
-			log.Fatalf("Error: --loader_bin is required when --squash is used.")
+			cli.Fatal("--loader_bin is required when --squash is used")
 		}
 		fmt.Printf("Running squash process without a sketch file.\n")
 		signAndSquash(*loader_bin, "", *pem_file, *erase_flash_dim, *image_version)
@@ -107,27 +121,30 @@ func main() {
 	}
 
 	if flag.NArg() != 1 {
-		fmt.Printf("Usage: %s [flags] <filename>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [flags] <filename>\n", os.Args[0])
 		flag.PrintDefaults()
-		return
+		cli.Fatal("expected exactly one file argument")
 	}
 	filename := flag.Arg(0)
 
 	// Read the file content
 	content, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
-		return
+		cli.Fatal("reading file: %v", err)
 	}
 
 	var ELF_HEADER = []byte{0x7f, 0x45, 0x4c, 0x46}
-	var elf_header_found = bytes.Compare(ELF_HEADER, content[0:4]) == 0
+	var elf_header_found = bytes.HasPrefix(content, ELF_HEADER)
 	if *add_header || (!*force && !elf_header_found) {
 		fmt.Printf("File does not have an ELF header, adding empty space\n")
 
 		var newContent = make([]byte, len(content)+16)
 		copy(newContent[16:], content)
 		content = newContent
+	}
+
+	if len(content) < 16 {
+		cli.Fatal("%s: file too short (%d bytes)", filename, len(content))
 	}
 
 	// Create and fill custom header
@@ -160,8 +177,7 @@ func main() {
 	var headerBuf bytes.Buffer
 	err = binary.Write(&headerBuf, binary.LittleEndian, header)
 	if err != nil {
-		fmt.Printf("Error encoding header: %v\n", err)
-		return
+		cli.Fatal("encoding header: %v", err)
 	}
 	headerBytes := headerBuf.Bytes()
 
@@ -171,8 +187,7 @@ func main() {
 	if !*force {
 		for i := 7; i < 16; i++ {
 			if content[i] != 0 {
-				fmt.Printf("Target ELF header area is not empty. Use --force to overwrite\n")
-				return
+				cli.Fatal("%s: target ELF header area is not empty, use -force to overwrite", filename)
 			}
 		}
 	}
@@ -189,8 +204,7 @@ func main() {
 	// Write the new content to the new file
 	err = os.WriteFile(newFilename, content, 0644)
 	if err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
-		return
+		cli.Fatal("writing to file: %v", err)
 	}
 
 	fmt.Printf("File %s saved as %s\n", filename, newFilename)
@@ -199,7 +213,7 @@ func main() {
 	// newFilename acts as the sketch_bin_file
 	if *squash {
 		if *loader_bin == "" {
-			log.Fatalf("Error: --loader_bin is required when --squash is used.")
+			cli.Fatal("--loader_bin is required when --squash is used")
 		}
 		signAndSquash(*loader_bin, newFilename, *pem_file, *erase_flash_dim, *image_version)
 	}
@@ -325,6 +339,13 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		log.Fatalf("Error: unable to find config file")
 	}
 
+	// MCUboot header (32 B) + sketch layout words written at 32..47
+	const minHeaderSize = 48
+	if header_size < minHeaderSize || header_size > 0xFFFF {
+		log.Fatalf("Error: %s=0x%X: the loader must reserve %d..65535 bytes for the MCUboot header",
+			ConfigRomStartOffset, header_size, minHeaderSize)
+	}
+
 	var slot0_dim uint32 = 0
 	var slot1_dim uint32 = 0
 
@@ -425,43 +446,14 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 	}
 
 	/* LOAD AND PARSE THE PRIVATE KEY */
-	if pemFile == "" {
-		log.Fatalf("Failed to read key: PEM file path is empty")
-	}
-	keyFile, err := os.ReadFile(pemFile)
+	key, err := readSigningKey(pemFile)
 	if err != nil {
-		log.Fatalf("Failed to read key: %v", err)
+		log.Fatal(err)
 	}
 
-	block, _ := pem.Decode(keyFile)
-	if block == nil {
-		log.Fatalf("Failed to parse PEM block")
+	if key.Curve != elliptic.P256() {
+		log.Fatalf("Error: %s is not an ECDSA P-256 key (TLV 0x22 requires P-256)", pemFile)
 	}
-
-	privKey, err := x509.ParseECPrivateKey(block.Bytes)
-	if err != nil {
-		log.Fatalf("Failed to parse ECDSA key: %v", err)
-	}
-
-	/* CONSTRUCT IMAGE HEADER */
-	imgVersion := parseVersionString(versionStr)
-	header := ImageHeader{
-		Magic:     ImageMagic,
-		LoadAddr:  0x0,
-		HdrSize:   uint16(header_size),
-		PTLVSize:  0,
-		ImageSize: uint32(len(image)) - header_size,
-		Flags:     0x0,
-		Version:   imgVersion,
-	}
-
-	/* OVERWRITE THE FIRST 32 BYTE OF THE IMAGE WITH THE NEW HEADER */
-	var headerBuf bytes.Buffer
-	err = binary.Write(&headerBuf, binary.LittleEndian, header)
-	if err != nil {
-		log.Fatalf("Failed to write header: %v", err)
-	}
-	copy(image[0:32], headerBuf.Bytes())
 
 	/* WRITE INTO THE PADDING THE INFORMATION */
 	binary.LittleEndian.PutUint32(image[32:36], sketch_offset)
@@ -482,31 +474,21 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		binary.LittleEndian.PutUint32(image[44:48], 1)
 	}
 
-	/*
-	 * CALCULATE THE HASH OF THE WHOLE IMAGE
-	 */
-	imgHash := sha256.Sum256(image)
-
-	/* Calculate the KEYHASH (SHA-256 of the DER-encoded Public Key) */
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+	// signingVersion is shared with --sign and validates the version string
+	// rather than silently defaulting it.
+	imgVersion, err := signingVersion(versionStr)
 	if err != nil {
-		log.Fatalf("Failed to marshal public key: %v", err)
-	}
-	keyHash := sha256.Sum256(pubKeyBytes)
-
-	/* Generate ECDSA P-256 Signature */
-	signature, err := ecdsa.SignASN1(rand.Reader, privKey, imgHash[:])
-	if err != nil {
-		log.Fatalf("Failed to sign payload: %v", err)
+		log.Fatal(err)
 	}
 
-	// Buffer for final output
-	var finalImg bytes.Buffer
-	finalImg.Write(image)
-	appendTLVs(&finalImg, keyHash[:], imgHash[:], signature)
+	// Metadata is complete; use the same MCUboot signer as standalone images.
+	signed, err := signMCUbootImage(image, key, uint16(header_size), imgVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Size Validation & Save
-	totalImageSize := uint32(finalImg.Len())
+	totalImageSize := uint32(len(signed))
 	if slot0_dim > 0 {
 		maxImageSize := slot0_dim - mcuboot_footer_size
 		if totalImageSize > maxImageSize {
@@ -516,40 +498,13 @@ func signAndSquash(loaderBinFile string, sketchBinFile string, pemFile string, e
 		fmt.Println("WARNING: slot0 size unknown, skipping final image size validation")
 	}
 
-	err = os.WriteFile(output_file, finalImg.Bytes(), 0644)
+	err = os.WriteFile(output_file, signed, 0644)
 	if err != nil {
 		log.Fatalf("Failed to write output file(%s), error %v", output_file, err)
 	}
 
 	fmt.Println("   === IMAGE built and signed successfully")
 	fmt.Printf("   === Output file: %s\n", output_file)
-}
-
-func parseVersionString(ver string) ImageVersion {
-	parts := strings.Split(ver, ".")
-	iv := ImageVersion{Major: 1, Minor: 0, Revision: 0, BuildNum: 0}
-	
-	if len(parts) > 0 {
-		if val, err := strconv.ParseUint(parts[0], 10, 8); err == nil {
-			iv.Major = uint8(val)
-		}
-	}
-	if len(parts) > 1 {
-		if val, err := strconv.ParseUint(parts[1], 10, 8); err == nil {
-			iv.Minor = uint8(val)
-		}
-	}
-	if len(parts) > 2 {
-		if val, err := strconv.ParseUint(parts[2], 10, 16); err == nil {
-			iv.Revision = uint16(val)
-		}
-	}
-	if len(parts) > 3 {
-		if val, err := strconv.ParseUint(parts[3], 10, 32); err == nil {
-			iv.BuildNum = uint32(val)
-		}
-	}
-	return iv
 }
 
 // appendTLVs handles the exact struct packing required by MCUboot
