@@ -77,8 +77,26 @@ To manually force a loader update, follow these steps:
 
 ---
 
-#### **Q: I get an out of memory error**
-**A:** Since collecting bug reports is very important at this time, we are keeping Zephyr's shell enabled to allow loading a full sketch (which requires a large stack). Adjust your board's `.conf` file to reduce the stack size if your platform doesn't have enough RAM.
+#### **Q: The board LED is blinking in a strange pattern and my sketch is not running. What does it mean?**
+**A:** The loader uses an error LED to signal two kinds of failures. Boards with a red LED use it (via the `error-led` devicetree alias), otherwise the first board LED (`led0`) is used; all other board LEDs are switched off. The blink pattern, not the color, tells you what happened:
+
+| Pattern | Meaning |
+|---------|---------|
+| 4 fast pulses + 4 slow pulses, repeated | **Sketch crash** |
+| 3 short pulses + long pause, repeated | **Loader failure** |
+
+* **Sketch crash** – the sketch was loaded and started, but then hit a fatal error (CPU fault such as a hard/usage/bus fault, kernel panic, failed assert, stack overflow, ...). This is usually caused by a bug in the sketch or in a library (e.g. a buffer overflow or a NULL pointer access). The system is halted with interrupts disabled, so USB and the shell are no longer available. The message `Sketch crashed, fatal error reason <N>` (along with the Zephyr fault dump) is printed on the default UART, so use a USB-to-UART adapter to read it. See also the [OS crash](#q-i-get-an-os-crash-like-err-os--usage-fault-) question above.
+* **Loader failure** – the loader itself is still running fine, but it could not load or start the sketch. This happens when the sketch flash partition cannot be opened or read, the sketch header is invalid (e.g. no sketch has been uploaded yet, or the upload was corrupted/interrupted), there is not enough memory to load the sketch, `llext` fails to load the sketch (e.g. because of an [undefined symbol](#q-i-did-it-and-i-get-the-error-err-llext-undefined-symbol-with-no-entry-in-symbol-table-)), the sketch `main` function cannot be found, or the memory domain setup fails. Unlike a crash, the system is not halted: the loader just gives up on starting the sketch. Note that the loader enables its log output only after the sketch header has been checked, so on most boards the LED pattern is the only indication of early failures (flash errors, invalid sketch header). Failures happening later (out of memory, `llext` load errors, missing `main`) are printed on the default hardware UART (e.g. `Failed to load sketch, rc <N>`), see [below](#q-how-can-i-read-the-loader-error-messages-without-a-usb-to-uart-adapter) for how to read them over USB. See also the [OS crash](#q-i-get-an-os-crash-like-err-os--usage-fault-) question above.
+
+**How to recover:** double-click the RESET button to enter bootloader mode and upload a fixed sketch. This is not needed on boards that are not uploaded through a USB bootloader, i.e. boards flashed by their MPU (UNO Q, VENTUNO Q) or through a debug probe with OpenOCD/pyOCD (e.g. Nicla Sense ME, Nano Matter, NXP FRDM and Renesas EK boards): just upload a new sketch.
+
+---
+
+#### **Q: How can I read the loader error messages without a USB-to-UART adapter?**
+**A:** Compile the sketch in `Debug` mode. On boards where `Serial` is the USB port (e.g. GIGA R1, Portenta, Nano 33 BLE), the loader then also enables USB and sends its log output to the USB serial port, so [loader failures](#q-the-board-led-is-blinking-in-a-strange-pattern-and-my-sketch-is-not-running-what-does-it-mean) such as `Failed to load sketch, rc <N>` become visible in the Serial Monitor. Keep in mind that:
+* the messages are emitted right at boot and the loader does not wait for the port to be opened, so they can be lost if the Serial Monitor is not already connected when the board starts;
+* early failures (flash errors, invalid sketch header) happen before the log output is enabled, so they are never printed and the LED pattern is the only indication;
+
 
 ---
 
