@@ -85,10 +85,14 @@ jobs:
             # in package_core.yml): they cannot change during this run, so mark
             # each available one as completed, for ci_filter_matrix.sh -x
             mkdir -p prereqs-ext
+            # (cores published before the switch to zstd are .tar.bz2)
             for ARTIFACT in $(jq -r '.[] | select(. != "zephyr")' <<< "$ARTIFACTS"); do
-              if wget -q --method=HEAD "$PUBLISHED_CORE_URL/ArduinoCore-$ARTIFACT-$CORE_HASH.tar.bz2" >& /dev/null ; then
-                jq -n --arg id "package-$ARTIFACT" '{ id: $id, status: "success" }' > prereqs-ext/package-$ARTIFACT.json
-              fi
+              for EXT in tar.zst tar.bz2 ; do
+                if wget -q --method=HEAD "$PUBLISHED_CORE_URL/ArduinoCore-$ARTIFACT-$CORE_HASH.$EXT" >& /dev/null ; then
+                  jq -n --arg id "package-$ARTIFACT" '{ id: $id, status: "success" }' > prereqs-ext/package-$ARTIFACT.json
+                  break
+                fi
+              done
             done
             if [ -z "$(ls prereqs-ext/)" ]; then
               echo "::error::No published core packages found for $CORE_HASH"
@@ -159,7 +163,7 @@ jobs:
     env:
       PLAT: arduino:${{ matrix.subarch }}
       FQBN: arduino:${{ matrix.subarch }}:${{ matrix.board }}:link_mode=${{ matrix.link_mode }}
-      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.prepare.outputs.CORE_HASH }}.tar.bz2
+      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.prepare.outputs.CORE_HASH }}.tar.zst
       ARTIFACT_TAG: ${{ needs.prepare.outputs.CORE_HASH }}-${{ matrix.board }}-${{ matrix.link_mode }}
       CI_BUILDS_URL: ${{ needs.prepare.outputs.CI_BUILDS_URL }}
     steps:
@@ -196,10 +200,14 @@ jobs:
         env:
           CORE_RUN_ID: ${{ needs.prepare.outputs.CORE_RUN_ID }}
         run: |
-          if [ -z "$CORE_RUN_ID" ]; then
-            wget -q "$PUBLISHED_CORE_URL/$CORE_ARTIFACT"
+          # will create ArduinoCore-zephyr/
+          if [ -n "$CORE_RUN_ID" ] || wget -q "$PUBLISHED_CORE_URL/$CORE_ARTIFACT" ; then
+            tar -I unzstd -xf ${CORE_ARTIFACT}
+          else
+            # published before the switch to zstd
+            wget -q "$PUBLISHED_CORE_URL/${CORE_ARTIFACT%.tar.zst}.tar.bz2"
+            tar -xjf ${CORE_ARTIFACT%.tar.zst}.tar.bz2
           fi
-          tar xf ${CORE_ARTIFACT} # will create ArduinoCore-zephyr/
           echo "REPORT_FILE=$(echo ${FQBN} | tr ':' '-').json" >> $GITHUB_ENV
 
       - name: Get test sketches

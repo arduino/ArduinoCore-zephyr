@@ -3,7 +3,7 @@
 # Copyright (c) Arduino s.r.l. and/or its affiliated companies
 # SPDX-License-Identifier: Apache-2.0
 
-# Package the core into a distributable tar.bz2 archive.
+# Package the core into a distributable tar.zst archive.
 
 set -e
 RET=0
@@ -20,7 +20,7 @@ fi
 
 ARTIFACT=$1
 VERSION=$2
-OUTPUT_FILE=${3:-distrib/${ARTIFACT}-${VERSION}.tar.bz2}
+OUTPUT_FILE=${3:-distrib/${ARTIFACT}-${VERSION}.tar.zst}
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -96,7 +96,9 @@ TEMP_EXC=$(mktemp -p . | sed 's/\.\///')
 artifact_exclusions $ARTIFACT >> ${TEMP_EXC}
 
 mkdir -p $(dirname ${OUTPUT_FILE})
-tar -cjhf ${OUTPUT_FILE} -X ${TEMP_EXC} -T ${TEMP_INC} \
+# --long=27: the variants share many files, far apart in the archive; a
+# 128 MiB window is still extracted with no options by zstd and arduino-cli
+tar -I "zstd -T0 -19 --long=27" -chf ${OUTPUT_FILE} -X ${TEMP_EXC} -T ${TEMP_INC} \
 	--transform "s,${TEMP_BOARDS},boards.txt," \
 	--transform "s,${TEMP_PLATFORM},platform.txt," \
 	--transform "s,^,ArduinoCore-zephyr/,"

@@ -125,8 +125,7 @@ jobs:
         with:
           name: ${{ matrix.tool }}-${{ matrix.version }}
           path: |
-            distrib/*.tar.gz
-            distrib/*.zip
+            distrib/*.tar.zst
           overwrite: true
           retention-days: 7
 
@@ -165,7 +164,7 @@ jobs:
 
       - name: Upload tool files to S3
         run: |
-          for f in *.tar.gz *.zip ; do
+          for f in *.tar.zst ; do
             [ -f "$f" ] || continue
             aws s3 cp "$f" s3://${{ secrets.S3_TOOLS_BUCKET }}/
           done

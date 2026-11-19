@@ -128,8 +128,8 @@ jobs:
           # runner (including the west cache in runner.temp).
           TOPDIR=$(realpath --relative-to=$HOME $(west topdir))
           (cd && tar cphf - --exclude-from=build-env.exclude .cmake $TOPDIR zephyr-sdk-* \
-                | zstd -T0 -9 --long=27 > build-env.tar.zstd)
-          ls -lh ~/build-env.tar.zstd
+                | zstd -T0 -9 --long=27 > build-env.tar.zst)
+          ls -lh ~/build-env.tar.zst
 
       # Caches saved by other branches and PRs are only visible to them, so
       # only main saves a new west cache, shared with all the others.
@@ -143,8 +143,8 @@ jobs:
       - name: Archive build environment
         uses: actions/upload-artifact@v7
         with:
-          name: build-env.tar.zstd
-          path: ~/build-env.tar.zstd
+          name: build-env.tar.zst
+          path: ~/build-env.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -180,7 +180,7 @@ jobs:
         timeout-minutes: 10 # early error on Github network issues
         with:
           path: /home/runner
-          name: build-env.tar.zstd
+          name: build-env.tar.zst
 
       - name: Restore build environment
         id: restore-env
@@ -190,7 +190,7 @@ jobs:
           sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache device-tree-compiler
-          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zstd && rm build-env.tar.zstd)
+          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zst && rm build-env.tar.zst)
 
       - name: ccache
         uses: actions/cache@v5
@@ -249,7 +249,7 @@ jobs:
 
           # Preprare an archive of the built binaries (and build dir on failure).
           # Prefix the name with 'failed-' if the build failed, so that it is not removed.
-          BINARIES_FILE=binaries-${ARTIFACT_TAG}.tar.zstd
+          BINARIES_FILE=binaries-${ARTIFACT_TAG}.tar.zst
           if [ "${{ job.status }}" == "failure" ] ; then
             FULL_BUILD_DIR="build/${{ matrix.variant }}/"
             BINARIES_FILE=failed-${BINARIES_FILE}
@@ -352,7 +352,7 @@ jobs:
       - select-packages
     env:
       ALL_BOARD_DATA: ${{ needs.build-env.outputs.ALL_BOARD_DATA }}
-      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+      CORE_ARTIFACT: ArduinoCore-${{ matrix.artifact }}-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
       CORE_TAG: ${{ needs.build-env.outputs.CORE_TAG }}
     strategy:
       matrix:
@@ -379,7 +379,7 @@ jobs:
         run: |
           # Extract the board binaries in place
           # (each will also include the same copy of the API)
-          for f in binaries-*.tar.zstd ; do
+          for f in binaries-*.tar.zst ; do
             tar --use-compress-program=unzstd -xpf $f
           done
           cat $(ls boards.local_*.txt | sort) >> boards.local.txt
@@ -444,7 +444,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.bz2' 'artifact-id-*'
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.zst' 'artifact-id-*'
 
       - name: Prepare PR package index
         run: |
@@ -455,7 +455,7 @@ jobs:
           mkdir -p snippets/platforms/
           jq -cr '.[].artifact' <<< ${PACKAGES} | while read -r artifact; do
             [ $artifact == "zephyr" ] && continue
-            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.bz2
+            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.zst
             PACKAGE_JSON=snippets/platforms/${artifact}.json
             ./extra/gen_package_index_json.sh ${artifact} ${ARTIFACT_FILE} ${PACKAGE_JSON}
             # replace the download URL with this PR's artifact link
@@ -510,9 +510,9 @@ jobs:
       - uses: geekyeggo/delete-artifact@v6
         with:
           name: |
-            arduino-api.tar.zstd
+            arduino-api.tar.zst
             binaries-*
-            build-env.tar.zstd
+            build-env.tar.zst
             artifact-id-*
           failOnError: false
 
@@ -575,7 +575,7 @@ jobs:
       - name: Generate workflow summary
         run: |
           # Archive the input set of reports for later inspection
-          tar jchf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 zephyr-* arduino-*.json
+          tar -I "zstd -T0 -19 --long=27" -chf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst zephyr-* arduino-*.json
           # Collect all CI data into a JSON file, then generate the report
           extra/ci_collect_data.py build_info.json
           extra/ci_generate_report.py build_info.json result summary full_log
@@ -596,7 +596,7 @@ jobs:
 
           # Prepare latest size artifact file on push events
           if [ "${{ github.event_name }}" == "push" ]; then
-            tar jchf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2 arduino-*.json
+            tar -I "zstd -T0 -19 --long=27" -chf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst arduino-*.json
           fi
 
       - name: Compute code size changes
@@ -640,8 +640,8 @@ jobs:
         uses: actions/upload-artifact@v7
         if: ${{ github.event_name == 'push' }}
         with:
-          name: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
-          path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          name: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
+          path: size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -650,8 +650,8 @@ jobs:
       - name: Archive input test reports
         uses: actions/upload-artifact@v7
         with:
-          name: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
-          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.bz2
+          name: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
+          path: build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst
           archive: false
           overwrite: true
           retention-days: 1
@@ -719,7 +719,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          extra/ci_download_artifacts.sh . 'ArduinoCore-*' 'size-reports-*.tar.bz2'
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.zst' 'size-reports-*.tar.zst'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -729,10 +729,10 @@ jobs:
 
       - name: Upload artifact
         run: |
-          for f in ArduinoCore-*.tar.bz2 ; do
+          for f in ArduinoCore-*.tar.zst ; do
             aws s3 cp $f s3://${{ secrets.S3_BUCKET }}/
           done
-          aws s3 cp size-reports-*.tar.bz2 s3://${{ secrets.S3_BUCKET }}/size-reports/
+          aws s3 cp size-reports-*.tar.zst s3://${{ secrets.S3_BUCKET }}/size-reports/
 
 
 
@@ -761,7 +761,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.bz2'
+          extra/ci_download_artifacts.sh . 'ArduinoCore-*.tar.zst'
 
       - uses: actions/download-artifact@v8
         with:
@@ -774,7 +774,7 @@ jobs:
           jq -cr '.[]' <<< ${ARTIFACTS} | while read -r artifact; do
             # note: the archive names are always hash-based so they use a
             # predictable pattern. JSON files can use the tag for user-friendliness.
-            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.bz2
+            ARTIFACT_FILE=ArduinoCore-${artifact}-${CORE_HASH}.tar.zst
             PACKAGE_JSON=snippets/platforms/ArduinoCore-${artifact}-${CORE_TAG}.json
             ./extra/gen_package_index_json.sh ${artifact} ${ARTIFACT_FILE} ${PACKAGE_JSON}
           done
