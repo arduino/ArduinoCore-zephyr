@@ -57,11 +57,15 @@ SECTIONS {
         KEEP(*(.exported_sym.*))
     }
 
+    /* As in GCC, constructors without init_priority behave as priority 65535 (run last). */
     .init_array : {
+        KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
         KEEP(*(.init_array))
     }
 
+    /* Run backwards at exit, so the layout matches .init_array. */
     .fini_array : {
+        KEEP(*(SORT_BY_INIT_PRIORITY(.fini_array.*)))
         KEEP(*(.fini_array))
     }
 
