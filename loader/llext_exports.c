@@ -565,3 +565,8 @@ FORCE_EXPORT_SYM(regulator_disable);
 #endif
 
 EXPORT_SYMBOL(sketch_header_v1_verify);
+
+#ifdef CONFIG_HWINFO
+#include <zephyr/drivers/hwinfo.h>
+EXPORT_SYMBOL(hwinfo_get_device_id);
+#endif
