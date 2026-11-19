@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"runtime"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/codeclysm/extract/v4"
@@ -78,8 +78,8 @@ func main() {
 	}
 	pathParts := strings.Split(filepath.ToSlash(absPath), "/")
 	if len(pathParts) < 3 ||
-	   pathParts[len(pathParts)-3] != "hardware" ||
-	   !strings.HasPrefix(pathParts[len(pathParts)-1], "zephyr") {
+		pathParts[len(pathParts)-3] != "hardware" ||
+		!strings.HasPrefix(pathParts[len(pathParts)-1], "zephyr") {
 		expPath := filepath.Join("hardware", "*", "zephyr")
 		fmt.Println("Error: the core path should end with ", expPath)
 		return
@@ -164,7 +164,7 @@ func main() {
 			// On Windows, the user might create a junction for the api
 			// folder; that will appear as a "regular" directory, but we
 			// should not emove the linked content but only the junction itself.
-			isJunction := runtime.GOOS == "windows"	&& info.Mode()&os.ModeIrregular != 0
+			isJunction := runtime.GOOS == "windows" && info.Mode()&os.ModeIrregular != 0
 			if info.IsDir() && !isJunction {
 				// Regular directory: remove it entirely
 				os.RemoveAll(apiPath)

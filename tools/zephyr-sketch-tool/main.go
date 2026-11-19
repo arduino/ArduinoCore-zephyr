@@ -53,7 +53,7 @@ func main() {
 		cli.Fatal("reading file: %v", err)
 	}
 
-	var ELF_HEADER = []byte { 0x7f, 0x45, 0x4c, 0x46 }
+	var ELF_HEADER = []byte{0x7f, 0x45, 0x4c, 0x46}
 	var elf_header_found = bytes.HasPrefix(content, ELF_HEADER)
 	if *add_header || (!*force && !elf_header_found) {
 		fmt.Printf("File does not have an ELF header, adding empty space\n")
@@ -69,10 +69,10 @@ func main() {
 
 	// Create and fill custom header
 	var header struct {
-		ver uint8       // @ 0x07
-		len uint32      // @ 0x08
-		magic uint16    // @ 0x0c
-		flags uint8     // @ 0x0e
+		ver   uint8  // @ 0x07
+		len   uint32 // @ 0x08
+		magic uint16 // @ 0x0c
+		flags uint8  // @ 0x0e
 	}
 
 	header.ver = 1
