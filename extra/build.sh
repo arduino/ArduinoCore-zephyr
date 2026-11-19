@@ -145,6 +145,7 @@ extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
 	"*sketch_max_size=_sketch_max_size" \
+	"*loader_base_addr=_loader_start" \
 	"*loader_max_size=_loader_max_size" \
 	"malloc=__wrap_malloc" \
 	"free=__wrap_free" \
@@ -224,6 +225,17 @@ if [ ! -z "$board" ]; then
 		UPLOAD_ADDR_COMMENT="$CODE_ADDR was offset by $upload_offset from ${board}.upload.offset"
 	fi
 	update_local_field "upload.address" "$UPLOAD_ADDR" "$UPLOAD_ADDR_COMMENT"
+
+	# loader load address: start of loader partition, hex (exact), offset as above
+	LOADER_START=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_start')
+	if [ -z "$upload_offset" ] ; then
+		LOADER_ADDR=$LOADER_START
+		LOADER_ADDR_COMMENT=""
+	else
+		LOADER_ADDR=$(printf "0x%X" $((LOADER_START - upload_offset)))
+		LOADER_ADDR_COMMENT="$LOADER_START was offset by $upload_offset from ${board}.upload.offset"
+	fi
+	update_local_field "loader.address" "$LOADER_ADDR" "$LOADER_ADDR_COMMENT"
 
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
 	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
