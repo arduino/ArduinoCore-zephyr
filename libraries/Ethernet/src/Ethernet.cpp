@@ -11,7 +11,7 @@
 #include <zephyrClockInit.hpp>
 #include <zephyrPinctrl.h>
 
-#if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy)
+#if defined(CONFIG_ETH_PHY_DRIVER)
 
 /* Internal Zephyr entry point for initializing network interfaces, not visible here. */
 extern "C" void net_if_init(void);
