@@ -66,6 +66,8 @@ private:
 	static void wifiScanEventHandler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 									 struct net_if *iface);
 	void registerScanEventCallback();
+	struct net_if *staIface();
+	bool deviceReady(bool retry = false);
 
 	inline bool isNetworkFound() const {
 		return (wifiState.flags & WIFI_FLAG_NETWORK_FOUND) != 0u;
@@ -83,6 +85,7 @@ private:
 	};
 
 	struct net_mgmt_event_callback wifiScanCb;
+	bool deviceFailed = false;
 	struct WiFiState wifiState;
 };
 
