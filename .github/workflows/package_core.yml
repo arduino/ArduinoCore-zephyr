@@ -87,6 +87,20 @@ jobs:
         run: |
           echo "## Building \`$CORE_VER\`" >> "$GITHUB_STEP_SUMMARY"
 
+      # The bootloader images are not stored in the repository: extract them
+      # in firmwares/<variant>/, so that the build environment passes them to
+      # the board builds and the core packages.
+      - name: Fetch bootloader images
+        timeout-minutes: 5 # early error on Github network issues
+        env:
+          BOOTLOADERS_URL: https://downloads.arduino.cc/cores/zephyr/bootloaders-20261120.zip
+          BOOTLOADERS_SHA256: cfe08116d060e854783e2220eb1dd470775e6aeb2bb9bfe8a08d8ee0be0fbaa7
+          BOOTLOADERS_ZIP: ${{ runner.temp }}/bootloaders.zip
+        run: |
+          wget --https-only -nv -O "$BOOTLOADERS_ZIP" "$BOOTLOADERS_URL"
+          echo "$BOOTLOADERS_SHA256  $BOOTLOADERS_ZIP" | sha256sum -c -
+          unzip -o "$BOOTLOADERS_ZIP" 'firmwares/*/bootloader.*'
+
       # Restore the west cache saved by main (or the latest one, if the
       # manifest changed): west only fetches what is missing from it.
       - name: Restore west modules and blobs
