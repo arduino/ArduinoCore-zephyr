@@ -52,3 +52,28 @@ jobs:
         with:
           clang-format-version: '19'
           check-files-from: all_changed_files.txt
+
+  verify-go-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - name: Run gofmt check
+        run: |
+          unformatted=$(gofmt -l tools)
+          if [ -n "$unformatted" ]; then
+            echo "The following Go files are not gofmt-formatted:"
+            echo "$unformatted"
+            echo
+            gofmt -d tools
+            echo "::error::Run 'gofmt -w tools' and commit the result."
+            exit 1
+          fi
