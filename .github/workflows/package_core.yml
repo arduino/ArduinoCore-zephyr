@@ -242,7 +242,7 @@ jobs:
         if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
         run: |
           # add the config file to the report files, list them for later archiving
-          cp firmwares/zephyr-${{ matrix.variant }}.config $REPORT.config
+          cp firmwares/${{ matrix.variant }}/loader.config $REPORT.config
           echo "REPORT_FILES<<EOF" >> $GITHUB_ENV
           ls reports/* >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -257,7 +257,7 @@ jobs:
           echo "BINARIES_FILE=${BINARIES_FILE}" >> $GITHUB_ENV
           sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
           tar chf - \
-            firmwares/*${{ matrix.variant }}* \
+            firmwares/${{ matrix.variant }}/ \
             variants/${{ matrix.variant }}/ \
             boards.local_${{ matrix.variant }}.txt \
             cores/arduino/api/ \

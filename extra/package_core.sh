@@ -70,7 +70,7 @@ for variant in $INCLUDED_VARIANTS ; do
 	echo "- ${variant}"
 	echo "variants/${variant}/" >> ${TEMP_INC}
 	# add the firmwares, if some are missing notify at end
-	if ! ls firmwares/zephyr-${variant}.* >> ${TEMP_INC} ; then
+	if ! ls -d firmwares/${variant} >> ${TEMP_INC} ; then
 		log_msg error "No firmware for '${variant}' found."
 		RET=3
 	fi

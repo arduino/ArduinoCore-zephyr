@@ -106,7 +106,7 @@ rm -rf ${BUILD_DIR}
 west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
 
 # Extract the generated EDK tarball and copy it to the variant directory
-mkdir -p ${VARIANT_DIR} firmwares
+mkdir -p ${VARIANT_DIR} firmwares/${variant}
 (set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
 rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
 
@@ -128,13 +128,13 @@ perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" $syscalls_hdrs
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
 for ext in elf bin hex uf2; do
-    rm -f firmwares/zephyr-$variant.$ext
+    rm -f firmwares/$variant/loader.$ext
     if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
+        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/$variant/loader.$ext
     fi
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/$variant/loader.dts
+cp ${BUILD_DIR}/zephyr/.config firmwares/$variant/loader.config
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
@@ -245,7 +245,7 @@ if [ ! -z "$board" ]; then
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
-	DATA_SIZE=$(( 1024*$(get_value_from_text_file firmwares/zephyr-${variant}.config 'CONFIG_LLEXT_HEAP_SIZE') ))
+	DATA_SIZE=$(( 1024*$(get_value_from_text_file firmwares/${variant}/loader.config 'CONFIG_LLEXT_HEAP_SIZE') ))
 	update_local_field "upload.maximum_data_size" $DATA_SIZE
 
 	# machine fields

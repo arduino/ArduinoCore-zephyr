@@ -227,7 +227,7 @@ or the Zephyr board target:
 ./extra/build.sh arduino_portenta_h7//m7
 ```
 
-The firmwares will be copied to the [firmware](/firmware) folder, and the
+The firmwares will be copied to the [firmwares](/firmwares)/`<variant>` folder, and the
 associated variant will be updated.
 
 ### Flash the Loader
