@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 # get value of NORMALIZED_BOARD_TARGET early
-find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} COMPONENTS yaml boards)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} COMPONENTS basic_settings yaml boards)
 
 set(DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.overlay)
 set(EXTRA_CONF_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.conf)
@@ -14,6 +14,11 @@ set(EXTRA_CONF_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TAR
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+
+# ACTIVATE PADDING ONLY IF required by configuration
+if(CONFIG_FLASH_ALIGN_BASED_ON_DT_ERASE_DIM OR CONFIG_CUSTOM_FLASH_ALIGN_ACTIVE)
+    zephyr_linker_sources(SECTIONS SORT_KEY zzz_flash_padding flash_padding.ld)
+endif()
 
 project(app LANGUAGES C CXX)
 
@@ -41,6 +46,17 @@ target_sources_ifdef(CONFIG_USB_DEVICE_STACK_NEXT app PRIVATE
 
 FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
+
+# MCUboot trailer API (bootutil_public.h), used by mcuboot_confirm.c.
+if(TARGET MCUBOOT_BOOTUTIL)
+    target_link_libraries(app PRIVATE MCUBOOT_BOOTUTIL)
+endif()
+
+# variant.c only (not .cpp): provides the board-specific _on_1200_bps().
+set(variant_c ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/variant.c)
+if(EXISTS ${variant_c})
+    target_sources(app PRIVATE ${variant_c})
+endif()
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
 

@@ -55,6 +55,7 @@ public:
 	uint8_t encryptionType(std::optional<uint8_t> networkItem = std::nullopt);
 
 	const char *firmwareVersion();
+	const char *driverVersion();
 
 	bool disconnect() override;
 
@@ -66,6 +67,7 @@ private:
 	static void wifiScanEventHandler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 									 struct net_if *iface);
 	void registerScanEventCallback();
+	struct net_if *staIface();
 
 	inline bool isNetworkFound() const {
 		return (wifiState.flags & WIFI_FLAG_NETWORK_FOUND) != 0u;

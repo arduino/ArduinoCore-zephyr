@@ -64,6 +64,10 @@ giga.bootloader.pid=0x0366
 giga.bootloader.interface=0
 giga.bootloader.file=zephyr-{build.variant}.bin
 giga.bootloader.address=0x08040000
+giga.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+giga.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+giga.bootloader.burn_image={bootloader.dir}/bootloader.hex
+giga.bootloader.updater={bootloader.dir}/updater.bin
 
 giga.debug.tool=gdb
 giga.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -117,6 +121,9 @@ nano33ble.bootloader.tool=bossac
 nano33ble.bootloader.tool.default=bossac
 nano33ble.bootloader.file=zephyr-{build.variant}.bin
 nano33ble.bootloader.address=0x0000
+nano33ble.bootloader.config=-f target/nrf52.cfg
+nano33ble.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nano33ble.bootloader.updater={bootloader.dir}/updater.bin
 
 nano33ble.debug.tool=gdb
 nano33ble.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -258,6 +265,10 @@ portentah7.bootloader.pid=0x035b
 portentah7.bootloader.interface=0
 portentah7.bootloader.file=zephyr-{build.variant}.bin
 portentah7.bootloader.address=0x08040000
+portentah7.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+portentah7.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+portentah7.bootloader.burn_image={bootloader.dir}/bootloader.hex
+portentah7.bootloader.updater={bootloader.dir}/updater.bin
 
 portentah7.build.ota.magic=0x2341025B
 portentah7.build.ota.sketch_offset={bootloader.maximum_size}
@@ -313,6 +324,10 @@ nicla_vision.bootloader.pid=0x035f
 nicla_vision.bootloader.interface=0
 nicla_vision.bootloader.file=zephyr-{build.variant}.bin
 nicla_vision.bootloader.address=0x08040000
+nicla_vision.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+nicla_vision.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+nicla_vision.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nicla_vision.bootloader.updater={bootloader.dir}/updater.bin
 
 nicla_vision.build.ota.magic=0x2341025F
 nicla_vision.build.ota.sketch_offset={bootloader.maximum_size}
@@ -406,6 +421,11 @@ nicla_sense.bootloader.tool=openocd
 nicla_sense.bootloader.tool.default=openocd
 nicla_sense.bootloader.file=zephyr-{build.variant}.hex
 nicla_sense.bootloader.target=nrf52
+nicla_sense.bootloader.config=-f target/nrf52.cfg
+
+# onboard probe, used when no hardware programmer is selected
+nicla_sense.programmer.protocol=cmsis-dap
+nicla_sense.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
 
 nicla_sense.debug.tool=gdb
 nicla_sense.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -461,6 +481,10 @@ portentac33.bootloader.interface=0
 portentac33.bootloader.address=0x10000
 portentac33.bootloader.pid=0x0368
 portentac33.bootloader.dfuse=
+portentac33.bootloader.target=r7fa6m5bh
+portentac33.bootloader.burn_image={bootloader.dir}/bootloader.hex
+portentac33.bootloader.updater={bootloader.dir}/updater.bin
+portentac33.bootloader.burn_pattern={tools.pyocd.burn.pattern}
 
 # the space before the extra arguments is important
 portentac33.leave.dfuse={empty} -Q
@@ -514,6 +538,10 @@ opta.bootloader.pid=0x0364
 opta.bootloader.interface=0
 opta.bootloader.file=zephyr-{build.variant}.bin
 opta.bootloader.address=0x08040000
+opta.bootloader.config=-f target/stm32h7x_dual_bank.cfg
+opta.bootloader.extra_action.preflash=stm32h7x option_write 0 0x01c 0xb86aaf0
+opta.bootloader.burn_image={bootloader.dir}/bootloader.hex
+opta.bootloader.updater={bootloader.dir}/updater.bin
 
 opta.debug.tool=gdb
 opta.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -565,6 +593,11 @@ nano_matter.bootloader.tool=openocd
 nano_matter.bootloader.tool.default=openocd
 nano_matter.bootloader.file=zephyr-{build.variant}.hex
 nano_matter.bootloader.target=arduino_nano_matter
+nano_matter.bootloader.config=-f target/efm32s2_g23.cfg
+
+# onboard probe, used when no hardware programmer is selected
+nano_matter.programmer.protocol=cmsis-dap
+nano_matter.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
 
 nano_matter.debug.server=openocd
 nano_matter.debug.server.openocd.scripts.0=interface/cmsis-dap.cfg
@@ -671,6 +704,7 @@ nano_connect.upload.familyid=0xe48bff56
 nano_connect.bootloader.tool=picotool
 nano_connect.bootloader.tool.default=picotool
 nano_connect.bootloader.file=zephyr-{build.variant}.uf2
+nano_connect.bootloader.config=-f target/rp2040.cfg
 
 nano_connect.debug.tool=gdb
 nano_connect.debug.server.openocd.scripts.0=interface/{programmer.protocol}.cfg
@@ -742,3 +776,77 @@ ventunoq.bootloader.tool=remoteocd
 ventunoq.bootloader.tool.default=remoteocd
 ventunoq.bootloader.file=zephyr-{build.variant}.elf
 ventunoq.bootloader.target=stm32h5f5xx
+
+##############################################################################################################
+
+nanoxllink.name=Arduino Nano XL Link
+nanoxllink.build.core=arduino
+nanoxllink.build.crossprefix=arm-zephyr-eabi-
+nanoxllink.build.compiler_path={runtime.tools.arm-zephyr-eabi-1.0.1.path}/bin/
+
+nanoxllink.menu.link_mode.dynamic=Dynamic
+nanoxllink.menu.link_mode.static=Static
+nanoxllink.menu.link_mode.static.build.link_mode=static
+nanoxllink.menu.link_mode.static.upload.extension=bin-zsk.bin
+
+nanoxllink.build.zephyr_target=arduino_nano_xl_link
+nanoxllink.build.zephyr_args=
+nanoxllink.build.zephyr_hals=hal_microchip
+nanoxllink.build.zephyr_toolchain=arm-zephyr-eabi
+nanoxllink.build.artifact=zephyr_main
+nanoxllink.build.variant=arduino_nano_xl_link_pic32ck2051sg01144
+nanoxllink.build.extra_flags=
+nanoxllink.build.board=NANO_XL_LINK
+
+# Loader and sketch squashed into one ECDSA-P256 signed MCUboot image;
+# build.certificate and build.image_version (the core version from
+# loader/VERSION) come from boards.local.txt (extra/build.sh).
+nanoxllink.build.image_version=0.0.0.0
+nanoxllink.build.zsk_args.squash=--squash --loader_bin "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" --pem_file "{build.certificate}" --erase_flash_dim 4096 --dfu_offset 4096 --image_version {build.image_version}
+
+nanoxllink.vid.0=0x2341
+nanoxllink.pid.0=0x007e
+nanoxllink.upload_port.0.vid=0x2341
+nanoxllink.upload_port.0.pid=0x007e
+# MCUboot USB DFU (double tap, no valid image) and loader USB DFU (DFU DETACH or
+# 1200-bps touch; same PID as the sketch, told apart by the DFU interface),
+# listed by dfu-discovery; the dfu-util recipes use these PIDs.
+nanoxllink.upload_port.1.vid=0x2341
+nanoxllink.upload_port.1.pid=0x017e
+nanoxllink.upload_port.2.vid=0x2341
+nanoxllink.upload_port.2.pid=0x007e
+
+# Both DFUs write slot1, then MCUboot overwrites slot0 (no swap). The .dfu image
+# starts one erased sector early because swap-using-offset expects the update
+# one sector into slot1. Recipes: platform.txt, "dual_dfu".
+nanoxllink.upload.tool=dfu-util
+nanoxllink.upload.tool.default=dfu-util
+nanoxllink.upload.tool.serial=dfu-util
+nanoxllink.upload.tool.dfu=dfu-util-port
+nanoxllink.upload.protocol=
+nanoxllink.upload.transport=
+# No touch: dfu-util sends DFU DETACH on the serial port's run-time interface
+# and waits for the loader DFU. The DFU devices have no serial port, so
+# arduino-cli's wait for one would always time out (10 s).
+nanoxllink.upload.use_1200bps_touch=false
+nanoxllink.upload.wait_for_upload_port=false
+nanoxllink.upload.native_usb=true
+nanoxllink.upload.artifacts.sketch={build.path}/{build.project_name}.signed.dfu.{upload.extension}
+# Stand-ins for the port properties when no port is detected.
+nanoxllink.upload.port.properties.pid=none
+nanoxllink.upload.port.properties.serialNumber=
+nanoxllink.upload.port.properties.configuration=
+nanoxllink.tools.dfu-util.upload.pattern={tools.dfu-util.dual_dfu.pattern}
+
+# MCUboot is built by sysbuild and updated over SWD through J-Link Commander.
+# zephyr_loader uploads a signed application containing the MCUboot updater.
+nanoxllink.bootloader.tool=dfu-util
+nanoxllink.bootloader.tool.default=dfu-util
+nanoxllink.bootloader.tool.serial=dfu-util
+nanoxllink.bootloader.tool.dfu=dfu-util-port
+nanoxllink.bootloader.updater={bootloader.dir}/updater.bin
+nanoxllink.tools.dfu-util.bootloader.pattern={tools.dfu-util.dual_dfu.bootloader.pattern}
+nanoxllink.bootloader.burn_image={bootloader.dir}/bootloader.hex
+nanoxllink.bootloader.target=PIC32CK2051SG
+nanoxllink.bootloader.burn_pattern={tools.jlink.burn.pattern}
+

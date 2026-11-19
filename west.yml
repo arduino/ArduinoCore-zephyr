@@ -17,11 +17,13 @@ manifest:
       url-base: https://github.com/facchinm
     - name: pillo79
       url-base: https://github.com/pillo79
+    - name: mcu-tools
+      url-base: https://github.com/mcu-tools
 
   projects:
     - name: zephyr
       remote: arduino
-      revision: zephyr-arduino-v4.5.0
+      revision: 44a6478e5a5e1cbb42c7f8792165c8b4bf2995b4
       import:
         name-allowlist:
           - cmsis
@@ -48,3 +50,15 @@ manifest:
       path: modules/lib/cannectivity
       url: https://github.com/CANnectivity/cannectivity.git
       revision: main
+
+    - name: mcuboot
+      remote: mcu-tools
+      revision: ff16fed9f298adc06aa7a1261bb73f3c70481b82
+      path: bootloader/mcuboot
+
+    - name: hal_microchip
+      revision: master
+      url: https://github.com/Zephyr4Microchip/microchip-hal
+      path: modules/hal/microchip
+      groups:
+        - hal

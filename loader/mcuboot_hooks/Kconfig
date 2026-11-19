@@ -1,0 +1,29 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+config ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	bool "USB DFU on a retention boot mode request"
+	depends on MCUBOOT && BOOT_USB_DFU && RETENTION_BOOT_MODE
+	select BOOT_GO_HOOKS
+	select MCUBOOT_ACTION_HOOKS
+	select REBOOT
+	help
+	  When the bootloader boot mode is set (1200-bps touch, double tap),
+	  wait in USB DFU without a timeout; MCUboot keeps feeding the
+	  watchdog. Without a bootable image, reboot into the same mode.
+
+config ARDUINO_MCUBOOT_DOUBLE_TAP
+	bool "Double tap of the reset button into USB DFU"
+	depends on ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	depends on $(dt_nodelabel_enabled,retained_ram)
+	help
+	  A second reset-button press within 500 ms sets the bootloader boot
+	  mode. The cookie lives at offset 0 of the retained_ram node; set
+	  CONFIG_RETAINED_MEM_INIT_PRIORITY=0 so it is armed before clock
+	  bring-up.
+
+config ARDUINO_MCUBOOT_DFU_FADE_LED
+	bool "Fade the mcuboot-fade-led0 LED while waiting in USB DFU"
+	depends on ARDUINO_MCUBOOT_DFU_BOOT_MODE
+	depends on $(dt_alias_enabled,mcuboot-fade-led0)
+	select PWM

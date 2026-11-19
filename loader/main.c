@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(sketch);
 #include <zephyr/logging/log_ctrl.h>
 
 #include <stdlib.h>
+#include <string.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/drivers/uart/cdc_acm.h>
@@ -42,10 +43,16 @@ const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
 
 #include <zephyr/usb/usbd.h>
+#include <zephyr/sys/reboot.h>
 struct usbd_context *usbd_init_device(usbd_msg_cb_t msg_cb);
 static struct usbd_context *_usbd = NULL;
 
 int usbd_config_set(struct usbd_context *uds_ctx, uint8_t new_cfg);
+
+/* Variants override it in variant.c. */
+__attribute__((weak)) void _on_1200_bps(void) {
+	sys_reboot(SYS_REBOOT_COLD);
+}
 
 int loader_usb_disable() {
 	if (_usbd == NULL) {
@@ -64,11 +71,32 @@ int loader_usb_disable() {
 	return err;
 }
 
+/* The 1200-bps touch arrives in a USB callback: reset from a work item instead. */
+static void bootloader_reset_work_handler(struct k_work *work) {
+	ARG_UNUSED(work);
+	_on_1200_bps();
+}
+
+static K_WORK_DELAYABLE_DEFINE(bootloader_reset_work, bootloader_reset_work_handler);
+
 static void loader_usb_msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) {
 	if (usbd_can_detect_vbus(ctx)) {
 		if (msg->type == USBD_MSG_VBUS_READY) {
 			usbd_enable(ctx);
 		}
+	}
+
+	if (msg->type == USBD_MSG_CDC_ACM_LINE_CODING) {
+		uint32_t baudrate;
+		uart_line_ctrl_get(usb_dev, UART_LINE_CTRL_BAUD_RATE, &baudrate);
+		if (baudrate == 1200) {
+			k_work_schedule(&bootloader_reset_work, K_MSEC(100));
+		}
+	}
+
+	/* DFU DETACH on the run-time interface: same as the 1200-bps touch. */
+	if (msg->type == USBD_MSG_DFU_APP_DETACH) {
+		k_work_schedule(&bootloader_reset_work, K_MSEC(100));
 	}
 }
 
@@ -112,10 +140,47 @@ void llext_entry(void *arg0, void *arg1, void *arg2) {
 }
 #endif /* CONFIG_USERSPACE */
 
+#ifdef CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE
+/*
+ * The sketch is appended to the loader inside the MCUboot image in slot0, so
+ * its address moves with the loader size. zephyr-sketch-tool records the
+ * offset right after the 32-byte MCUboot header.
+ */
+#define SKETCH_PARTITION   slot0_partition
+#define SKETCH_INFO_OFFSET 0x20
+
+/* Export Flash parameters for use by core building scripts */
+__attribute__((retain)) const uintptr_t sketch_max_size =
+	DT_REG_SIZE(DT_NODELABEL(slot0_partition));
+#else
+#define SKETCH_PARTITION user_sketch
+
 /* Export Flash parameters for use by core building scripts */
 __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
+#endif
+
+/* Offset of the sketch in SKETCH_PARTITION, or a negative errno. */
+static int sketch_offset_get(uint32_t *offset) {
+#ifdef CONFIG_LOADER_SKETCH_IN_MCUBOOT_IMAGE
+	uint32_t value;
+
+	memcpy(&value,
+		   (const void *)(DT_PARTITION_ADDR(DT_NODELABEL(SKETCH_PARTITION)) + SKETCH_INFO_OFFSET),
+		   sizeof(value));
+
+	/* Past the header, inside the slot, and aligned like any ELF section. */
+	if (value < CONFIG_ROM_START_OFFSET || value >= DT_REG_SIZE(DT_NODELABEL(SKETCH_PARTITION)) ||
+		(value & 0x3) != 0) {
+		return -ENOENT;
+	}
+	*offset = value;
+#else
+	*offset = 0;
+#endif
+	return 0;
+}
 
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
@@ -139,32 +204,39 @@ extern volatile __stm32_backup_sram_section struct backup_store backup;
 static int loader(const struct shell *sh) {
 	const struct flash_area *fa;
 	int rc;
+	uint32_t sketch_offset = 0;
+	bool sketch_valid = true;
+
+	if (sketch_offset_get(&sketch_offset) != 0) {
+		printk("No sketch in the image\n");
+		sketch_valid = false;
+	}
+
+	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(SKETCH_PARTITION)) + sketch_offset;
 
 	/* Test that attempting to open a disabled flash area fails */
-	rc = flash_area_open(PARTITION_ID(user_sketch), &fa);
+	rc = flash_area_open(PARTITION_ID(SKETCH_PARTITION), &fa);
 	if (rc) {
 		printk("Failed to open flash area, rc %d\n", rc);
 		recoverable_error_led();
 		return rc;
 	}
 
-#if defined(CONFIG_OTA)
+#if defined(CONFIG_OTA_BACKEND_FS)
 	try_ota_update(fa);
 #endif
 
-	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
-
 	char header[SKETCH_HEADER_LEN];
-	rc = flash_area_read(fa, 0, header, sizeof(header));
+	rc = flash_area_read(fa, sketch_offset, header, sizeof(header));
 	if (rc) {
 		printk("Failed to read header, rc %d\n", rc);
 		recoverable_error_led();
 		return rc;
 	}
 
-	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
-	if (sketch_header_v1_verify(sketch_hdr) != 0) {
+	if (!sketch_valid || sketch_header_v1_verify(sketch_hdr) != 0 ||
+		sketch_hdr->len > DT_REG_SIZE(DT_NODELABEL(SKETCH_PARTITION)) - sketch_offset) {
 		printk("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
@@ -321,7 +393,7 @@ static int loader(const struct shell *sh) {
 		return -ENOMEM;
 	}
 
-	rc = flash_area_read(fa, 0, sketch_buf, sketch_buf_len);
+	rc = flash_area_read(fa, sketch_offset, sketch_buf, sketch_buf_len);
 	if (rc) {
 		printk("Failed to read sketch area, rc %d\n", rc);
 		recoverable_error_led();
@@ -412,6 +484,13 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
+#ifdef CONFIG_LOADER_DFU_MODE
+	bool check_dfu_mode_requested(void);
+	void wait_for_dfu_update(void);
+	if (check_dfu_mode_requested()) {
+		wait_for_dfu_update();
+	}
+#endif
 	loader(NULL);
 	return 0;
 }

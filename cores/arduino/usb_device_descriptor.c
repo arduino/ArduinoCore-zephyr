@@ -18,7 +18,8 @@
 
 #ifdef CONFIG_USB_DEVICE_STACK_NEXT
 
-/* By default, do not register the USB DFU class DFU mode instance. */
+/* By default, do not register the USB DFU class DFU mode instance; the
+ * run-time instance (CONFIG_USBD_DFU) stays for DFU DETACH. */
 static const char *const blocklist[] = {
 	"dfu_dfu",
 #if defined(LOADER_PROVIDES_EXTRA_USB_CLASSES)

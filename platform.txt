@@ -100,6 +100,10 @@ build.zsk_args.startup-mode-wait=
 build.zsk_args.startup-mode-app=-wait_for_app
 build.zsk_args.startup-mode-immediate=-immediate
 
+## Tool configuration defaults (can be overridden in boards.txt)
+build.zsk_args.squash=
+
+
 # These can be overridden in platform.local.txt
 compiler.c.extra_flags=
 compiler.c.elf.extra_flags=
@@ -165,9 +169,8 @@ recipe.objcopy.bin.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.hex.flags} {compiler.elf2hex.extra_flags} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.hex"
 
 ## Mangle the file
-recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.elf"
-recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
-recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
+recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} {build.zsk_args.squash} "{build.path}/{build.project_name}.elf"
+recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} {build.zsk_args.squash} "{build.path}/{build.project_name}.bin"
 
 ## Compute size
 recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"
@@ -183,6 +186,7 @@ recipe.output.save_file={build.project_name}.{build.variant}.{upload.extension}
 # ---------------------------------
 pluggable_discovery.required.0=builtin:serial-discovery
 pluggable_discovery.required.1=builtin:mdns-discovery
+pluggable_discovery.required.2=builtin:dfu-discovery
 pluggable_monitor.required.serial=builtin:serial-monitor
 
 
@@ -201,6 +205,23 @@ erase.pattern=
 # Generated files used at upload time
 upload.artifacts.loader={runtime.platform.path}/firmwares/{bootloader.file}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
+
+# Files used by "Upload Using Programmer" (SWD, absolute addresses)
+program.artifacts.loader={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
+program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
+upload.offset=0
+
+# Image written by "Burn Bootloader" with a hardware programmer. Boards with a
+# separate bootloader override it; on the others the loader is the base image.
+bootloader.burn_image={runtime.platform.path}/firmwares/zephyr-{build.variant}.hex
+bootloader.config=
+bootloader.extra_action.preflash=
+# Boards whose MCU is not supported by openocd can point this to another tool
+bootloader.burn_pattern={burn.pattern}
+# Uploaded by the zephyr_loader programmer; boards with a separate bootloader
+# point this to {bootloader.dir}/updater.bin, built by extra/build.sh
+bootloader.updater={runtime.platform.path}/firmwares/{bootloader.file}
+bootloader.dir={runtime.platform.path}/bootloaders/{build.variant}
 
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
 # section. The loader is flashed if it does not match the current (maybe
@@ -235,11 +256,12 @@ tools.openocd.upload.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {
 
 tools.openocd.program.params.verbose=-d2
 tools.openocd.program.params.quiet=-d0
-tools.openocd.program.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -c "set filename1 "{upload.artifacts.sketch}"" -c "set offset {upload.address}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}"
+tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "set filename0 "{program.artifacts.loader}"" -c "set filename1 "{program.artifacts.sketch}"" -c "set offset [expr {upload.address} + {upload.offset}]" -f "{runtime.platform.path}/debugger/flash_sketch.cfg"
 
 tools.openocd.bootloader.params.verbose=-d2
 tools.openocd.bootloader.params.quiet=-d0
-tools.openocd.bootloader.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -f "{build.variant.path}/flash_bootloader.cfg" "{upload.verbose}"
+tools.openocd.bootloader.pattern={bootloader.burn_pattern}
+tools.openocd.burn.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {bootloader.config} -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; {bootloader.extra_action.preflash}; program {{bootloader.burn_image}}; reset run; shutdown"
 
 
 #
@@ -285,6 +307,40 @@ tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
 tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
+
+# Boards with a loader USB DFU (DFU DETACH or 1200-bps touch) and an MCUboot USB
+# DFU (double tap), e.g. Nano XL Link. The board lists its serial port, which
+# also carries the DFU run-time interface, as upload_port.0, MCUboot's DFU as
+# upload_port.1 and the loader's as upload_port.2, defaults upload.port.properties.pid to "none"
+# (serialNumber and configuration to empty), and sets upload.tool.serial=dfu-util,
+# upload.tool.dfu=dfu-util-port, tools.dfu-util.upload.pattern={tools.dfu-util.dual_dfu.pattern}.
+# - Serial port: a first dfu-util sends DFU DETACH to the running board (no
+#   touch needed); a second one waits (-w) for the loader DFU, matching DFU-mode
+#   devices only, so it starts as soon as the board is back. It gets the full
+#   image (alt 0, complete_image) when the running loader's version (USB
+#   configuration string) differs from {version}, else only the sketch (alt 1).
+# - No port (no -p): MCUboot's DFU, no wait, fails fast if it is not there.
+# - DFU port: alt 0, the full image, of that very device (dfu-util-port).
+tools.dfu-util.dual_dfu.detach.cmd="{path}/{cmd}" --device {upload_port.0.vid}:{upload_port.0.pid},{upload_port.2.vid}:{upload_port.2.pid} -S {upload.port.properties.serialNumber} -e
+tools.dfu-util.dual_dfu.full.cmd="{path}/{cmd}" --device ,{upload_port.2.vid}:{upload_port.2.pid} -S {upload.port.properties.serialNumber} -D "{upload.artifacts.sketch}" -a0 -w
+tools.dfu-util.dual_dfu.sketch.cmd="{path}/{cmd}" --device ,{upload_port.2.vid}:{upload_port.2.pid} -S {upload.port.properties.serialNumber} -D "{upload.artifacts.sketch}" -a1 -w
+tools.dfu-util.dual_dfu.mcuboot.cmd="{path}/{cmd}" --device ,{upload_port.1.vid}:{upload_port.1.pid} -D "{upload.artifacts.sketch}" -a0
+tools.dfu-util.dual_dfu.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.mcuboot.cmd} :: if not eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.detach.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {tools.dfu-util.dual_dfu.full.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" not {flash-loader-condition} {tools.dfu-util.dual_dfu.sketch.cmd}
+
+# Burn Bootloader with zephyr_loader always uploads the complete updater at
+# alt 0, even when the running loader has the same version as the core.
+tools.dfu-util.dual_dfu.bootloader.full.cmd="{path}/{cmd}" --device ,{upload_port.2.vid}:{upload_port.2.pid} -S {upload.port.properties.serialNumber} -D "{upload.artifacts.loader}" -a0 -w
+tools.dfu-util.dual_dfu.bootloader.mcuboot.cmd="{path}/{cmd}" --device ,{upload_port.1.vid}:{upload_port.1.pid} -D "{upload.artifacts.loader}" -a0
+tools.dfu-util.dual_dfu.bootloader.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.bootloader.mcuboot.cmd} :: if not eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.detach.cmd} :: if not eq "v{upload.port.properties.pid}" "vnone" {tools.dfu-util.dual_dfu.bootloader.full.cmd}
+
+tools.dfu-util-port.path={runtime.tools.dfu-util.path}
+tools.dfu-util-port.cmd=dfu-util
+tools.dfu-util-port.upload.params.verbose=-d
+tools.dfu-util-port.upload.params.quiet=
+tools.dfu-util-port.upload.pattern="{path}/{cmd}" --device ,{upload.port.properties.vid}:{upload.port.properties.pid} -S ,{upload.port.properties.serial} -a 0 -D "{upload.artifacts.sketch}"
+tools.dfu-util-port.bootloader.params.verbose=-d
+tools.dfu-util-port.bootloader.params.quiet=
+tools.dfu-util-port.bootloader.pattern="{path}/{cmd}" --device ,{upload.port.properties.vid}:{upload.port.properties.pid} -S ,{upload.port.properties.serial} -a 0 -D "{upload.artifacts.loader}"
 
 
 #
@@ -358,6 +414,7 @@ tools.pyocd.upload.pattern="{cmd}" load --target {upload.target} {upload.artifac
 tools.pyocd.bootloader.params.verbose=
 tools.pyocd.bootloader.params.quiet=
 tools.pyocd.bootloader.pattern="{cmd}" load --target {bootloader.target} "{upload.artifacts.loader}"
+tools.pyocd.burn.pattern="{tools.pyocd.cmd}" load --target {bootloader.target} "{bootloader.burn_image}"
 
 
 #
@@ -371,6 +428,9 @@ tools.jlink.cmd.darwin=JLinkExe
 tools.jlink.upload.params.verbose=-v
 tools.jlink.upload.params.quiet=
 tools.jlink.upload.pattern="{path}/{cmd}" -CommanderScript "{build.path}/flasher.jlink"
+
+tools.jlink.burn.pattern=sh -c "cd '{bootloader.dir}' && exec '{tools.jlink.cmd}' -device {bootloader.target} -if SWD -speed 4000 -AutoConnect 1 -NoGui 1 -ExitOnError 1 -CommandFile '{runtime.platform.path}/debugger/flash_bootloader.jlink'"
+tools.jlink.burn.pattern.windows=cmd /c cd /d "{bootloader.dir}" && "{tools.jlink.cmd}" -device {bootloader.target} -if SWD -speed 4000 -AutoConnect 1 -NoGui 1 -ExitOnError 1 -CommandFile "{runtime.platform.path}/debugger/flash_bootloader.jlink"
 
 
 #

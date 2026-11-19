@@ -20,12 +20,38 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 	export ZEPHYR_SDK_INSTALL_DIR=${SDK_PATH}
 fi
 
+
+# in case we use mcuboot we need a certificate to sign image
+# we use "insecure" (because is public) certificate by mcuboot
+
+
+
+remaining_args=()
+SIGNING_KEY_PATH=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --key)
+      SIGNING_KEY_PATH="$2"
+      shift  
+      ;;
+    *)
+      remaining_args+=("$1")
+      shift 1
+      ;;
+  esac
+done
+
+set -- "${remaining_args[@]}"
+
 if [ $# -eq 0 ] || [ x$1 == x"-h" ] || [ x$1 == x"--help" ]; then
 	cat << EOF
 Usage:
 	$0 <arduino_board>
 	$0 <zephyr_board> [<west_args>]
 Build the loader for the given target.
+
+A key file (path) for signing can be provided with --key path.
 
 When given an <arduino_board> defined in 'boards.txt' (e.g. 'giga'), the actual
 Zephyr board target and arguments are taken from that definition.
@@ -77,6 +103,10 @@ fi
 
 # Save the build version to loader/VERSION and for later use in local files
 build_version=$(extra/get_core_version.sh loader/VERSION)
+image_version=$(awk -F' *= *' '
+	$1 == "VERSION_MAJOR" { ma = $2 } $1 == "VERSION_MINOR" { mi = $2 }
+	$1 == "PATCHLEVEL" { pl = $2 } $1 == "VERSION_TWEAK" { tw = $2 }
+	END { printf "%d.%d.%d.%d", ma, mi, pl, tw }' loader/VERSION)
 
 # CMake arguments go after a '--' separator, which args may already contain
 [[ " ${args[*]} " == *" -- "* ]] || args+=(--)
@@ -103,12 +133,64 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+
+
+DEFAULT_KEY_PATH="${VARIANT_DIR}/../../../bootloader/mcuboot/root-ec-p256.pem"
+KEY_PATH_TARGET="${VARIANT_DIR}/keys/"
+KEY_FILE_NAME="development-key.pem"
+# check if the board uses mcuboot (so that a KEY is required to sign images)
+if [ -f ${VARIANT_DIR}/mcuboot.conf ]; then
+	if [[ ! -d "$KEY_PATH_TARGET" ]]; then
+		mkdir -p "$KEY_PATH_TARGET"
+	fi
+        
+	if [[ ${SIGNING_KEY_PATH} == "" ]]; then
+		echo "[WARNING]: Signing key is required but not provided using default"
+		SIGNING_KEY_PATH=${DEFAULT_KEY_PATH}
+	elif [ ! -f ${SIGNING_KEY_PATH} ]; then
+		echo "[ERROR]: Signing key provided but not found, using default development one!!!"
+		SIGNING_KEY_PATH=${DEFAULT_KEY_PATH}
+	else
+		KEY_FILE_NAME=$(basename "$SIGNING_KEY_PATH")
+	fi
+	echo "Using signing key: $SIGNING_KEY_PATH"
+	echo "copied as $KEY_PATH_TARGET$KEY_FILE_NAME"
+	cp "$SIGNING_KEY_PATH" "$KEY_PATH_TARGET$KEY_FILE_NAME"
+
+	# the (now copied) signing key path is passed on the 'west build'
+	# command line (via -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE), so that
+	# MCUboot (built via sysbuild) signs with it
+	KEY_FILE_REALPATH=$(realpath "$KEY_PATH_TARGET$KEY_FILE_NAME")
+fi
+
+# A variant shipping a sysbuild.conf boots through MCUboot built alongside the
+# loader (its MCUboot config, mcuboot.conf/.overlay, is picked up by
+# loader/sysbuild.cmake). Under sysbuild the loader's tree is
+# ${BUILD_DIR}/loader and the llext-edk target is not part of 'all', so it is
+# built separately.
+if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
+	IMAGE_DIR=${BUILD_DIR}/loader
+	key_args=()
+	if [ ! -z "${KEY_FILE_REALPATH}" ]; then
+		# BOOT_SIGNATURE_KEY_FILE is a Kconfig string option: the value
+		# passed via -D must itself contain the surrounding quotes,
+		# since CMake writes it verbatim into the generated .conf file
+		key_args=( -DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"${KEY_FILE_REALPATH}\")
+	fi
+	echo "sysbuild key configuration argument: ${key_args[@]}"
+
+	SB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf) \
+		west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${key_args[@]}"
+	cmake --build ${IMAGE_DIR} --target llext-edk
+else
+	IMAGE_DIR=${BUILD_DIR}
+	west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}" "${debug_args[@]}"
+fi
 
 # Extract the generated EDK tarball and copy it to the variant directory
 mkdir -p ${VARIANT_DIR} firmwares
-(set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
-rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+(set -e ; cd ${IMAGE_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
+rsync -a --delete ${IMAGE_DIR}/llext-edk ${VARIANT_DIR}/
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -129,18 +211,68 @@ perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
 for ext in elf bin hex uf2; do
     rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
+    if [ -f ${IMAGE_DIR}/zephyr/zephyr.$ext ]; then
+        cp ${IMAGE_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
     fi
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+cp ${IMAGE_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
+cp ${IMAGE_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# The MCUboot companion image (sysbuild builds only)
+for ext in bin hex; do
+    rm -f firmwares/mcuboot-$variant.$ext
+    if [ -f ${BUILD_DIR}/mcuboot/zephyr/zephyr.$ext ]; then
+        cp ${BUILD_DIR}/mcuboot/zephyr/zephyr.$ext firmwares/mcuboot-$variant.$ext
+    fi
+done
+
+# Sysbuild's MCUboot is the board's bootloader; package the freshly built image.
+BOOTLOADER_DIR=bootloaders/${variant}
+if [ -f ${BUILD_DIR}/mcuboot/zephyr/.config ]; then
+    mkdir -p "${BOOTLOADER_DIR}"
+    cp "${BUILD_DIR}/mcuboot/zephyr/zephyr.hex" "${BOOTLOADER_DIR}/bootloader.hex"
+fi
+
+SQUASH_ARGS=
+if [ -n "$board" ] && [[ -f firmwares/zephyr-$variant.bin ]]; then
+    # Dynamically extract squash arguments using the Python helper
+    PLATFORM_PATH=$(pwd)
+    BOOTLOADER_FILE="zephyr-${variant}.bin"
+    
+    SQUASH_ARGS=$(python3 extra/get_squash_args.py "boards.txt" "${board}" "${PLATFORM_PATH}" "${VARIANT_DIR}" "${BOOTLOADER_FILE}" "${variant}")
+fi
+# extract FLASH_ERASE_DIM as backup in case this information is not present 
+# in the dts file 
+FLASH_ERASE_DIM=
+if [[ ! -z $SQUASH_ARGS ]]; then
+	if [[ "$SQUASH_ARGS" =~ --erase_flash_dim[[:space:]]+([^[:space:]]+) ]]; then
+		FLASH_ERASE_DIM="${BASH_REMATCH[1]}"
+	fi
+fi
+
+# Build the updater after its embedded bootloader image is available.
+if [ -f ${BOOTLOADER_DIR}/bootloader.hex ]; then
+	UPDATER_BUILD_DIR=build/updater-${variant}
+	updater_args=()
+	if [ -f ${BUILD_DIR}/mcuboot/zephyr/.config ]; then
+		# Build the signer once; CMake uses it without invoking Go per image.
+		mkdir -p build/tools
+		SIGNER_PATH=$(realpath build/tools)/zephyr-sketch-tool
+		go -C tools/zephyr-sketch-tool build -o "${SIGNER_PATH}" .
+		updater_args=(-DCONFIG_BOOTLOADER_MCUBOOT=y
+			"-DZEPHYR_SKETCH_TOOL=${SIGNER_PATH}"
+			"-DCONFIG_MCUBOOT_SIGNATURE_KEY_FILE=\"${KEY_FILE_REALPATH}\""
+			"-DCONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION=\"${image_version%.*}+${image_version##*.}\"")
+	fi
+	west build -p always -d ${UPDATER_BUILD_DIR} -b ${target} bootloader_updater "${args[@]}" "${updater_args[@]}"
+	cp "${UPDATER_BUILD_DIR}/zephyr/updater.bin" "${BOOTLOADER_DIR}/updater.bin"
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${IMAGE_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
@@ -151,6 +283,48 @@ extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
 	"realloc=__wrap_realloc" \
 	"calloc=__wrap_calloc" \
 	"random=__wrap_random" > ${VARIANT_DIR}/syms-static.ld
+
+# Boards squashing the sketch after the loader in the MCUboot slot0 image:
+# the sketch position depends on the loader size, so it is computed here.
+if [ -n "$SQUASH_ARGS" ]; then
+	echo "build.sh: (mcuboot) adding _sketch_start symbol to sym-static.ld"
+	size_bytes=$(wc -c < "${IMAGE_DIR}/zephyr/zephyr.bin")
+	
+	# Read the array of values from the python script
+	read -r -a SLOT0_INFO <<< $(python3 extra/extract_slot0_info.py "${IMAGE_DIR}/zephyr/zephyr.dts")
+	
+	if [ ${#SLOT0_INFO[@]} -eq 0 ]; then
+		echo "Error: Could not find slot0_partition info in zephyr.dts"
+		exit 1
+	fi
+	
+	SLOT0_ADDR_HEX=${SLOT0_INFO[0]}
+	SLOT0_DIM=${SLOT0_INFO[1]}
+	DTS_FLASH_ERASE_DIM=${SLOT0_INFO[2]}
+	
+	calculated_start=$(( size_bytes + SLOT0_ADDR_HEX ))
+	actual_start=$(printf "0x%X" "$calculated_start")
+	echo "PROVIDE(_sketch_start = ${actual_start});" >> "${VARIANT_DIR}/syms-static.ld"
+	
+	echo "build.sh: (mcuboot) adding _sketch_max_size symbol to sym-static.ld"
+	
+	# Fallback to SQUASH_ARGS flash erase dimension if not found in DTS
+	if [ "$DTS_FLASH_ERASE_DIM" != "None" ] && [ -n "$DTS_FLASH_ERASE_DIM" ]; then
+		USED_FLASH_ERASE_DIM=$DTS_FLASH_ERASE_DIM
+	else
+		USED_FLASH_ERASE_DIM=$FLASH_ERASE_DIM
+	fi
+	
+	if [ -z "$USED_FLASH_ERASE_DIM" ]; then
+		echo "Error: Flash erase dimension not found in DTS or SQUASH_ARGS"
+		exit 1
+	fi
+	
+	# Calculate sketch_max_size = slot0_dimension - sketch_start_offset - (2 * erase_sector)
+	calculated_max_size=$(( SLOT0_DIM - size_bytes - (2 * USED_FLASH_ERASE_DIM) ))
+	actual_max_size=$(printf "0x%X" "$calculated_max_size")
+	echo "PROVIDE(_sketch_max_size = ${actual_max_size});" >> "${VARIANT_DIR}/syms-static.ld"
+fi
 
 cmake -P extra/gen_arduino_files.cmake $variant
 
@@ -190,7 +364,7 @@ EOF
 	if [ -n "$comment" ]; then
 		# if there's a comment, add/update it as a commented-out line above the actual field
 		if grep -qE "^# ${match_regexp}:" $file; then
-			sed -i -e "s/^# ${match_regexp}:.*/# ${full_field_name}: ${comment}/" $file
+			sed -i -e "s|^# ${match_regexp}:.*|# ${full_field_name}: ${comment}|" $file
 		else
 			echo "# ${full_field_name}: ${comment}" >> $file
 		fi
@@ -198,7 +372,7 @@ EOF
 
 	# update the actual field line
 	if grep -qE "^${match_regexp}" $file; then
-		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${value}/" $file
+		sed -i -e "s|^${match_regexp}=.*|${full_field_name}=${value}|" $file
 	else
 		echo "${full_field_name}=${value}" >> $file
 	fi
@@ -213,6 +387,10 @@ if [ ! -z "$board" ]; then
 	#   (when developing, each board build should be tracked separately).
 	board="" update_local_field "version" "$build_version"
 	update_local_field "version" "$build_version"
+
+	# MCUboot image version (major.minor.revision.build) of the squashed
+	# loader+sketch image, as Zephyr signs the loader alone: from loader/VERSION.
+	update_local_field "build.image_version" "$image_version"
 
 	# sketch load address: start of sketch partition, hex (exact)
 	CODE_ADDR=$(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_start')
@@ -230,6 +408,23 @@ if [ ! -z "$board" ]; then
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
+	# Boards squashing the sketch after the loader into one MCUboot slot0 image
+	# (build.zsk_args.squash in boards.txt): _sketch_max_size is slot0 minus the
+	# loader and two erase blocks. The sketch actually loses the loader padding
+	# to an erase block, the image TLVs and MCUboot's trailer erase block.
+	if [ -n "$SQUASH_ARGS" ]; then
+		ERASE_DIM=$USED_FLASH_ERASE_DIM
+		TLV_MAX=512
+		LOADER_PAD=$(( (ERASE_DIM - size_bytes % ERASE_DIM) % ERASE_DIM ))
+		CODE_SIZE=$(( CODE_SIZE + 2 * ERASE_DIM - LOADER_PAD - TLV_MAX - ERASE_DIM ))
+		# Swap-using-offset: the update sits one sector into slot1, and the
+		# swap trailer is larger than the overwrite-only one.
+		CONFIG=firmwares/zephyr-${variant}.config
+		if grep -q '^CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y' $CONFIG; then
+			FOOTER=$(get_value_from_text_file $CONFIG 'CONFIG_MCUBOOT_UPDATE_FOOTER_SIZE')
+			CODE_SIZE=$(( CODE_SIZE - ${FOOTER:-0} ))
+		fi
+	fi
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
@@ -247,4 +442,8 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
+	
+	if [ -f ${VARIANT_DIR}/mcuboot.conf ]; then
+		update_local_field "build.certificate" "{build.variant.path}/keys/$KEY_FILE_NAME"
+	fi
 fi

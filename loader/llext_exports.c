@@ -16,8 +16,12 @@
 #include <time.h>
 #include <sys/time.h>
 #include <zephyr/drivers/pinctrl.h>
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+#include <zephyr/retention/bootmode.h>
+#endif
 #include <zephyr/device.h>
 #include <zephyr/posix/unistd.h>
+#include <zephyr/sys/reboot.h>
 #if defined(CONFIG_MBEDTLS)
 #include <mbedtls/memory_buffer_alloc.h>
 #include <mbedtls/debug.h>
@@ -150,6 +154,12 @@ EXPORT_SYMBOL(k_sys_work_q);
 EXPORT_SYMBOL(k_mem_slab_init);
 EXPORT_SYMBOL(k_mem_slab_free);
 EXPORT_SYMBOL(k_mem_slab_alloc);
+
+/* For a variant's _on_1200_bps() in the sketch. */
+#if defined(CONFIG_RETENTION_BOOT_MODE)
+EXPORT_SYMBOL(bootmode_set);
+#endif
+EXPORT_SYMBOL(sys_reboot);
 
 #if defined(CONFIG_PINCTRL)
 EXPORT_SYMBOL(pinctrl_lookup_state);
@@ -541,7 +551,7 @@ EXPORT_SYMBOL(arm_irq_is_enabled);
 EXPORT_SYMBOL(arm_irq_priority_set);
 #endif
 
-#if defined(__arm__)
+#if defined(__arm__) && !defined(CONFIG_SOC_FAMILY_MICROCHIP_PIC32CK_SG_GC)
 EXPORT_SYMBOL(SystemCoreClock);
 #endif
 

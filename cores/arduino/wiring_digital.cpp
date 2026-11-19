@@ -28,7 +28,14 @@ void pinMode(pin_size_t pinNumber, PinMode pinMode) {
 		gpio_pin_configure_dt(&arduino_pins[pinNumber],
 							  GPIO_INPUT | GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH);
 	} else if (pinMode == OUTPUT) { // output mode
-		gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+		/*
+		 * Keep the input enabled so digitalRead() returns the driven level;
+		 * fall back to output only where the driver can't do both.
+		 */
+		if (gpio_pin_configure_dt(&arduino_pins[pinNumber],
+								  GPIO_OUTPUT_LOW | GPIO_INPUT | GPIO_ACTIVE_HIGH) != 0) {
+			gpio_pin_configure_dt(&arduino_pins[pinNumber], GPIO_OUTPUT_LOW | GPIO_ACTIVE_HIGH);
+		}
 	}
 }
 

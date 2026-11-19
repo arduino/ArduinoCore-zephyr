@@ -13,7 +13,7 @@ if [ ! -f platform.txt ]; then
   exit 2
 fi
 
-REQUIRED_TOOLS="cmake curl git jq ninja pip3 python3 wget zip"
+REQUIRED_TOOLS="cmake curl git go jq ninja pip3 python3 wget zip"
 MISSING_TOOLS=""
 for tool in $REQUIRED_TOOLS; do
   if ! command -v "$tool" >/dev/null 2>&1; then
@@ -62,9 +62,10 @@ else
 fi
 west config manifest.project-filter -- "$HAL_FILTER"
 west update $WEST_MODULES_CACHE "$@"
-west zephyr-export
 pip3 install -r ../zephyr/scripts/requirements-base.txt
+pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt 
 log_msg "endgroup"
+west zephyr-export
 
 TOOLCHAIN_VERSIONS=$(for tc in $NEEDED_TOOLCHAINS; do
   version=$(jq -r --arg name "$tc" '.toolsDependencies[] | select(.name == $name) | .version' extra/artifacts/_common.json)

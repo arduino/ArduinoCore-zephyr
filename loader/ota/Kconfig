@@ -5,16 +5,44 @@
 #
 
 menuconfig OTA
-	bool "Enable lookup for sketch update at boot"
-	depends on FILE_SYSTEM
+	bool "Enable sketch and loader updates"
+	depends on FILE_SYSTEM || BOOTLOADER_MCUBOOT
 	select REBOOT
-	select RTC if SOC_SERIES_STM32H7X
 	help
-	  Enable checking for an update inside of the filesystem. If a file inside of
-	  OTA_SKETCH_UPDATE_PATH is found during the boot, the OTA procedure is started and the
-	  current sketch binary is replaced
+	  Let the sketch stage an update (ota.h) that is installed on the next
+	  boot, by the loader from a file or by MCUboot from its secondary slot.
 
 if OTA
+
+choice OTA_BACKEND
+	prompt "Where updates are staged"
+	default OTA_BACKEND_MCUBOOT if BOOTLOADER_MCUBOOT
+	default OTA_BACKEND_FS
+
+config OTA_BACKEND_FS
+	bool "File in a filesystem"
+	depends on FILE_SYSTEM
+	select RTC if SOC_SERIES_STM32H7X
+	help
+	  The update is written to OTA_SKETCH_UPDATE_PATH or OTA_LOADER_UPDATE_PATH.
+	  The loader installs a sketch update at boot, the mbed bootloader a
+	  loader update.
+
+config OTA_BACKEND_MCUBOOT
+	bool "MCUboot secondary slot"
+	depends on BOOTLOADER_MCUBOOT
+	select FLASH_MAP
+	select STREAM_FLASH
+	# MCUBOOT_IMG_MANAGER is the image manager choice's default.
+	select IMG_MANAGER
+	select IMG_ERASE_PROGRESSIVELY
+	help
+	  The update is a full MCUboot image (loader + sketch) written to
+	  slot1_partition; MCUboot verifies and installs it on the next boot.
+
+endchoice
+
+if OTA_BACKEND_FS
 
 config OTA_SKETCH_UPDATE_PATH
 	string "The path it is looked for ota"
@@ -48,6 +76,8 @@ config OTA_TRANSCRIPTION_CHUNK_SIZE
 	default 1024
 	help
 	  The size of the stack allocated chunk in bytes for ota file transcription
+
+endif # OTA_BACKEND_FS
 
 module = OTA
 module-str = OTA

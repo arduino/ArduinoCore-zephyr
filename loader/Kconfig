@@ -7,7 +7,6 @@
 config PINCTRL
 	select PINCTRL_NON_STATIC
 
-source "Kconfig.zephyr"
 
 config LLEXT_HEAP_REGION
 	string "LLEXT heap memory region"
@@ -21,4 +20,79 @@ config MAIN_STACK_REGION
 	help
 	  Specify the memory region for main stack.
 
+menu "Flash Padding Options"
+
+choice FLASH_PADDING_STRATEGY
+    prompt "Flash padding strategy"
+    optional
+    depends on !LINKER_LAST_SECTION_ID
+	 depends on !MCUBOOT
+    help
+      Select how the firmware image is padded. Requires CONFIG_LINKER_LAST_SECTION_ID=n.
+
+config FLASH_ALIGN_BASED_ON_DT_ERASE_DIM
+    bool "Align based on Devicetree erase block size"
+
+config CUSTOM_FLASH_ALIGN_ACTIVE
+    bool "Align to a custom dimension"
+
+endchoice
+
+config CUSTOM_FLASH_ALIGN
+    int "Custom flash alignment boundary"
+    depends on CUSTOM_FLASH_ALIGN_ACTIVE
+    default 1024
+    help
+      The dimension to align the padding to, disregarding the Devicetree block size.
+
+endmenu
+
+config LOADER_SKETCH_IN_MCUBOOT_IMAGE
+	bool "Sketch is appended to the loader in the MCUboot image"
+	depends on BOOTLOADER_MCUBOOT
+	help
+	  Load the sketch from slot0 at the offset zephyr-sketch-tool --squash
+	  stores after the MCUboot header, instead of from a user_sketch
+	  partition.
+
+config LOADER_TRIAL_WINDOW_MS
+	int "Time a test image has to confirm itself (0: no trial)"
+	depends on MCUBOOT_IMG_MANAGER && APP_WATCHDOG_ENFORCED
+	default 60000 if MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET
+	default 0
+	help
+	  With MCUboot swap modes an update first runs as a test. The sketch
+	  must call ota_confirm() within this time, or the watchdog thread
+	  reboots and MCUboot swaps the previous image back. A hang that
+	  stops the thread is caught by the watchdog itself.
+
+config LOADER_DFU_MODE
+	bool "Loader USB DFU mode entered by the 1200-bps touch"
+	depends on USB_DEVICE_STACK_NEXT && MCUBOOT_IMG_MANAGER && RETENTION_BOOT_MODE
+	select USBD_DFU
+	help
+	  The 1200-bps touch reboots into the loader's own DFU mode (instead
+	  of MCUboot's), with a "complete_image" and a "sketch" alternate; both
+	  write slot1 and request a permanent MCUboot update.
+
+if LOADER_DFU_MODE
+
+config LOADER_DFU_BOOT_MODE
+	hex "Retention boot mode value requesting the loader DFU mode"
+	default 0x4c
+
+endif
+
+config APP_WATCHDOG_ENFORCED
+    bool "Hardware watchdog enforced by Sysbuild (MCU Boot required)"
+    default n
+    help
+      This is automatically set to 'y' by Sysbuild if the secure 
+      watchdog parameters are injected into MCUBoot.
+
+config APP_WATCHDOG_TIMEOUT_MS
+    int "Watchdog timeout injected by Sysbuild"
+    default 20000
+
+source "Kconfig.zephyr"
 rsource "ota/Kconfig"

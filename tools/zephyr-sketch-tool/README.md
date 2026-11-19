@@ -24,3 +24,22 @@ command to build the tool for your platform.
 To build the full set of binaries for all platforms, run the `package_tool.sh`
 script in the parent directory with `../package_tool.sh`, or provide the path
 to this directory as an argument.
+
+### Signing a standalone MCUboot image
+
+Use `--sign` to sign a binary that already reserves space for an MCUboot header:
+
+```sh
+zephyr-sketch-tool --sign --pem_file development-key.pem \
+  --image_version 1.1.1.0 --header_size 0x400 --slot_size 0x100000 \
+  --output zephyr.signed.bin zephyr.bin
+```
+
+This writes the MCUboot header and appends SHA-256, key hash, and ECDSA P-256
+signature TLVs. The payload and the remaining header padding are preserved;
+no sketch metadata or DFU padding is added. `--image_version` accepts both
+`major.minor.revision.build` and `major.minor.revision+build`.
+
+`--sign` requires an explicit output, header size, slot size, and a PEM-encoded
+SEC1 ECDSA P-256 private key. Errors, including an image that exceeds the slot,
+return a nonzero exit status. It cannot be combined with `--squash` or `--ota`.

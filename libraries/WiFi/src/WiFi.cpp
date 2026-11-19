@@ -77,13 +77,70 @@ void WiFiClass::registerScanEventCallback() {
 	net_mgmt_add_event_callback(&wifiScanCb);
 }
 
+/*
+ * Bring the station interface up if it is not yet and wait for its carrier,
+ * i.e. the device reporting ready. Some drivers start their device only then,
+ * e.g. ESP-AT with CONFIG_WIFI_ESP_AT_NET_IF_NO_AUTO_START for a module on an
+ * optional carrier. Tried once: without the device, the wait would otherwise
+ * repeat on every call.
+ */
+static bool wifiDeviceReady() {
+	static constexpr int64_t startTimeoutMs = 5000;
+	static bool failed;
+	struct net_if *iface = net_if_get_wifi_sta();
+
+	if (iface == nullptr || failed) {
+		return false;
+	}
+	if (net_if_is_up(iface)) {
+		return true;
+	}
+
+	int ret = net_if_up(iface);
+	int64_t start = k_uptime_get();
+
+	while (ret == 0 && !net_if_is_carrier_ok(iface)) {
+		if (k_uptime_get() - start > startTimeoutMs) {
+			ret = -ETIMEDOUT;
+			break;
+		}
+		k_msleep(10);
+	}
+	if (ret < 0 && ret != -EALREADY) {
+		(void)net_if_down(iface);
+		failed = true;
+		return false;
+	}
+	return true;
+}
+
+/* The interface in use, the station one until beginAP() picks the AP. */
+struct net_if *WiFiClass::staIface() {
+	if (netif == nullptr) {
+		wifiState.sta_iface = net_if_get_wifi_sta();
+		netif = wifiState.sta_iface;
+	}
+	return netif;
+}
+
+const char *WiFiClass::driverVersion() {
+	struct wifi_version ver = {};
+
+	if (!wifiDeviceReady() || staIface() == nullptr ||
+		net_mgmt(NET_REQUEST_WIFI_VERSION, netif, &ver, sizeof(ver)) != 0 ||
+		ver.drv_version == nullptr) {
+		return "unknown";
+	}
+
+	return ver.drv_version;
+}
+
 const char *WiFiClass::firmwareVersion() {
 	static constexpr const char unknownVersion[] = "v0.0.0";
 	struct wifi_version version = {};
-	struct net_if *iface = net_if_get_wifi_sta();
 
-	if (iface == nullptr ||
-		net_mgmt(NET_REQUEST_WIFI_VERSION, iface, &version, sizeof(version)) != 0) {
+	if (!wifiDeviceReady() || staIface() == nullptr ||
+		net_mgmt(NET_REQUEST_WIFI_VERSION, netif, &version, sizeof(version)) != 0) {
 		return unknownVersion;
 	}
 
@@ -97,6 +154,10 @@ const char *WiFiClass::firmwareVersion() {
 int WiFiClass::begin(const char *ssid, const char *passphrase, wl_enc_type security,
 					 bool blocking) {
 	wifi_security_type wifi_security = encryptionTypeToSecType(security);
+
+	if (!wifiDeviceReady()) {
+		return WL_NO_SHIELD;
+	}
 
 	wifiState.sta_iface = net_if_get_wifi_sta();
 	netif = wifiState.sta_iface;
@@ -155,7 +216,7 @@ int WiFiClass::begin(const char *ssid, const char *passphrase, wl_enc_type secur
 }
 
 bool WiFiClass::beginAP(char *ssid, char *passphrase, int channel, bool blocking) {
-	if (wifiState.ap_iface != nullptr) {
+	if (wifiState.ap_iface != nullptr || !wifiDeviceReady()) {
 		return false;
 	}
 
@@ -220,14 +281,25 @@ const struct wifi_scan_result *WiFiClass::getScanResults() const {
 int WiFiClass::status() {
 	struct wifi_iface_status if_status;
 
-	if (netif == nullptr) {
-		wifiState.sta_iface = net_if_get_wifi_sta();
-		netif = wifiState.sta_iface;
+	if (!wifiDeviceReady() || staIface() == nullptr) {
+		return WL_NO_SHIELD;
 	}
 
 	if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, netif, &if_status,
 				 sizeof(struct wifi_iface_status))) {
 		return WL_NO_SHIELD;
+	}
+
+	/* WIFI_STATE_UNKNOWN sorts *above* WIFI_STATE_COMPLETED in the enum, so it
+	   must be rejected before the ordered comparison below. The esp_at driver
+	   leaves the state at UNKNOWN whenever "AT+CWJAP?" reports no AP, i.e. any
+	   time the module is not associated. */
+	if (if_status.state == WIFI_STATE_UNKNOWN) {
+		return WL_DISCONNECTED;
+	}
+
+	if (if_status.state == WIFI_STATE_INTERFACE_DISABLED) {
+		return WL_DISCONNECTED;
 	}
 
 	if (if_status.iface_mode != WIFI_MODE_AP) {
@@ -236,13 +308,16 @@ int WiFiClass::status() {
 
 	if (if_status.state >= WIFI_STATE_ASSOCIATED) {
 		return WL_CONNECTED;
-	} else {
-		return WL_DISCONNECTED;
 	}
-	return WL_NO_SHIELD;
+
+	return WL_DISCONNECTED;
 }
 
 int8_t WiFiClass::scanNetworks() {
+	if (!wifiDeviceReady()) {
+		return -1;
+	}
+
 	wifiState.sta_iface = net_if_get_wifi_sta();
 	netif = wifiState.sta_iface;
 
