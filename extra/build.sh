@@ -106,14 +106,27 @@ rm -rf ${BUILD_DIR}
 
 # The loader is built through sysbuild, which lets per-image sysbuild.cmake
 # files add further images alongside it; a variant can configure sysbuild
-# with a sysbuild.conf file. The loader's own build tree is ${BUILD_DIR}/loader
-# and the llext-edk target is not part of 'all', so it is built separately.
-LOADER_DIR=${BUILD_DIR}/loader
+# with a sysbuild.conf file.
 sysbuild_args=()
 if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	sysbuild_args=(-DSB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf))
 fi
 west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}"
+
+# The images built by sysbuild, as "<name> <build_dir>" lines from domains.yaml,
+# the default (loader) image first. LOADER_DIR is the loader's own build tree.
+domains=()
+while IFS= read -r domain; do
+	domains+=("$domain")
+done < <(python3 -c '
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+for x in sorted(d["domains"], key=lambda x: x["name"] != d["default"]):
+    print(x["name"], x["build_dir"])
+' ${BUILD_DIR}/domains.yaml)
+LOADER_DIR=${domains[0]#* }
+
+# The llext-edk target is not part of the sysbuild 'all', so build it separately
 cmake --build ${LOADER_DIR} --target llext-edk
 
 # Extract the generated EDK tarball and copy it to the variant directory
@@ -138,14 +151,19 @@ edk_funcs='k_ticks_t k_sleep_ticks\(k_timeout_t timeout\)|void k_busy_wait\(uint
 perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" $syscalls_hdrs
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
-for ext in elf bin hex uf2; do
-    rm -f firmwares/$variant/loader.$ext
-    if [ -f ${LOADER_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${LOADER_DIR}/zephyr/zephyr.$ext firmwares/$variant/loader.$ext
-    fi
+# Copy the outputs of each image as firmwares/<variant>/<image>.<ext>
+for domain in "${domains[@]}"; do
+	name=${domain%% *}
+	image_dir=${domain#* }/zephyr
+	rm -f firmwares/$variant/$name.*
+	for ext in elf bin hex uf2; do
+		if [ -f "$image_dir/zephyr.$ext" ]; then
+			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
+		fi
+	done
+	cp "$image_dir/zephyr.dts" firmwares/$variant/$name.dts
+	cp "$image_dir/.config" firmwares/$variant/$name.config
 done
-cp ${LOADER_DIR}/zephyr/zephyr.dts firmwares/$variant/loader.dts
-cp ${LOADER_DIR}/zephyr/.config firmwares/$variant/loader.config
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
