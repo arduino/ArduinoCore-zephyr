@@ -48,10 +48,10 @@ struct gpio_port_callback *find_gpio_port_callback(const struct device *dev) {
 void setInterruptHandler(pin_size_t pinNumber, voidFuncPtr func) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+	struct gpio_port_callback *pcb = find_gpio_port_callback(local_gpio_port(pinNumber));
 
 	if (pcb) {
-		pcb->handlers[arduino_pins[pinNumber].pin].handler = func;
+		pcb->handlers[local_gpio_pin(pinNumber)].handler = func;
 	}
 }
 
@@ -69,20 +69,20 @@ void handleGpioCallback(const struct device *port, struct gpio_callback *cb, uin
 void enableInterrupt(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+	struct gpio_port_callback *pcb = find_gpio_port_callback(local_gpio_port(pinNumber));
 
 	if (pcb) {
-		pcb->handlers[arduino_pins[pinNumber].pin].enabled = true;
+		pcb->handlers[local_gpio_pin(pinNumber)].enabled = true;
 	}
 }
 
 void disableInterrupt(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+	struct gpio_port_callback *pcb = find_gpio_port_callback(local_gpio_port(pinNumber));
 
 	if (pcb) {
-		pcb->handlers[arduino_pins[pinNumber].pin].enabled = false;
+		pcb->handlers[local_gpio_pin(pinNumber)].enabled = false;
 	}
 }
 
@@ -112,17 +112,16 @@ void attachInterrupt(pin_size_t pinNumber, voidFuncPtr callback, PinStatus pinSt
 		return;
 	}
 
-	pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+	pcb = find_gpio_port_callback(local_gpio_port(pinNumber));
 	__ASSERT(pcb != nullptr, "gpio_port_callback not found");
 
-	pcb->pins |= BIT(arduino_pins[pinNumber].pin);
+	pcb->pins |= BIT(local_gpio_pin(pinNumber));
 	setInterruptHandler(pinNumber, callback);
 	enableInterrupt(pinNumber);
 
-	gpio_pin_interrupt_configure(arduino_pins[pinNumber].port, arduino_pins[pinNumber].pin,
-								 intmode);
+	gpio_pin_interrupt_configure(local_gpio_port(pinNumber), local_gpio_pin(pinNumber), intmode);
 	gpio_init_callback(&pcb->callback, handleGpioCallback, pcb->pins);
-	gpio_add_callback(arduino_pins[pinNumber].port, &pcb->callback);
+	gpio_add_callback(local_gpio_port(pinNumber), &pcb->callback);
 }
 
 void detachInterrupt(pin_size_t pinNumber) {
@@ -149,7 +148,7 @@ void noInterrupts(void) {
 int digitalPinToInterrupt(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber, -1);
 
-	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
+	struct gpio_port_callback *pcb = find_gpio_port_callback(local_gpio_port(pinNumber));
 
 	return (pcb) ? pinNumber : -1;
 }
