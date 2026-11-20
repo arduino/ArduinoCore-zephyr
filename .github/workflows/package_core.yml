@@ -521,7 +521,15 @@ jobs:
     if: ${{ !cancelled() && needs.build-board.result == 'success' && contains(fromJSON('["success", "skipped"]'), needs.package-core.result) }}
     steps:
 
-      - uses: geekyeggo/delete-artifact@v6
+      # only needs the delete-artifacts action
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/delete-artifacts/
+          sparse-checkout-cone-mode: false
+
+      # - uses: geekyeggo/delete-artifact@v6
+      - uses: ./.github/actions/delete-artifacts
         with:
           name: |
             arduino-api.tar.zst
@@ -692,8 +700,16 @@ jobs:
 
     steps:
 
+      # only needs the delete-artifacts action
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/delete-artifacts/
+          sparse-checkout-cone-mode: false
+
       - name: Clean up intermediate artifacts
-        uses: geekyeggo/delete-artifact@v6
+        # uses: geekyeggo/delete-artifact@v6
+        uses: ./.github/actions/delete-artifacts
         with:
           name: |
             build-report-*
