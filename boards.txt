@@ -854,6 +854,15 @@ mezza.upload.artifacts.sketch={build.path}/{build.project_name}.signed.{upload.e
 # fixed recovery PID instead.
 mezza.upload.port.properties.pid=none
 mezza.upload.mcuboot_pid={bootloader.pid}
+# The board is being treated as "in mcuboot recovery" either when no port
+# was selected/open at all (the "none" sentinel above) or when the port
+# that *was* selected is itself the mcuboot recovery DFU port (PID
+# bootloader.pid=0x087B). The latter happens whenever the IDE's DFU
+# pluggable discovery finds the board already sitting in recovery and
+# offers that port for upload - without this check the upload would
+# wrongly take the loader branch and hang waiting for a PID (0x017B) that
+# is never going to appear.
+mezza.upload.is_recovery_port=or eq "v{upload.port.properties.pid}" "vnone" eq "v{upload.port.properties.pid}" "v{bootloader.pid}"
 
 mezza.leave.dfuse=
 
@@ -873,12 +882,11 @@ mezza.flash-loader-and-sketch.2=run echo
 # - loader.cmd targets the loader's own self-hosted DFU (PID upload.pid=
 #   0x017B), reached via the normal 1200bps touch from the running sketch.
 # - mcuboot.cmd targets mcuboot's dedicated recovery DFU (PID
-#   bootloader.pid=0x087B), used only when no live port was selected/open
-#   to begin with (see upload.port.properties.pid=none above), i.e. the
-#   board is already sitting in mcuboot recovery DFU on its own. That rule
-#   also double-checks "not {flash-loader-condition}" as a belt-and-braces
-#   reinforcement of the same idea, even though upload.port.properties.pid
-#   alone already makes this branch mutually exclusive with the other two.
+#   bootloader.pid=0x087B), used whenever upload.is_recovery_port is true,
+#   i.e. either no live port was selected/open to begin with (see
+#   upload.port.properties.pid=none above) or the port that was selected
+#   is itself the mcuboot recovery DFU port - in both cases the board is
+#   already sitting in mcuboot recovery DFU on its own.
 # Both devices already enumerate directly in DFU mode (bInterfaceProtocol
 # == 2), so dfu-util only ever matches them against the DFU-mode half of
 # --device (the part after the comma) - the Run-Time half before the comma
@@ -895,7 +903,7 @@ mezza.tools.dfu-util.mcuboot.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.m
 # re-write the sketch sub-region using offsets derived from the OLD,
 # currently-running loader's layout, which can disagree with the new
 # loader's layout and corrupt the just-written image.
-mezza.tools.dfu-util.upload.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if and eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {mcuboot.cmd} :: if and not eq "v{upload.port.properties.pid}" "vnone" {flash-loader-condition} {loader.cmd}{loader.args.with_sketch} :: if and not eq "v{upload.port.properties.pid}" "vnone" not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
+mezza.tools.dfu-util.upload.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" if {upload.is_recovery_port} {mcuboot.cmd} :: if and not {upload.is_recovery_port} {flash-loader-condition} {loader.cmd}{loader.args.with_sketch} :: if and not {upload.is_recovery_port} not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
 
 mezza.loader.args.with_sketch={empty} -w
 mezza.loader.args.without_sketch={empty} -w
