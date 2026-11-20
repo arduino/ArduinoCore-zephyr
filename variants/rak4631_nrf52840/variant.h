@@ -116,6 +116,8 @@
 #define PIN_SPI_CS WB_SPI_CS
 #define SS         PIN_SPI_CS
 
+#define SPI_MIN_CLOCK_FREQUENCY 125000 /* nrf-spim */
+
 /*
  * Wire interfaces
  */

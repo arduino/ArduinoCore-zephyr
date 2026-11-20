@@ -106,6 +106,7 @@
 };
 
 &i2c0 {
+	compatible = "nordic,nrf-twim";
 	status = "okay";
 };
 
@@ -116,8 +117,15 @@
 
 /* WisBlock header SPI: SCK P0.03, MOSI P0.30, MISO P0.29 */
 &spi2 {
-	compatible = "nordic,nrf-spi";
+	compatible = "nordic,nrf-spim";
 	status = "okay";
+};
+
+/* Standard drive is too slow for 8 MHz */
+&spi2_default {
+	group1 {
+		nordic,drive-mode = <NRF_DRIVE_H0H1>;
+	};
 };
 
 /* Arduino API pin mappings */
