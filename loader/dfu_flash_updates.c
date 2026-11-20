@@ -22,6 +22,8 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(dfu_flash_updates);
 
+#include "slot1_trailer.h"
+
 #ifdef CONFIG_USE_DFU_FADING_BLINK
 void fading_blink_led_start(void);
 void fading_blink_led_stop(void);
@@ -120,6 +122,16 @@ static int dfu_flash_write(void *const priv, const uint32_t block, const uint16_
 			return -EINVAL;
 		}
 
+		if (IS_ENABLED(CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET)) {
+			/* flash_img_init_id() only erases slot1's leading sector
+			 * (the one it skips over); clear a stale trailer left by an
+			 * OTA swap attempt so boot_request_upgrade() writes a fresh
+			 * one for this permanent USB update. */
+			if (slot1_erase_trailer(data->fi_ctx.flash_area)) {
+				return -EIO;
+			}
+		}
+
 		data->last_block = 0;
 		data->downloaded = 0;
 
@@ -211,6 +223,13 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 	/* Get hardware write block size directly from the flash device */
 	size_t wbs = flash_get_write_block_size(flash_area_get_device(fa));
 
+	/* With swap-using-offset MCUboot reserves slot1's first flash erase
+	 * block for its swap status; the image itself (what this alternate
+	 * writes) starts right after it instead of at offset 0. This call is a
+	 * compile-time no-op (returns 0) in any other swap mode. */
+	uint32_t img_start = boot_get_image_start_offset(UPDATE_PARTITION_ID);
+	uint32_t usable_size = UPDATE_PARTITION_SIZE - img_start;
+
 	if (block == 0) {
 		if (sketch_layout.sketch_offset == 0 || sketch_layout.erase_size == 0 ||
 			sketch_layout.block_num == 0) {
@@ -221,7 +240,7 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 
 		uint32_t sketch_total_size = sketch_layout.erase_size * sketch_layout.block_num;
 
-		if ((sketch_layout.sketch_offset + sketch_total_size) > UPDATE_PARTITION_SIZE) {
+		if ((sketch_layout.sketch_offset + sketch_total_size) > usable_size) {
 			LOG_ERR("Sketch offset exceeds partition size");
 			err = -ENOSPC;
 			goto end;
@@ -229,16 +248,28 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 
 		data->current_offset = 0;
 
-		LOG_INF("Erase header (1) 0x%08x bytes at offset 0", sketch_layout.erase_size);
-		err = flash_area_erase(fa, 0, sketch_layout.erase_size);
+		if (IS_ENABLED(CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET)) {
+			/* Clear a stale trailer left by an OTA swap attempt so
+			 * boot_request_upgrade() writes a fresh one for this
+			 * permanent USB update. */
+			err = slot1_erase_trailer(fa);
+			if (err) {
+				LOG_ERR("Trailer erase failed (%d)", err);
+				goto end;
+			}
+		}
+
+		LOG_INF("Erase header (1) 0x%08x bytes at offset 0x%08x", sketch_layout.erase_size,
+				img_start);
+		err = flash_area_erase(fa, img_start, sketch_layout.erase_size);
 		if (err) {
 			LOG_ERR("Flash area erase failed (%d)", err);
 			goto end;
 		}
 
 		LOG_INF("Erase sketch initial block (2) 0x%08x bytes at offset 0x%08x",
-				sketch_layout.erase_size, start_offset);
-		err = flash_area_erase(fa, start_offset, sketch_layout.erase_size);
+				sketch_layout.erase_size, img_start + start_offset);
+		err = flash_area_erase(fa, img_start + start_offset, sketch_layout.erase_size);
 		if (err) {
 			LOG_ERR("Flash area erase failed - 2 (%d)", err);
 			goto end;
@@ -255,7 +286,7 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 		/* Case 1: Header region */
 		if (data->current_offset < sketch_layout.erase_size) {
 			process_size = MIN(remaining_size, sketch_layout.erase_size - data->current_offset);
-			write_offset = data->current_offset;
+			write_offset = img_start + data->current_offset;
 		}
 		/* Case 2: Gap between header and sketch */
 		else if (data->current_offset < start_offset) {
@@ -269,18 +300,18 @@ static int dynamic_flash_write(void *const priv, const uint32_t block, const uin
 		}
 		/* Case 3: Sketch region */
 		else {
-			write_offset = data->current_offset;
-
-			if (write_offset >= UPDATE_PARTITION_SIZE) {
-				LOG_ERR("Write offset 0x%08x exceeds partition size", write_offset);
+			if (data->current_offset >= usable_size) {
+				LOG_ERR("Write offset 0x%08x exceeds partition size", data->current_offset);
 				err = -ENOSPC;
 				goto end;
 			}
 
-			process_size = MIN(remaining_size, UPDATE_PARTITION_SIZE - write_offset);
+			write_offset = img_start + data->current_offset;
+			process_size = MIN(remaining_size, usable_size - data->current_offset);
 
 			/* Erase dynamically as we cross into a new block */
-			if (write_offset > start_offset && (write_offset % sketch_layout.erase_size == 0)) {
+			if (data->current_offset > start_offset &&
+				(data->current_offset % sketch_layout.erase_size == 0)) {
 				LOG_INF("Dynamically erasing block of size 0x%08x at offset 0x%08x",
 						sketch_layout.erase_size, write_offset);
 				err = flash_area_erase(fa, write_offset, sketch_layout.erase_size);
