@@ -1,0 +1,22 @@
+#
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# loader/Kconfig.sysbuild
+
+source "share/sysbuild/Kconfig"
+
+config ENFORCE_SECURE_WATCHDOG
+    bool "Enforce hardware watchdog at boot"
+    depends on BOOTLOADER_MCUBOOT
+    default n
+
+config SECURE_WATCHDOG_TIMEOUT_MS
+    int "Watchdog timeout in milliseconds"
+    default 20000
+    help
+      The actual timeout may be clamped by the hardware watchdog's maximum
+      supported value (e.g. 16384 ms on PIC32), so check the SoC's watchdog
+      driver limits before raising this.
