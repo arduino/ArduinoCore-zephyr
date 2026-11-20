@@ -47,9 +47,9 @@ manifest:
         #   west config -d manifest.project-filter
     # Add this new block for mcuboot
     - name: mcuboot
-      remote: maidnl
+      remote: arduino
       path: bootloader/mcuboot
-      revision: support_dfu_boot_mode_activation
+      revision: arduino-v2.5.1
 
     - name: cannectivity
       path: modules/lib/cannectivity
