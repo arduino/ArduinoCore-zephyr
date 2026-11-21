@@ -623,9 +623,9 @@ jobs:
           extra/ci_generate_report.py --native-sim-summary "$NATIVE_SIM_SUMMARY" build_info.json result summary full_log
           cat result
 
-          # Display the summary and full log in the step summary
+          # Display the summary in the step summary (the details of each
+          # artifact are displayed by the steps below)
           cat summary >> $GITHUB_STEP_SUMMARY
-          cat full_log >> $GITHUB_STEP_SUMMARY
 
           # Create a comment for PRs using the summary file
           if [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -640,6 +640,21 @@ jobs:
           if [ "${{ github.event_name }}" == "push" ]; then
             tar -I "zstd -T0 -19 --long=27" -chf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst arduino-*.json
           fi
+
+      # Display the details of each artifact in its own step summary, so that
+      # no step summary is too large to be displayed. Keep in sync with the
+      # artifact list in the "Check the artifact reports" step below.
+      - name: Report zephyr_main
+        if: ${{ !cancelled() && hashFiles('full_log-zephyr_main.md') != '' }}
+        run: cat full_log-zephyr_main.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Report zephyr_contrib
+        if: ${{ !cancelled() && hashFiles('full_log-zephyr_contrib.md') != '' }}
+        run: cat full_log-zephyr_contrib.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Report zephyr_unoq
+        if: ${{ !cancelled() && hashFiles('full_log-zephyr_unoq.md') != '' }}
+        run: cat full_log-zephyr_unoq.md >> $GITHUB_STEP_SUMMARY
 
       - name: Compute code size changes
         if: ${{ github.event_name == 'pull_request' }}
