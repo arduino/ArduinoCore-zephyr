@@ -1,0 +1,42 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# This file contains a list of examples that are shipped with the core (or used
+# by continuous integration tests), but are known to be currently failing for
+# this specific variant.
+#
+# Each line in this file is treated as a regular expression and will be matched
+# against the path of each sketch found in this repo. If a match is found, the
+# sketch compilation result will be ignored.
+
+# If the line contains a '|' (pipe) character, the part before the | is treated
+# as a regular expression to match against the sketch path, and the part after
+# the '|' is a regular expression to match against a reported issue. If both
+# match, the message will be ignored.
+
+# no analog pins defined
+examples/arduino-examples/examples/01.Basics/AnalogReadSerial
+# no Serial1
+examples/arduino-examples/examples/04.Communication/SerialPassthrough
+# no CAN controller in the devicetree
+libraries/CAN/examples/.*
+# no SPI object
+libraries/M95M01/examples/M95M01_test
+# no Bluetooth
+libraries/ArduinoBLE/examples/.*
+# no secure element
+libraries/Arduino_SecureElement/examples/.*
+# no Wire object
+libraries/Arduino_APDS9960/examples/.*
+libraries/Arduino_BMI270_BMM150/examples/.*
+libraries/Arduino_HS300x/examples/.*
+libraries/Arduino_LPS22HB/examples/.*
+# no touch controller
+libraries/Arduino_GigaDisplayTouch/examples/.*
+# no Serial1
+libraries/Arduino_RPClite/examples/.*
+libraries/Arduino_RouterBridge/examples/.*
+# no video hardware
+libraries/Arduino_Video/examples/.*
+# ARM only: needs cmsis_core.h (UNO Q, Ventuno Q)
+libraries/Arduino_LED_Matrix/examples/.*

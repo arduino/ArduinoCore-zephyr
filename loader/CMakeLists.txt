@@ -19,6 +19,7 @@ project(app LANGUAGES C CXX)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/blobs)
 add_subdirectory_ifdef(CONFIG_OTA ${CMAKE_CURRENT_SOURCE_DIR}/ota)
+add_subdirectory_ifdef(CONFIG_ARCH_POSIX ${CMAKE_CURRENT_SOURCE_DIR}/native_sim/pinctrl)
 
 # Memory region relocation based on Kconfig
 # Relocate LLEXT heap if region specified
@@ -43,6 +44,19 @@ FILE(GLOB app_sources *.c)
 target_sources(app PRIVATE ${app_sources})
 target_compile_definitions(app PUBLIC _XOPEN_SOURCE=700)
 target_compile_definitions(app PUBLIC _GNU_SOURCE)
+
+if(CONFIG_ARCH_POSIX)
+    # native_sim/board_irq.h includes ../common/irq/board_irq.h: export that
+    # directory in the EDK too (it only exports the include directories)
+    zephyr_include_directories(${ZEPHYR_BASE}/boards/native/common)
+    zephyr_linker_sources(NOINIT native_sim/llext_heap_noinit.ld)
+    target_sources(app PRIVATE native_sim/sketch_native_impl.c native_sim/gpio_log.c)
+    target_include_directories(app PRIVATE native_sim)
+    target_sources(native_simulator INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/native_sim/sketch_native_host.c)
+    target_compile_options(native_simulator INTERFACE
+        -I${CMAKE_CURRENT_SOURCE_DIR}/native_sim)
+endif()
 
 target_link_libraries(app PUBLIC blobs)
 target_link_libraries_ifdef(CONFIG_OTA app PUBLIC ota)

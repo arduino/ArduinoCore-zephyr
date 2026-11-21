@@ -33,9 +33,11 @@ declutter_file() {
 #
 # Prints the paths left out of the core package of an artifact: the common
 # and artifact .exc entries, and the .only entries of the other artifacts.
+# native_sim poses as the boards of all artifacts: it ships their own files.
 artifact_exclusions() {
 	declutter_file extra/artifacts/_common.exc
 	declutter_file "extra/artifacts/$1.exc"
+	[ "$1" == "native_sim" ] && return
 	for f in extra/artifacts/*.only ; do
 		[ "$f" == "extra/artifacts/$1.only" ] || declutter_file "$f"
 	done

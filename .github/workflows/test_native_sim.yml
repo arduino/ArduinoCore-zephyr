@@ -1,0 +1,355 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Build the native_sim board, package it and test sketches on the host with
+# the installed package: the loader tests, and for each board of the core
+# artifacts the sketches test_core builds for it, with native_sim posing as
+# that board (see the 'mimic' menu in boards.txt), one job per board.
+#
+# Called by package_core.yml, without waiting for the other boards: it
+# needs the build environment (build-env.tar.zst) of the calling run. It
+# fetches the test data and publishes it as test-data for the calling run
+# (test_core.yml reuses it). The results are reported here, as soon as the
+# tests are done (see the summarize job), and not by the calling run.
+
+name: Native tests
+
+on:
+  workflow_call:
+    inputs:
+      core-version:
+        description: Version of the core being tested
+        type: string
+        required: true
+      core-tag:
+        description: Tag or hash of the core being tested, for file names
+        type: string
+        required: true
+      ci-builds-url:
+        description: Additional Board Manager index URL for the tools (optional)
+        type: string
+        default: ''
+      native-sim-board-data:
+        description: The native_sim board data, see ci_get_build_info.sh
+        type: string
+        required: true
+    outputs:
+      matrix:
+        description: The native_sim test jobs, see ci_native_sim_matrix.sh
+        value: ${{ jobs.build.outputs.MATRIX }}
+      summary:
+        description: The short summary of the native_sim tests, linking to their report (empty if not reported)
+        value: ${{ jobs.summarize.outputs.SUMMARY }}
+
+jobs:
+
+  # Build the native_sim board and package it, then compute the matrix of
+  # native_sim test jobs from the test list. The package is never published,
+  # it is only tested on the host.
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      # native_sim test jobs, see ci_native_sim_matrix.sh
+      MATRIX: ${{ steps.matrix.outputs.MATRIX }}
+    env:
+      # ccache, don't look for the spec file anywhere
+      CCACHE_IGNOREOPTIONS: -specs=*
+      # the core .git folder is not archived, use the version computed by build-env
+      PINNED_CORE_VERSION: ${{ inputs.core-version }}
+      CORE_TAG: ${{ inputs.core-tag }}
+      CORE_ARTIFACT: distrib/native_sim.tar.zst
+      # report file stem, as for build-board
+      REPORT: reports/zephyr-native_sim_native_64
+    steps:
+
+      - uses: actions/download-artifact@v8
+        timeout-minutes: 10 # early error on Github network issues
+        with:
+          path: /home/runner
+          name: build-env.tar.zst
+
+      - name: Restore build environment
+        id: restore-env
+        timeout-minutes: 5 # early error on Github network issues
+        run: |
+          sudo apt-get remove --purge man-db -y # skips the mandb triggers
+          sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git cmake wget python3-pip ninja-build ccache device-tree-compiler gcc-14 g++-14
+          # the SDK libstdc++ headers need gcc 14: make it the default host compiler
+          for link in gcc:gcc g++:g++ cc:gcc c++:g++ cpp:cpp ; do
+            sudo ln -sf /usr/bin/${link#*:}-14 /usr/local/bin/${link%:*}
+          done
+          (cd ~ && tar --use-compress-program=unzstd -xpf build-env.tar.zst && rm build-env.tar.zst)
+
+      # download the external test repositories once for all the test jobs of
+      # this run, as early as possible. See ci_fetch_tests.sh for details.
+      - name: Fetch test data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_fetch_tests.sh
+
+      - name: Archive test data
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-data
+          path: test-data/
+          overwrite: true
+          retention-days: 1
+
+      - name: ccache
+        uses: actions/cache@v5
+        with:
+          key: ${{ github.job }} # independent cache
+          path: ~/.cache/ccache
+
+      - name: Build and package native_sim
+        shell: bash
+        run: |
+          mkdir -p reports
+          if ! ./extra/build.sh native_sim 1> >(tee $REPORT.stdout) 2> >(tee $REPORT.stderr >&2) ; then
+            # build failed, capture errors in summary
+            echo "### :x: native_sim build errors" > $GITHUB_STEP_SUMMARY
+            echo >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat $REPORT.stderr >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          # look for warnings, as build-board does
+          grep -i "warning:" $REPORT.stdout > $REPORT.warnings || true
+          cp firmwares/zephyr-native_sim_native_64.config $REPORT.config
+          ./extra/package_core.sh native_sim ${CORE_TAG} ${CORE_ARTIFACT}
+
+      - name: Archive core package
+        uses: actions/upload-artifact@v7
+        with:
+          name: native_sim-package
+          path: ${{ env.CORE_ARTIFACT }}
+          overwrite: true
+          retention-days: 1
+
+      - name: Archive build reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-report-native_sim
+          path: |
+            ${{ env.REPORT }}.config
+            ${{ env.REPORT }}.warnings
+          overwrite: true
+          retention-days: 1
+
+      - name: Collect test lists
+        run: |
+          # the test list of each board native_sim poses as, as test-core
+          # selects it for the board package
+          extra/ci_native_sim_lists.sh lists/
+
+      - name: Compute test matrix
+        id: matrix
+        run: |
+          echo "MATRIX=$(extra/ci_native_sim_matrix.sh lists/)" >> $GITHUB_OUTPUT
+
+      - name: Archive test list
+        uses: actions/upload-artifact@v7
+        with:
+          name: native_sim-test-list
+          path: lists/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+      # publish the outcome of this job for ci_collect_data.py (the action
+      # comes with the build environment)
+      - name: Mark build as completed
+        if: ${{ !cancelled() && steps.restore-env.outcome == 'success' }}
+        uses: ./.github/actions/mark-job-completed
+        with:
+          id: build-native_sim
+          retention-days: 1
+
+
+
+  # Compile the test sketches of each board with the installed package, one
+  # job per board native_sim poses as (see ci_native_sim_matrix.sh), and run
+  # the ones that have expect logic on the host. See
+  # loader/native_sim/tests/run_sketches.sh.
+
+  test:
+    name: Test ${{ matrix.group }}
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        include:
+          ${{ fromJSON( needs.build.outputs.MATRIX ) }}
+      fail-fast: false
+    env:
+      # the core package, installed as a sketchbook hardware platform, also
+      # under the core architecture names (see setup-native-sim)
+      CORE_DIR: /home/runner/Arduino/hardware/arduino-git/native_sim
+      # native_sim posing as the board, under the board architecture
+      FQBN: ${{ matrix.arch && format('arduino-git:{0}:native_sim:mimic={1}', matrix.arch, matrix.group) || 'arduino-git:zephyr:native_sim' }}
+      # report of this job, for ci_collect_data.py
+      SKETCH_REPORT: ${{ github.workspace }}/native_sim-sketches-${{ matrix.group }}.json
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-native-sim
+        with:
+          core-dir: ${{ env.CORE_DIR }}
+          ci-builds-url: ${{ inputs.ci-builds-url }}
+
+      # sketch build cache of this test job, from its latest run (see
+      # setup-native-sim): most of the sketches and libraries do not change
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/ccache
+          key: native-sim-ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.group }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: native-sim-ccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.group }}-
+
+      - uses: actions/download-artifact@v8
+        if: ${{ matrix.group != 'loader' }}
+        with:
+          name: native_sim-test-list
+          path: lists/
+
+      - uses: actions/download-artifact@v8
+        if: ${{ matrix.group != 'loader' }}
+        continue-on-error: true # no test-data, no sketches: the test fails
+        with:
+          name: test-data
+          path: test-data/
+
+      - name: Prepare test sketches
+        if: ${{ matrix.arch }}
+        env:
+          ARTIFACT: ${{ matrix.artifact }}
+          VARIANT: ${{ matrix.variant }}
+          GROUP: ${{ matrix.group }}
+        run: |
+          # extract the fetched repositories of the board into the installed
+          # core, as for its test list (ci_apply_tests.sh uses this fixed
+          # path); the lists of the build job are used, not the ones written
+          # here
+          # (nothing to prepare if the lists of the board failed)
+          [ ! -f "lists/$GROUP/failed" ] || exit 0
+          ln -s $CORE_DIR ArduinoCore-zephyr
+          extra/ci_apply_tests.sh "$ARTIFACT" "$VARIANT" "$RUNNER_TEMP/lists"
+          sort -u "lists/$GROUP/libraries.txt" | while read -r lib ; do
+            arduino-cli lib install "$lib" || echo "::warning::cannot install library '$lib'"
+          done
+
+      - name: Run tests
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          case "$GROUP" in
+            loader)
+              loader/native_sim/tests/run_tests.sh ;;
+            *)
+              if [ -f "lists/$GROUP/failed" ] ; then
+                cat "lists/$GROUP/failed"
+                echo "::error::The test list of $GROUP failed, see the build job"
+                exit 1
+              fi
+              mapfile -t sketches < "lists/$GROUP/tests.txt"
+              loader/native_sim/tests/run_sketches.sh -n ArduinoCore-zephyr \
+                -u "lists/$GROUP/unavailable.txt" "${sketches[@]}" ;;
+          esac || [ -s "$SKETCH_REPORT" ] # failed sketches are checked below
+
+      # fail early on results that are not known issues, as test-core does
+      - name: Check test results
+        if: ${{ success() || failure() }}
+        env:
+          # the board native_sim poses as, if any, for its known issues
+          MIMIC: ${{ matrix.arch && matrix.group || '' }}
+        run: |
+          extra/ci_check_test_report.py native_sim_native_64 "$SKETCH_REPORT" $MIMIC
+
+      - name: Archive test report
+        if: ${{ success() || failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-native_sim-${{ matrix.group }}
+          path: ${{ env.SKETCH_REPORT }}
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 1
+
+      - name: Mark tests as completed
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/mark-job-completed
+        with:
+          id: ${{ matrix.id }}
+          retention-days: 1
+
+
+
+  # Summarize the results of the native_sim test jobs, as soon as they are
+  # all done: the short summary of the jobs, then the details of the tests.
+  # See ci_collect_data.py and ci_generate_report.py.
+
+  summarize:
+    name: Collect
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - test
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    outputs:
+      # short summary, for the report of the calling run
+      SUMMARY: ${{ steps.summary.outputs.SUMMARY }}
+    env:
+      # (no other boards: only native_sim is reported)
+      ALL_BOARD_DATA: '[]'
+      NATIVE_SIM_BOARD_DATA: ${{ inputs.native-sim-board-data }}
+      NATIVE_SIM_MATRIX: ${{ needs.build.outputs.MATRIX }}
+    steps:
+
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            extra/
+            variants/*/known_example_issues*.txt
+          sparse-checkout-cone-mode: false
+
+      - name: Download test reports
+        continue-on-error: true # missing reports are listed as failures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh . 'test-report-native_sim-*'
+
+      - uses: actions/download-artifact@v8
+        continue-on-error: true # a missing loader report is listed as a failure
+        with:
+          path: .
+          name: build-report-native_sim
+
+      - name: Download job markers
+        continue-on-error: true # missing markers are listed as failures
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          extra/ci_download_artifacts.sh prereqs/ 'prereq-*-native_sim*'
+
+      - name: Write summary
+        id: summary
+        run: |
+          # the job fails if any test job failed
+          extra/ci_collect_data.py report.json
+          extra/ci_generate_report.py --native-sim report.json summary full_log || rc=$?
+          cat full_log >> $GITHUB_STEP_SUMMARY
+          # (the one line summary, linking here, is for the PR comment)
+          { echo "SUMMARY<<EOF_SUMMARY"; cat summary; echo "EOF_SUMMARY"; } >> $GITHUB_OUTPUT
+          exit ${rc:-0}

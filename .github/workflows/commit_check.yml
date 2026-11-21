@@ -14,22 +14,91 @@ jobs:
   check-commit-messages:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Check commit messages format'
-        uses: gsactions/commit-message-checker@v2
+      - uses: actions/checkout@v6
         with:
-          pattern: '^[^!]+: [A-Za-z]+.+ .+$'
-          flags: 'gm'
-          error: 'Commit subject line / PR title must match the following pattern: <scope>: <description>'
-          excludeTitle: 'false'
-          excludeDescription: 'true'
-          checkAllCommitMessages: 'true'
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
-      - name: 'Check commit messages length'
-        uses: gsactions/commit-message-checker@v2
-        with:
-          pattern: '^[^#].{10,80}$'
-          error: 'Commit subject line maximum line length of 80 characters is exceeded.'
-          excludeTitle: 'true'
-          excludeDescription: 'true'
-          checkAllCommitMessages: 'true'
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 'Check PR and commits'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess, sys
+
+          FORMAT_RE = re.compile(r'^[^!]+: [A-Za-z]+.+ .+$')
+          LENGTH_RE = re.compile(r'^[^#].{10,79}$')
+          AUTOSQUASH_RE = re.compile(r'^(fixup|squash|amend)! ')
+          CONFLICT_RE = re.compile(r'^\+(<{7}|>{7})( |$)', re.M)
+
+          # (commits may add text that is not valid UTF-8)
+          def git(*args):
+              return subprocess.run(['git', *args], check=True, text=True,
+                                    errors='replace', capture_output=True).stdout
+
+          # Trailers (Signed-off-by, Co-authored-by, ...) do not count
+          # as a description.
+          def has_text(text):
+              lines = [l for l in (text or '').splitlines()
+                       if l.strip() and not re.match(r'^[A-Za-z][A-Za-z-]*-by:', l)]
+              return bool(lines)
+
+          # Commits changing fewer than SMALL_COMMIT_LINES lines may have a
+          # title only. Binary files count as large.
+          SMALL_COMMIT_LINES = 10
+          def is_small(sha):
+              total = 0
+              for line in git('show', '--numstat', '--format=', sha).splitlines():
+                  added, deleted, _ = line.split('\t', 2)
+                  if added == '-' or deleted == '-':
+                      return False
+                  total += int(added) + int(deleted)
+              return total < SMALL_COMMIT_LINES
+
+          errors = []
+
+          title = os.environ.get('PR_TITLE', '')
+          if not FORMAT_RE.match(title):
+              errors.append(f'PR title ({title}) must match the following pattern: <scope>: <description>')
+          if not has_text(os.environ.get('PR_BODY')):
+              errors.append('PR description must not be empty.')
+
+          commits_range = f"{os.environ['BASE_SHA']}..{os.environ['HEAD_SHA']}"
+
+          # Merge commits pull unrelated history into the range; report them
+          # and stop, the other checks are meaningless until the branch is
+          # rebased.
+          merges = git('rev-list', '--merges', commits_range).split()
+          for sha in merges:
+              subject = git('show', '-s', '--format=%s', sha).strip()
+              errors.append(f'Commit {sha[:12]} ({subject}): merge commits are not allowed, rebase the branch instead.')
+          if merges:
+              for e in errors:
+                  print(f'::error::{e}')
+              sys.exit(1)
+
+          commits = git('rev-list', '--reverse', commits_range).split()
+          for sha in commits:
+              message = git('show', '-s', '--format=%B', sha)
+              subject, _, body = message.partition('\n')
+              ref = f'Commit {sha[:12]} ({subject})'
+              if AUTOSQUASH_RE.match(subject):
+                  errors.append(f'{ref}: fixup/squash/amend commits must be squashed before merging.')
+              elif not FORMAT_RE.match(subject):
+                  errors.append(f'{ref}: subject line must match the following pattern: <scope>: <description>')
+              if not LENGTH_RE.match(subject):
+                  errors.append(f'{ref}: subject line must be 11 to 80 characters long.')
+              if not has_text(body) and not is_small(sha):
+                  errors.append(f'{ref}: has no description in the message body.')
+              diff = git('show', '--format=', '-U0', '--no-color', '--no-ext-diff', sha)
+              if CONFLICT_RE.search(diff):
+                  errors.append(f'{ref}: adds conflict markers.')
+
+          for e in errors:
+              print(f'::error::{e}')
+          sys.exit(1 if errors else 0)
+          PY

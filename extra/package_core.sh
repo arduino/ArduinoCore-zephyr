@@ -28,8 +28,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 # and boards for exclude because we want to remove matching lines in boards.txt
 BOARD_DETAILS=$(extra/get_board_details.sh)
 if [ $ARTIFACT == "zephyr" ] ; then
-	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr ".[].variant")
-	EXCLUDED_BOARDS=""
+	# all boards, except the CI/dev only native_sim artifact
+	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"native_sim\")) | .[].variant")
+	EXCLUDED_BOARDS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact == \"native_sim\")) | .[].board")
 elif [ ! -f extra/artifacts/${ARTIFACT}.json ]; then
 	echo "Unknown artifact '$ARTIFACT'."
 	exit 3

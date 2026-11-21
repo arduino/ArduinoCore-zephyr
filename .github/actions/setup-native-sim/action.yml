@@ -1,0 +1,98 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Prepare a job to compile and run sketches on native_sim: install the host
+# compiler and arduino-cli with the tools of the Board Manager core, then
+# install the native_sim core package built by the build job of
+# test_native_sim.yml as a sketchbook platform, also available under the
+# core architecture names (zephyr, zephyr_main, ...) via symlinks.
+
+name: Set up native_sim
+description: Install the native_sim core package and its tools
+
+inputs:
+  core-dir:
+    description: Directory to install the core package to, in the sketchbook hardware folder
+    required: true
+  ci-builds-url:
+    description: Additional Board Manager index URL for the tools (optional)
+    default: ''
+
+runs:
+  using: composite
+  steps:
+
+    - name: Install host compiler
+      shell: bash
+      run: |
+        sudo apt-get remove --purge man-db -y # skips the mandb triggers
+        sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt 2>/dev/null || true # unreliable mirror
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends gcc-14 g++-14 gdb ccache
+        # the SDK libstdc++ headers need gcc 14: make it the default host compiler
+        for link in gcc:gcc g++:g++ cc:gcc c++:g++ cpp:cpp ; do
+          sudo ln -sf /usr/bin/${link#*:}-14 /usr/local/bin/${link%:*}
+        done
+        # the sketches are built with the host compiler from the PATH: build
+        # them through ccache (its directory comes first in the PATH, and
+        # calls the compiler above). Each sketch test runs in a directory of
+        # its own: do not hash it, or nothing would be shared.
+        echo "/usr/lib/ccache" >> $GITHUB_PATH
+        echo "CCACHE_DIR=$HOME/.cache/ccache" >> $GITHUB_ENV
+        echo "CCACHE_NOHASHDIR=1" >> $GITHUB_ENV
+        echo "CCACHE_MAXSIZE=500M" >> $GITHUB_ENV
+
+    - uses: actions/download-artifact@v8
+      with:
+        name: native_sim-package
+        path: native_sim-package/
+
+    - uses: arduino/setup-arduino-cli@v2
+
+    # The Board Manager core is installed as test-core does (from ci-builds,
+    # if possible) to get the exact set of tools the core recipes need. All
+    # test jobs install the same one: cache it by version. The latest cache
+    # is restored first, before arduino-cli installs its builtin tools, and
+    # the cache is saved again only if the core version changed.
+    - uses: actions/cache/restore@v5
+      id: cache
+      with:
+        path: ~/.arduino15/packages
+        key: native-sim-arduino15-${{ runner.os }}-${{ runner.arch }}-
+        restore-keys: native-sim-arduino15-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Install core and tools
+      id: core
+      shell: bash
+      env:
+        CI_BUILDS_URL: ${{ inputs.ci-builds-url }}
+      run: |
+        arduino-cli core update-index ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+        VERSION=$(arduino-cli core search arduino:zephyr_main --format json ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL} |
+                  jq -r '.platforms[0].latest_version')
+        echo "key=native-sim-arduino15-${RUNNER_OS}-${RUNNER_ARCH}-${VERSION}" >> $GITHUB_OUTPUT
+        # (only downloads what the restored cache does not have)
+        arduino-cli core install arduino:zephyr_main@${VERSION} ${CI_BUILDS_URL:+--additional-urls $CI_BUILDS_URL}
+
+    - uses: actions/cache/save@v5
+      if: ${{ steps.cache.outputs.cache-matched-key != steps.core.outputs.key }}
+      continue-on-error: true # parallel jobs may be saving the same key
+      with:
+        path: ~/.arduino15/packages
+        key: ${{ steps.core.outputs.key }}
+
+    - name: Install native_sim package
+      shell: bash
+      env:
+        CORE_DIR: ${{ inputs.core-dir }}
+      run: |
+        # install the native_sim core package as a sketchbook platform
+        mkdir -p $(dirname $CORE_DIR)
+        tar --use-compress-program=unzstd -xpf native_sim-package/native_sim.tar.zst -C $(dirname $CORE_DIR)
+        mv $(dirname $CORE_DIR)/ArduinoCore-zephyr $CORE_DIR
+        # arduino-cli rejects the libraries that do not declare the board
+        # architecture: make the same core available under the name of each
+        # core architecture
+        for arch in $(jq -r '.architecture | select(. != "" and . != "native_sim")' extra/artifacts/*.json | sort -u) ; do
+          ln -sfn $(basename $CORE_DIR) $(dirname $CORE_DIR)/$arch
+        done
