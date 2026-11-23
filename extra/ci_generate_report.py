@@ -15,6 +15,7 @@
 #  If output files are not specified, summary and full report are written to /dev/stdout
 #  and results to /dev/null.
 
+import argparse
 from collections import defaultdict
 import json
 import sys
@@ -359,16 +360,16 @@ def print_mem_report(artifact, artifact_boards):
 # Main Logic
 # ---------------------------------------------------------------------------
 
-if not len(sys.argv) in (2, 5):
-    print("Usage: ci_generate_report.py <json_file> [<results_file> <summary_file> <full_report_file>]")
-    sys.exit(1)
+parser = argparse.ArgumentParser(description="Write the CI reports of the collected data")
+parser.add_argument("json_file", help="data collected by ci_collect_data.py")
+parser.add_argument("files", nargs="*", metavar="file", help="<results_file> <summary_file> <full_report_file>")
+args = parser.parse_args()
+if len(args.files) not in (0, 3):
+    parser.error("wrong number of output files")
 
-json_file = sys.argv[1]
-
-if len(sys.argv) == 5:
-    results_file = sys.argv[2]
-    summary_file = sys.argv[3]
-    full_report_file = sys.argv[4]
+json_file = args.json_file
+if args.files:
+    results_file, summary_file, full_report_file = args.files
 else:
     results_file = "/dev/null"
     summary_file = full_report_file = "/dev/stdout"
