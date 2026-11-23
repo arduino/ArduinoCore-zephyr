@@ -43,3 +43,17 @@ burner_app.communication=USB
 burner_app.protocol=
 burner_app.bootloader.pattern={iap_flash.pattern}
 burner_app.upload.artifacts.loader={iap_flash.image}
+
+linkserver.name=NXP LinkServer
+linkserver.communication=USB
+linkserver.protocol=
+linkserver.program.protocol=
+linkserver.program.tool.default=linkserver
+linkserver.program.extra_params=
+
+pyocd.name=pyOCD
+pyocd.communication=USB
+pyocd.protocol=
+pyocd.program.protocol=
+pyocd.program.tool.default=pyocd
+pyocd.program.extra_params=
