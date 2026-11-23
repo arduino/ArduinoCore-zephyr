@@ -168,7 +168,7 @@ recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 ## Mangle the file
 recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.elf"
 recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
-recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/{build.variant}/loader.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
+recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
 
 ## Compute size
 recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/{build.variant}/loader.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"
@@ -200,39 +200,40 @@ upload.pid={bootloader.pid}
 erase.pattern=
 
 # Generated files used at upload time
-upload.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/loader.{loader.format}
+loader.basename=loader
+upload.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.{loader.format}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
 # Files used by "Upload Using Programmer" (SWD, absolute addresses)
-program.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/loader.hex
+program.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.hex
 program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 upload.offset=0
 
-# "Burn Bootloader" needs a bootloader tool and pattern: the SWD programmers
-# set openocd and swd_flash.pattern; the burner app sets iap_flash.pattern
-# and runs the board's bootloader.tool (its upload tool, set on
-# boards with a bootloader image). Otherwise the placeholders below are not
-# commands, so the action fails showing their name.
+# On boards with a bootloader image, "Burn Bootloader" needs a bootloader tool
+# and pattern: the SWD programmers set their tool and swd_flash.pattern; the
+# burner app reuses the board's upload tool (enforced via build.sh) and sets
+# iap_flash.pattern.
+# On other boards, the placeholders below are not substituted, so the action
+# fails showing their name.
 bootloader.tool.default=no-bootloader-available
 bootloader.pattern=no-bootloader-available
 
-# "Burn Bootloader" with a hardware programmer runs swd_flash.pattern (the
-# bootloader pattern of the SWD programmers) to write swd_flash.image with
-# the swd_flash.cmd of swd_flash.tool: the programmer's tool, unless the board
-# sets another one. Boards that ship a bootloader set the pattern and have
-# their image in firmwares/<variant>/bootloader.hex; on the others the
-# placeholder below is not a command, so the action fails showing its name.
+# "Burn Bootloader" with a hardware programmer: the programmer sets the
+# bootloader pattern to swd_flash.pattern, overriding the default: it writes
+# swd_flash.image over SWD with the swd_flash.cmd of swd_flash.tool.
+# This allows each board to override the programmer's tool.
 swd_flash.config=
 swd_flash.preflash=
 swd_flash.tool={bootloader.tool.default}
 swd_flash.pattern=no-bootloader-available
 swd_flash.image={runtime.platform.path}/firmwares/{build.variant}/bootloader.hex
-# "Burn Bootloader" with the burner programmer runs this pattern. Boards
-# that ship a bootloader point it to tools.patterns.iap_flash, which
-# uploads firmwares/{build.variant}/burner.bin (built by extra/build.sh)
-# with their upload tool.
-# The placeholder below is not a command, so the action fails showing its name.
+
+# "Burn Bootloader" with the burner app: arduino-cli runs the board's
+# bootloader.tool (its USB upload tool), and the pattern used to upload
+# iap_flash.image is iap_flash.pattern.
+burner.basename=burner
 iap_flash.pattern=no-bootloader-available
+iap_flash.image={runtime.platform.path}/firmwares/{build.variant}/{burner.basename}.{loader.format}
 
 # Shared flash recipes, built from the pieces in each tool's section:
 # - {loader.cmd} and {sketch.cmd} flash the loader and the sketch, with extra

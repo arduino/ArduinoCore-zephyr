@@ -196,6 +196,15 @@ get_value_from_text_file() {
 	grep -E "\<${field//./\\./}\>\s*=" $file | tail -n 1 | cut -d '=' -f 2- | tr -d '); '
 }
 
+get_board_field() {
+	local field=$1
+	local full_field_name="${board}.${field}"
+	local match_regexp="${full_field_name//./\\.}" # escape dots
+
+	# strip comments, then print the value of the field
+	sed -e 's/\s*#.*//' boards.txt | sed -n -e "s/^${match_regexp}=//p"
+}
+
 update_local_field() {
 	local field=$1
 	local value="$2"
@@ -233,7 +242,8 @@ EOF
 
 	# update the actual field line
 	if grep -qE "^${match_regexp}=" $file; then
-		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${value}/" $file
+		local escaped_value=$(sed -e 's/[\/&]/\\&/g' <<< "$value") # escape for sed
+		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${escaped_value}/" $file
 	else
 		echo "${full_field_name}=${value}" >> $file
 	fi
@@ -273,6 +283,19 @@ if [ ! -z "$board" ]; then
 
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
 	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
+
+	# For "Burn Bootloader" on boards with a bootloader image:
+	# - with a hardware programmer, write the image with the board's
+	#   swd_flash.tool;
+	# - with the burner app, upload the burner image with the
+	#   board's usual upload tool (copied as bootloader.tool.default).
+	if [ -f firmwares/${variant}/bootloader.hex ]; then
+		update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/bootloader.hex"
+		update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
+		BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
+		update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
+		update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+	fi
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
