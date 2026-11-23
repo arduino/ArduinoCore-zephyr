@@ -17,7 +17,9 @@
 #  - CORE_TAG: tag (if found) or hash, for user-friendly strings and file names
 #  - CORE_BRANCH: target branch of this build, used for ci-builds tracking
 #  - ALL_BOARD_DATA: JSON describing all boards, from get_board_details.sh
-#    (except native_sim, a test only board that is never published)
+#    (except native_sim, built and tested by dedicated jobs)
+#  - NATIVE_SIM_BOARD_DATA: the native_sim entry of get_board_details.sh, with
+#    the "build-native_sim" id of its build job
 #  - ALL_BOARD_FQBNS: ALL_BOARD_DATA with link_mode alternatives added, each
 #    requiring the package of its artifact
 #  - ARTIFACTS: list of artifacts, including the "zephyr" umbrella artifact
@@ -45,8 +47,11 @@ REF=${1:-HEAD}
 OUTPUT=${GITHUB_ENV:-/dev/stdout}
 
 CORE_HASH=$(git describe --always $REF)
-# native_sim is never published: keep it out of the board matrix
-ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'map(select(.artifact != "native_sim")) | sort_by(.variant) | map(. + {id: "build-\(.board)"})')
+# native_sim is never published: it is built, packaged and tested by
+# dedicated jobs, without waiting for the other boards
+BOARD_DETAILS=$(extra/get_board_details.sh)
+ALL_BOARD_DATA=$(jq -c 'map(select(.artifact != "native_sim")) | sort_by(.variant) | map(. + {id: "build-\(.board)"})' <<< ${BOARD_DETAILS})
+NATIVE_SIM_BOARD_DATA=$(jq -c 'map(select(.artifact == "native_sim") | . + {id: "build-\(.board)"}) | first' <<< ${BOARD_DETAILS})
 CORE_VER=$(extra/get_core_version.sh)
 CORE_TAG=$(git describe --tags --exact-match --exclude '*/*' 2>/dev/null || echo $CORE_HASH)
 if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
@@ -82,6 +87,6 @@ if [[ "$GITHUB_REPOSITORY" == "arduino/ArduinoCore-zephyr" ]]; then
 	fi
 fi
 
-for VAR in CORE_HASH CORE_VER CORE_TAG CORE_BRANCH ALL_BOARD_DATA ALL_BOARD_FQBNS ARTIFACTS PACKAGE_DATA SUB_ARCHES CI_BUILDS_URL; do
+for VAR in CORE_HASH CORE_VER CORE_TAG CORE_BRANCH ALL_BOARD_DATA NATIVE_SIM_BOARD_DATA ALL_BOARD_FQBNS ARTIFACTS PACKAGE_DATA SUB_ARCHES CI_BUILDS_URL; do
 	echo "$VAR=${!VAR}" >> "$OUTPUT"
 done

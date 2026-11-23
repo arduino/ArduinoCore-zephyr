@@ -35,6 +35,14 @@ on:
           is used, so that only this attempt's results count.
         type: string
         default: ''
+      native-sim-matrix:
+        description: >
+          The native_sim test jobs of the run holding the core packages (see
+          ci_native_sim_matrix.sh), whose job markers are in that run. If not
+          empty, a board is only tested if the native_sim jobs posing as it
+          and the ones common to all boards succeeded.
+        type: string
+        default: ''
 
 env:
   # use the head SHA for PR hashes, instead of the merge commit
@@ -124,10 +132,19 @@ jobs:
       - name: Select tests
         env:
           MIN_ATTEMPT: ${{ inputs.min-attempt || github.run_attempt }}
+          NATIVE_SIM_MATRIX: ${{ inputs.native-sim-matrix }}
         run: |
+          # with native_sim tests, a board also requires the native_sim jobs
+          # posing as it (with a variant) and the ones common to all boards
+          # (without), whose markers come with the test markers of this run
+          FQBNS=$ALL_BOARD_FQBNS
+          if [ -n "$NATIVE_SIM_MATRIX" ]; then
+            FQBNS=$(jq -c --argjson jobs "$NATIVE_SIM_MATRIX" 'map(. as $e | .requires += [
+              $jobs[] | select((has("variant") | not) or .group == $e.board) | .id ])' <<< "$FQBNS")
+          fi
           # only test boards whose core package was successfully created,
           # and that did not already pass in an earlier attempt
-          echo "TEST_FQBNS=$(extra/ci_filter_matrix.sh -m $MIN_ATTEMPT -x prereqs-ext/ prereqs/ "$ALL_BOARD_FQBNS")" >> "$GITHUB_ENV"
+          echo "TEST_FQBNS=$(extra/ci_filter_matrix.sh -m $MIN_ATTEMPT -x prereqs-ext/ prereqs/ "$FQBNS")" >> "$GITHUB_ENV"
 
       # test data fetched by the run holding the core packages, if available
       - uses: actions/download-artifact@v8
