@@ -200,7 +200,7 @@ upload.pid={bootloader.pid}
 erase.pattern=
 
 # Generated files used at upload time
-upload.artifacts.loader={runtime.platform.path}/firmwares/{bootloader.file}
+upload.artifacts.loader={runtime.platform.path}/firmwares/zephyr-{build.variant}.{loader.format}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
 # Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
@@ -227,6 +227,7 @@ tools.patterns.flash-loader-only={loader.cmd}{loader.args.without_sketch}
 # Special handling of loader and sketch via cfg file
 
 tools.openocd.path={runtime.tools.openocd-0.12.0-arduino1-static.path}
+tools.openocd.loader.format=hex
 tools.openocd.cmd=bin/openocd
 tools.openocd.cmd.windows=bin/openocd.exe
 
@@ -248,11 +249,12 @@ tools.openocd.bootloader.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts
 #
 
 tools.bossac.path={runtime.tools.bossac-1.9.1-arduino2.path}
+tools.bossac.loader.format=bin
 tools.bossac.cmd=bossac
 tools.bossac.cmd.windows=bossac.exe
 
 tools.bossac.sketch.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.sketch}" --offset {upload.address} -R
-tools.bossac.loader.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.loader}" --offset {bootloader.address}
+tools.bossac.loader.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.loader}" --offset {loader.address}
 tools.bossac.loader.args.without_sketch={empty} -R
 
 tools.bossac.upload.params.verbose=-d
@@ -271,12 +273,14 @@ tools.bossac.bootloader.pattern={tools.patterns.flash-loader-only}
 # overridable by boards.txt
 leave.dfuse=:leave
 upload.dfuse=--dfuse-address={upload.address}
-bootloader.dfuse=--dfuse-address={bootloader.address}
+loader.dfuse=--dfuse-address={loader.address}
+loader.interface=0
 
 tools.dfu-util.path={runtime.tools.dfu-util.path}
+tools.dfu-util.loader.format=bin
 tools.dfu-util.cmd=dfu-util
 tools.dfu-util.sketch.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{upload.interface} {upload.dfuse}{leave.dfuse}
-tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{bootloader.interface} {bootloader.dfuse}
+tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{loader.interface} {loader.dfuse}
 tools.dfu-util.loader.args.without_sketch={leave.dfuse}
 
 tools.dfu-util.upload.params.verbose=-d
@@ -297,6 +301,7 @@ tools.picotool.loader.cmd="{path}/{cmd}" {upload.verbose} -n -D "{upload.artifac
 tools.picotool.loader.args.with_sketch={empty} -R
 
 tools.picotool.path={runtime.tools.rp2040tools.path}
+tools.picotool.loader.format=uf2
 tools.picotool.cmd=rp2040load
 tools.picotool.upload.params.verbose=-v
 tools.picotool.upload.params.quiet=
@@ -323,6 +328,7 @@ tools.imgtool.flags=sign --key "{build.keys.keychain}/{build.keys.sign_key}" --e
 # Special handling of loader and sketch via upload command
 
 tools.remoteocd.path={runtime.tools.remoteocd.path}
+tools.remoteocd.loader.format=elf
 tools.remoteocd.cmd=remoteocd
 tools.remoteocd.upload.params.verbose=--verbose
 tools.remoteocd.upload.params.quiet=
@@ -337,6 +343,7 @@ tools.remoteocd_network.upload.protocol=network
 tools.remoteocd_network.upload.field.password=Password
 tools.remoteocd_network.upload.field.password.secret=true
 tools.remoteocd_network.path={runtime.tools.remoteocd.path}
+tools.remoteocd_network.loader.format=elf
 tools.remoteocd_network.cmd=remoteocd
 tools.remoteocd_network.upload.params.verbose=--verbose
 tools.remoteocd_network.upload.params.quiet=
@@ -351,6 +358,7 @@ tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.ad
 # TODO: at the moment, install pyocd manually (with provided script)
 #tools.pyocd.path={runtime.tools.pyocd.path}
 tools.pyocd.path=
+tools.pyocd.loader.format=elf
 tools.pyocd.cmd=pyocd
 tools.pyocd.upload.params.verbose=
 tools.pyocd.upload.params.quiet=

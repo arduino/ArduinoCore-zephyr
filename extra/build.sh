@@ -226,7 +226,7 @@ if [ ! -z "$board" ]; then
 	update_local_field "upload.address" "$UPLOAD_ADDR" "$UPLOAD_ADDR_COMMENT"
 
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
-	update_local_field "bootloader.maximum_size" $LOADER_MAX_SIZE
+	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
