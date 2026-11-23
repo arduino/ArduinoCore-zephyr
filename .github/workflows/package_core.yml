@@ -560,7 +560,7 @@ jobs:
 
 
   # Collect all build and test reports, analyze them and produce a summary.
-  # See ci_collect_data.py and ci_generate_report.py for details.
+  # See ci_collect_data.py and ci_report_summary.py for details.
 
   verify-core:
     runs-on: ubuntu-latest
@@ -594,18 +594,59 @@ jobs:
         run: |
           extra/ci_download_artifacts.sh prereqs/ 'prereq-*'
 
-      - name: Generate workflow summary
+      - name: Collect data
         run: |
           # Archive the input set of reports for later inspection
           tar -I "zstd -T0 -19 --long=27" -chf build-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst zephyr-* arduino-*.json
-          # Collect all CI data into a JSON file, then generate the report
+          # Collect all CI data into a JSON file
           extra/ci_collect_data.py build_info.json
-          extra/ci_generate_report.py build_info.json result summary full_log
+
+      # (before the report page, which shows the size deltas)
+      - name: Compute code size changes
+        continue-on-error: true # the deltas are only shown in the report page
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "SIZE_DELTAS=none" >> $GITHUB_ENV
+            exit 0
+          fi
+          export GITHUB_BASE_SHA=$(git rev-list --parents -n 1 HEAD | cut -d' ' -f2)
+          # errors due to race conditions with parallel branch runs should not fail the job
+          if extra/ci_calc_size_reports.py ${GITHUB_BASE_SHA} sketches-reports/ ; then
+            echo "SIZE_DELTAS=available" >> $GITHUB_ENV
+          else
+            echo "SIZE_DELTAS=unavailable" >> $GITHUB_ENV
+          fi
+
+      # The full report is a single page, uploaded as a non-zipped artifact
+      # that GitHub shows in the browser, and linked from the summary
+      # (failures here only lose the page: the summary then links to the
+      # run, and the metadata, comment and publishing are not blocked)
+      - name: Generate report page
+        continue-on-error: true
+        run: |
+          extra/ci_report_page.py report-${{ needs.build-env.outputs.CORE_HASH }}.html build_info.json \
+            --sizes . --deltas sketches-reports --size-deltas ${SIZE_DELTAS:-unavailable}
+
+      # (kept as long as the run logs, as the step summary that links to it)
+      - name: Archive report page
+        id: report-page
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: report-${{ needs.build-env.outputs.CORE_HASH }}.html
+          path: report-${{ needs.build-env.outputs.CORE_HASH }}.html
+          archive: false
+          overwrite: true
+
+      - name: Generate workflow summary
+        env:
+          DETAILS_URL: ${{ steps.report-page.outputs.artifact-url }}
+        run: |
+          extra/ci_report_summary.py --details-url "$DETAILS_URL" build_info.json result summary
           cat result
 
-          # Display the summary and full log in the step summary
+          # Display the summary, linking to the report page, in the step summary
           cat summary >> $GITHUB_STEP_SUMMARY
-          cat full_log >> $GITHUB_STEP_SUMMARY
 
           # Create a comment for PRs using the summary file
           if [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -620,13 +661,6 @@ jobs:
           if [ "${{ github.event_name }}" == "push" ]; then
             tar -I "zstd -T0 -19 --long=27" -chf size-reports-${{ needs.build-env.outputs.CORE_HASH }}.tar.zst arduino-*.json
           fi
-
-      - name: Compute code size changes
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          export GITHUB_BASE_SHA=$(git rev-list --parents -n 1 HEAD | cut -d' ' -f2)
-          # errors due to race conditions with parallel branch runs should not fail the job
-          extra/ci_calc_size_reports.py ${GITHUB_BASE_SHA} sketches-reports/ || true
 
       # upload build metadata artifact, for upload to ci-builds
       - name: Archive build metadata information

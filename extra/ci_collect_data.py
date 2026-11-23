@@ -8,7 +8,7 @@
 # The script reads build artifacts and test reports generated during a GitHub
 # Actions CI run for Arduino Zephyr cores. It aggregates results by board,
 # artifact, and sketch, and serializes all data to a JSON file for further
-# processing by ci_generate_report.py.
+# processing by ci_report_summary.py.
 #
 # This script expects the following inputs:
 #
@@ -26,7 +26,7 @@
 #
 # This script produces one output file:
 #
-#  - <json_file>: JSON file with all collected data, to be consumed by ci_generate_report.py
+#  - <json_file>: JSON file with all collected data, to be consumed by ci_report_summary.py
 #
 # Usage: ci_collect_data.py [<json_file>]
 #  If no argument is given, output is written to /dev/stdout.

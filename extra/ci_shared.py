@@ -221,6 +221,9 @@ class TestGroup:
         self.group_names = set()
         # Counts of test results by status
         self.counts = { s: 0 for s in TestStatus }
+        # Worst status of each (board, sketch): a sketch built for both link
+        # modes counts once, with its worst result
+        self.sketch_status = {}
         # Overall status of the group
         self.status = SKIP
         # List of individual TestEntry objects by feature
@@ -236,10 +239,22 @@ class TestGroup:
             self.tests_with_issues.append(test_entry)
 
         self.counts[test_entry.status] += 1
+        key = (test_entry.board, test_entry.sketch)
+        self.sketch_status[key] = max(self.sketch_status.get(key, SKIP), test_entry.status)
         self.status = max(self.status, test_entry.status)
         self.boards.add(test_entry.board)
         self.sketches.add(test_entry.sketch)
         self.group_names.add((test_entry.group, test_entry.name))
+
+    def sketch_counts(self):
+        """
+        Counts of the sketches by their worst status (skipped ones included,
+        so that the counts add up to the sketches)
+        """
+        counts = { s: 0 for s in TestStatus }
+        for status in self.sketch_status.values():
+            counts[status] += 1
+        return counts
 
 
 def load_known_issues(variant):
