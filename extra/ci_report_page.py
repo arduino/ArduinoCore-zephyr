@@ -11,9 +11,11 @@
 # is uploaded as a non-zipped artifact, that GitHub serves as a web page (see
 # package_core.yml): it must not load anything from outside.
 #
-# Usage: ci_report_page.py <out.html> <build_info.json>
+# Usage: ci_report_page.py <out.html> [<build_info.json>] [--native-sim <report.json>]
 #                          [--sizes <dir>] [--deltas <dir>] [--size-deltas available|unavailable|none]
-#  - build_info.json: data of the core artifacts, see ci_collect_data.py
+#  - build_info.json: data of the core artifacts, see ci_collect_data.py;
+#    without it, the page of the native_sim tests only (see test_native_sim.yml)
+#  - --native-sim: data of the native_sim tests (missing file: native_sim not built)
 #  - --sizes: folder of the arduino-*.json compilation reports, for the sketch sizes
 #  - --deltas: folder of the same reports with the size deltas to the base
 #    commit, see ci_calc_size_reports.py
@@ -30,7 +32,7 @@ import json
 import os
 import re
 
-from ci_shared import TestStatus
+from ci_shared import TestStatus, RAN_ICON, RUN_FAILED_ICON
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAYLOAD_VERSION = 1
@@ -40,7 +42,7 @@ ICONS = {
     ":new_moon:": "🌑", ":green_circle:": "🟢", ":white_check_mark:": "✅",
     ":yellow_circle:": "🟡", ":no_entry_sign:": "🚫", ":heavy_check_mark:": "✔️",
     ":interrobang:": "⁉️", ":red_circle:": "🔴", ":x:": "❌", ":fire:": "🔥",
-    ":label:": "🏷️", ":green_book:": "📗",
+    ":green_heart:": "💚", ":broken_heart:": "💔", ":label:": "🏷️", ":green_book:": "📗",
 }
 
 # sketch name in the delta reports, see ci_calc_size_reports.py
@@ -156,15 +158,26 @@ def run_info(env, now):
     return {k: v for k, v in info.items() if v}
 
 
-def build_payload(build_info, sizes, size_deltas, info=None):
+def build_payload(build_info, native_sim, sizes, size_deltas, info=None):
     """
-    Returns the data embedded in the page, see the module comment.
+    Returns the data embedded in the page, see the module comment. With no
+    build_info, the page of the native_sim tests only, with their run data.
     info: the information on the CI run, see run_info().
     """
+    if build_info is None:
+        build_info = {"job_link_stem": native_sim["job_link_stem"], "ci_run_passed": native_sim["ci_run_passed"],
+                      "artifacts": [], "all_board_data": {}, "board_loaders": {}, "all_tests": [],
+                      "regions_by_soc": native_sim.get("regions_by_soc", {})}
     artifacts = list(build_info["artifacts"])
     boards = dict(build_info["all_board_data"])
     loaders = dict(build_info["board_loaders"])
     tests = list(build_info["all_tests"])
+    if native_sim:
+        artifacts.append("native_sim")
+        boards.update(native_sim["all_board_data"])
+        for board, loader in native_sim["board_loaders"].items():
+            loaders.setdefault(board, loader)
+        tests += native_sim["all_tests"]
 
     return {
         "version": PAYLOAD_VERSION,
@@ -177,11 +190,14 @@ def build_payload(build_info, sizes, size_deltas, info=None):
         "statuses": [{"value": int(s), "name": s.name, "passed": s.passed,
                       "test_icon": icon(s.test_icon), "board_icon": icon(s.board_icon),
                       "legend": s.legend} for s in TestStatus],
-        "icons": {"warnings": icon(":label:"), "no_warnings": icon(":green_book:")},
+        "icons": {"ran": icon(RAN_ICON), "run_failed": icon(RUN_FAILED_ICON),
+                  "warnings": icon(":label:"), "no_warnings": icon(":green_book:")},
         "boards": boards,
         "regions_by_soc": build_info.get("regions_by_soc", {}),
         "loaders": loaders,
         "tests": tests,
+        "native_sim": {"present": native_sim is not None,
+                       "ci_run_passed": bool(native_sim and native_sim["ci_run_passed"])},
         "sizes": sizes,
         "size_deltas": size_deltas,
     }
@@ -208,17 +224,25 @@ def write_page(payload, out_path):
 def main():
     parser = argparse.ArgumentParser(description="Write the CI report page")
     parser.add_argument("out")
-    parser.add_argument("build_info")
+    parser.add_argument("build_info", nargs="?")
+    parser.add_argument("--native-sim")
     parser.add_argument("--sizes")
     parser.add_argument("--deltas")
     parser.add_argument("--size-deltas", choices=["available", "unavailable", "none"], default="none")
     args = parser.parse_args()
 
-    with open(args.build_info) as f:
-        build_info = json.load(f)
+    if not args.build_info and not args.native_sim:
+        parser.error("build_info or --native-sim required")
+    build_info = None
+    if args.build_info:
+        with open(args.build_info) as f:
+            build_info = json.load(f)
+    native_sim = read_report(args.native_sim) if args.native_sim else None
+    if build_info is None and native_sim is None:
+        parser.error(f"cannot read {args.native_sim}")
     sizes = read_sizes(args.sizes, args.deltas) if args.sizes else []
     info = run_info(os.environ, datetime.now(timezone.utc))
-    write_page(build_payload(build_info, sizes, args.size_deltas, info), args.out)
+    write_page(build_payload(build_info, native_sim, sizes, args.size_deltas, info), args.out)
 
 
 if __name__ == "__main__":

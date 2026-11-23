@@ -15,8 +15,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
 
 // --- data model
 
-// sketch identity: the path in the core ('libraries/...'), the tests name
-// the sketches from its parent folder ('ArduinoCore-zephyr/libraries/...')
+// sketch identity: the core tests name the sketches from the parent folder
+// ('ArduinoCore-zephyr/libraries/...'), the native_sim tests from the core
+// ('libraries/...')
 const sketchKey = (sketch) => String(sketch ?? '').replace(/^ArduinoCore-zephyr\//, '');
 
 function buildModel(p) {
@@ -32,7 +33,8 @@ function buildModel(p) {
   for (const [board, l] of Object.entries(p.loaders)) add(l.artifact, board);
   for (const [a, set] of boardsByArtifact) boardsByArtifact.set(a, [...set].sort());
 
-  const artifacts = [...boardsByArtifact.keys()];
+  // native_sim last (its data is appended to the core artifacts)
+  const artifacts = [...boardsByArtifact.keys()].sort((a, b) => (a === 'native_sim') - (b === 'native_sim'));
 
   // test groups (library or examples group, '' for the CI entries) and their sketches
   const groups = new Map();
@@ -42,7 +44,7 @@ function buildModel(p) {
   }
   for (const [g, set] of groups) groups.set(g, [...set].sort());
 
-  // SoCs and their boards
+  // SoCs and their boards (native_sim and the boards it poses as: 'native')
   const socs = new Map();
   for (const b of [...boardsByArtifact.values()].flat()) {
     const soc = p.boards[b]?.soc;
@@ -52,15 +54,33 @@ function buildModel(p) {
   }
   for (const list of socs.values()) list.sort();
 
+  // sketches run on native_sim (false: some run checks failed), by board and
+  // sketch: on the native_sim boards and on the boards they pose as
+  const runs = new Map();
+  const addRun = (board, sketch, ok) => {
+    const k = `${board}\n${sketchKey(sketch)}`;
+    runs.set(k, (runs.get(k) ?? true) && ok);
+  };
+  for (const t of p.tests) {
+    if (typeof t.run_success !== 'boolean') continue;
+    addRun(t.board, t.sketch, t.run_success);
+    const mimic = p.boards[t.board]?.mimic;
+    if (mimic) addRun(mimic, t.sketch, t.run_success);
+  }
+
   return {
     p, statuses, S: byName,
     artifacts,
+    // page of the native_sim tests only (see test_native_sim.yml)
+    nativeOnly: p.run.artifacts.length === 1 && p.run.artifacts[0] === 'native_sim',
     boardsByArtifact,
     groups: new Map([...groups].sort(([a], [b]) => a.localeCompare(b))),
     socs: new Map([...socs].sort(([a], [b]) => a.localeCompare(b))),
     status: (value) => statuses.get(value) ?? statuses.get(byName.SKIP),
-    label: (board) => board,
+    label: (board) => (p.boards[board]?.mimic ? `${p.boards[board].mimic} (sim)` : board),
     sketchLabel: (t) => (t.group ? `${t.group} ${t.name}` : t.name),
+    // native_sim run of a sketch on a board: true, false, or undefined (not run)
+    ran: (board, sketch) => runs.get(`${board}\n${sketchKey(sketch)}`),
   };
 }
 
@@ -205,6 +225,19 @@ function table(head, rows, cls = '') {
   return `<div class='scroll'><table${cls ? ` class='${cls}'` : ''}><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 
+// with native_sim collapsed in the recap, the boards it poses as are hidden
+// where the board they pose as is also listed (that carries their run marks)
+function hideTwins(m, view, boards) {
+  if (recapOpen(m, view, 'native_sim')) return boards;
+  const set = new Set(boards);
+  return boards.filter((b) => !set.has(m.p.boards[b]?.mimic));
+}
+
+// icon of the native_sim run of some sketches on a board: failed if any failed
+function ranIcon(m, board, sketches) {
+  const r = sketches.map((s) => m.ran(board, s)).filter((v) => v !== undefined);
+  return !r.length ? '' : r.includes(false) ? ` ${m.p.icons.run_failed}` : ` ${m.p.icons.ran}`;
+}
 const note = (text) => `<p class='note'>${text}</p>`;
 
 // state of a <details> section: the user's choice (view.open has 'key' when
@@ -258,7 +291,13 @@ function renderSidebar(m, view) {
   const filter = view.filter ?? '';
   // badges of each side are counted on the tests of the other selection
   const forBoards = selectTests(m, view, { boards: false });
-  const forTests = selectTests(m, view, { tests: false });
+  // (the known failures of native_sim count as passed on the tests side,
+  // unless only native_sim boards are selected)
+  const simBoards = new Set(m.boardsByArtifact.get('native_sim') ?? []);
+  const selBoards = selectionBoards(m, view.boards ?? { kind: 'all' });
+  const simOnly = m.nativeOnly || (selBoards?.length > 0 && selBoards.every((b) => simBoards.has(b)));
+  const forTests = selectTests(m, view, { tests: false }).map((t) => (!simOnly && t.artifact === 'native_sim'
+    && t.status === m.S.EXPECTED_ERROR ? { ...t, status: m.S.PASS } : t));
   const hit = (tests, boards = []) => !filter || tests.some((t) => matches(testText(m, t), filter))
     || boards.some((b) => matches(loaderText(m, b), filter));
   const expanded = (key, def) => (view.collapsed?.has(key) ? !def : def);
@@ -277,7 +316,7 @@ function renderSidebar(m, view) {
     const list = m.boardsByArtifact.get(a);
     const tests = forBoards.filter((t) => t.artifact === a);
     const key = `artifact:${a}`;
-    const open = expanded(key, true);
+    const open = expanded(key, a !== 'native_sim' || m.nativeOnly);
     boards.push(boardEntry('artifact', a, a, tests, list, toggleBtn(key, open)));
     if (!open) continue;
     for (const b of list) {
@@ -312,10 +351,13 @@ function renderSidebar(m, view) {
     + renderLegend(m);
 }
 
-// the icons of the statuses (test icon, and board icon when different)
+// the icons of the statuses (test icon, and board icon when different) and
+// of the native_sim runs
 function renderLegend(m) {
   const row = (icons, text) => `<div class='lrow'><span class='licons'>${icons}</span><span>${esc(text)}</span></div>`;
   const rows = m.p.statuses.map((s) => row(s.board_icon === s.test_icon ? s.test_icon : `${s.test_icon} ${s.board_icon}`, s.legend));
+  rows.push(row(m.p.icons.ran, 'Sketch also ran on native_sim, and all its run checks passed.'));
+  rows.push(row(m.p.icons.run_failed, 'Sketch also ran on native_sim, and some run checks failed.'));
   return `<div class='panel legend'><h3>LEGEND</h3>${rows.join('')}</div>`;
 }
 
@@ -360,33 +402,43 @@ function runInfo(info, runLink) {
 function renderHeader(m) {
   const p = m.p;
   const run = p.run.ci_run_passed ? `PASSED ${m.status(m.S.PASS).test_icon}` : `FAILED ${m.status(m.S.ERROR).test_icon}`;
+  const ns = p.native_sim.present ? '' : `${m.status(m.S.FAILURE).test_icon} native_sim: not built`;
   // the workflow run is linked from its number, if known
-  const notes = [p.info?.run_number ? '' : link(p.run.job_link_stem, 'workflow run ↗')].filter(Boolean);
-  return `<header><h1>CI run — ${run}</h1>${runInfo(p.info, p.run.job_link_stem)}`
+  const notes = [p.info?.run_number ? '' : link(p.run.job_link_stem, 'workflow run ↗'), ns].filter(Boolean);
+  return `<header><h1>${m.nativeOnly ? 'native_sim ' : ''}CI run — ${run}</h1>${runInfo(p.info, p.run.job_link_stem)}`
     + `${notes.length ? `<div class='note'>${notes.join(' · ')}</div>` : ''}</header>`;
 }
 
-const pageTitle = (m) => `CI report: ${m.p.run.ci_run_passed ? 'PASSED' : 'FAILED'}`;
+const pageTitle = (m) => `${m.nativeOnly ? 'native_sim ' : ''}CI report: ${m.p.run.ci_run_passed ? 'PASSED' : 'FAILED'}`;
 
 function results(m, tests) {
   const S = m.S;
-  // per sketch of each board, not per link mode test: a sketch built for
-  // both link modes counts once, with its worst status
-  const worst = new Map();
+  // one outcome per sketch of each board, not per link mode test: a sketch
+  // built for both link modes counts once, with its worst status. A sketch
+  // that also ran on native_sim counts with its run icon instead of its
+  // status when the run replaces it: passed, or failed with an error
+  const outcomes = new Map();
   for (const t of tests) {
     const k = `${t.board}\n${sketchKey(t.sketch)}`;
-    worst.set(k, Math.max(worst.get(k) ?? S.SKIP, t.status));
+    const status = Math.max(outcomes.get(k)?.status ?? S.SKIP, t.status);
+    outcomes.set(k, { status, ran: m.ran(t.board, t.sketch) });
   }
-  const statuses = [...worst.values()];
-  const n = (...v) => statuses.filter((s) => v.includes(s)).length;
-  const parts = [`${statuses.length - n(S.SKIP)} sketches`];
-  const add = (count, status) => { if (count) parts.push(`${count} ${m.status(status).test_icon}`); };
-  add(n(S.FAILURE), S.FAILURE);
-  add(n(S.INVALID_EXCEPTION, S.ERROR), S.ERROR);
-  add(n(S.EXPECTED_ERROR), S.EXPECTED_ERROR);
-  add(n(S.WARNING), S.WARNING);
-  add(n(S.PASS), S.PASS);
-  add(n(S.SKIP), S.SKIP);
+  const kinds = [...outcomes.values()].map(({ status, ran }) => {
+    if (status === S.PASS && ran === true) return 'ran';
+    if ((status === S.ERROR || status === S.INVALID_EXCEPTION) && ran === false) return 'run_failed';
+    return status;
+  });
+  const n = (...v) => kinds.filter((k) => v.includes(k)).length;
+  const parts = [`${kinds.length} sketches`];
+  const add = (count, icon) => { if (count) parts.push(`${count} ${icon}`); };
+  add(n(S.FAILURE), m.status(S.FAILURE).test_icon);
+  add(n(S.INVALID_EXCEPTION, S.ERROR), m.status(S.ERROR).test_icon);
+  add(n('run_failed'), m.p.icons.run_failed);
+  add(n(S.EXPECTED_ERROR), m.status(S.EXPECTED_ERROR).test_icon);
+  add(n(S.WARNING), m.status(S.WARNING).test_icon);
+  add(n(S.PASS), m.status(S.PASS).test_icon);
+  add(n('ran'), m.p.icons.ran);
+  add(n(S.SKIP), m.status(S.SKIP).test_icon);
   return parts.join(', ');
 }
 
@@ -408,13 +460,14 @@ function recapRow(m, view, b, tests) {
     + `<td class='n'>${ramCell}</td><td>${logs.join(' · ')}</td></tr>`;
 }
 
-// whether the boards of an artifact are shown in the recap; with a board
-// selection in a single artifact, there are no artifact headers and all
-// are shown
+// whether the boards of an artifact are shown in the recap (native_sim
+// collapsed by default, but on its own page); with a board selection in a
+// single artifact, there are no artifact headers and all are shown
 function recapOpen(m, view, a) {
   const kind = (view.boards ?? { kind: 'all' }).kind;
   if (kind !== 'all' && kind !== 'soc') return true;
-  return !view.collapsed?.has(`recap:${a}`);
+  const def = a !== 'native_sim' || m.nativeOnly;
+  return view.collapsed?.has(`recap:${a}`) ? !def : def;
 }
 
 function renderRecap(m, view) {
@@ -491,8 +544,10 @@ function card(m, view, c, group) {
     const k = `${h.board}\n${h.link_mode}`;
     if (!chips.has(k) || chips.get(k).status < h.status) chips.set(k, h);
   }
-  const chipHtml = [...chips.values()].map((h) => `<a class='chip st-${m.status(h.status).name.toLowerCase()}' href='${esc(h.job_link)}'`
-    + ` title='${esc(m.status(h.status).name)}'>${hl(m.label(h.board), view.filter)}${h.link_mode ? ` ${esc(h.link_mode)}` : ''} ↗</a>`).join('');
+  const shown = new Set(hideTwins(m, view, [...new Set(c.hits.map((h) => h.board))]));
+  const chipHtml = [...chips.values()].filter((h) => shown.has(h.board)).map((h) => `<a class='chip st-${m.status(h.status).name.toLowerCase()}' href='${esc(h.job_link)}'`
+    + ` title='${esc(m.status(h.status).name)}'>${hl(m.label(h.board), view.filter)}${h.link_mode ? ` ${esc(h.link_mode)}` : ''}`
+    + `${ranIcon(m, h.board, c.hits.filter((x) => x.board === h.board).map((x) => x.sketch))} ↗</a>`).join('');
   const more = c.sketches.length > 1 ? ` <span class='count'>— ${c.sketches.length} sketches${c.text ? ', same error' : ''}</span>` : '';
   const rawKey = `raw:${group}:${hashKey(c.key)}`;
   // the full output of the jobs is rendered only when opened (page weight)
@@ -523,12 +578,12 @@ function renderIssuesTab(m, view) {
   const cards = (list, group) => list.map((c) => card(m, view, c, group)).join('');
   const nHits = (list) => list.reduce((n, c) => n + c.hits.length, 0);
   const { issues, known, warnings, passed, skipped } = g;
-  const passedBody = () => `<ul class='list'>${passed.map((r) => `<li>${code(r.label)} — ${[...new Set(r.boards.map((b) => b.board))]
-    .map((b) => hl(m.label(b), f)).join(', ')}</li>`).join('')}</ul>`;
+  const passedBody = () => `<ul class='list'>${passed.map((r) => `<li>${code(r.label)} — ${hideTwins(m, view, [...new Set(r.boards.map((b) => b.board))])
+    .map((b) => `${hl(m.label(b), f)}${ranIcon(m, b, [r.sketch])}`).join(', ')}</li>`).join('')}</ul>`;
   // (as the passed list, one entry per sketch with its boards, under the
   // reason they were skipped for)
   const skippedBody = () => [...new Set(skipped.map((r) => r.reason))].map((reason) => `<h5 class='list-title'>${hl(reason, f)}</h5><ul class='list'>`
-    + `${skipped.filter((r) => r.reason === reason).map((r) => `<li>${code(r.label)} — ${r.boards
+    + `${skipped.filter((r) => r.reason === reason).map((r) => `<li>${code(r.label)} — ${hideTwins(m, view, r.boards)
       .map((b) => hl(m.label(b), f)).join(', ')}</li>`).join('')}</ul>`).join('');
   return (issues.length ? '' : note(f && anyIssues ? 'no issues match the filter' : 'no issues'))
     + sec('issues', S.ERROR, 'Issues', issues, nHits(issues), () => cards(issues, 'issues'), true)
@@ -596,7 +651,8 @@ const KCONFIG_SETS = [['diff', 'differing values'], ['shared', 'defined in all b
 
 function renderKconfigTab(m, view) {
   const f = view.filter ?? '';
-  const boards = selectedBoards(m, view).filter((b) => m.p.loaders[b]?.config);
+  // (not native_sim, a test only board, and the boards it poses as)
+  const boards = selectedBoards(m, view).filter((b) => m.p.loaders[b]?.config && m.p.loaders[b].artifact !== 'native_sim');
   const names = [...new Set(boards.flatMap((b) => Object.keys(m.p.loaders[b].config)))].sort();
   const textOf = (name, values) => values.flatMap((v) => (v === undefined ? [] : kconfigTexts(name, v))).join('\n') || name;
   if (boards.length === 1) {

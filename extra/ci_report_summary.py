@@ -11,20 +11,30 @@
 #    of the boards and the list of the failing sketches
 # The details are in the report page, see ci_report_page.py.
 #
-# Usage: ci_report_summary.py [--details-url <url>] <json_file> [<results_file> <summary_file>]
+# Usage: ci_report_summary.py [--native-sim-summary <text>] [--details-url <url>] <json_file> [<results_file> <summary_file>]
 #  If output files are not specified, the summary is written to /dev/stdout
-#  and results to /dev/null. The links of the summary and of the results
-#  point to the report page at the --details-url URL, if given, otherwise to
-#  the CI run.
+#  and results to /dev/null. The native_sim summary line (see below), if given,
+#  is printed after the summary title. The links of the summary and of the
+#  results point to the report page at the --details-url URL, if given,
+#  otherwise to the CI run.
+#
+# Usage: ci_report_summary.py --native-sim [--details-url <url>] <json_file> <summary_file> <step_summary_file>
+#  For the native_sim tests only (collected with no other boards): write the
+#  short summary of the native_sim tests, a line linking to their report page
+#  with the counts of its sketches, to the summary file, and the same line
+#  with the list of the failing sketches to the step summary file. Exits with
+#  an error if any native_sim test failed.
 
 import argparse
 from collections import defaultdict
 import json
+import sys
 
 import ci_shared
 from ci_shared import (
     TestStatus, SKIP, PASS, WARNING, EXPECTED_ERROR, INVALID_EXCEPTION, ERROR, FAILURE,
     LoaderEntry, TestEntry, TestGroup,
+    RAN_ICON, RUN_FAILED_ICON,
 )
 
 BASE_COLOR = 0x20               # darkest tone
@@ -65,6 +75,13 @@ def color_entry(values):
 # - Failed sketches (and ignored errors)
 RECAP_TABLE_HEADER = "<table>\n<tr><th>Artifact</th><th>Board</th><th>Core</th><th>Tests</th><th>RAM</th><th>Sketches</th><th>Warnings</th><th>Errors</th></tr>"
 
+def board_label(board):
+    """
+    Returns the name a board is shown with: native_sim posing as a board is
+    shown with the name of that board, in the native_sim summary.
+    """
+    return ALL_BOARD_DATA.get(board, {}).get('mimic', board)
+
 def counts_text(res):
     """
     Returns the sketches, warnings and errors cells of a recap row.
@@ -92,7 +109,7 @@ def print_recap_rows(artifact):
     Prints the recap table rows of the boards of an artifact.
     """
     artifact_boards = sorted(ARTIFACT_TESTS[artifact].boards)
-    artifact_status = ARTIFACT_TESTS[artifact].status
+    artifact_status = max(BOARD_TESTS[board].status for board in artifact_boards)
 
     artifact_text = f"<a href='{details_link()}'><code>{artifact}</code></a>"
     first_row_text = f"<td rowspan='{len(artifact_boards)}'>{artifact_status.board_icon} {artifact_text}</td>"
@@ -104,9 +121,9 @@ def print_recap_rows(artifact):
         # Board name
         res = BOARD_LOADERS[board]
         if res.job_link:
-            f_print(f"<td><code><a href='{res.job_link}'>{board}</a></code>")
+            f_print(f"<td><code><a href='{res.job_link}'>{board_label(board)}</a></code>")
         else:
-            f_print(f"<td><code>{board}</code>")
+            f_print(f"<td><code>{board_label(board)}</code>")
 
         # Core build status + message on failure
         if res.status == FAILURE:
@@ -126,7 +143,7 @@ def print_recap_rows(artifact):
             continue
 
         # Memory usage
-        f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo['RAM'])}\n\n</td>")
+        f_print(f"<td align='right'>\n\n{color_entry(BOARD_LOADERS[board].meminfo.get('RAM'))}\n\n</td>")
 
         # Test count summary
         f_print(f"{counts_text(res)}</tr>")
@@ -143,6 +160,8 @@ def print_summary():
         failed_boards = [ f"{res.status.board_icon} `{board}`" for board, res in BOARD_TESTS.items() if not res.status.passed ]
         title = f"# [CI run]({details_link()}) FAILED: {', '.join(failed_boards)}\n"
     f_print(title)
+    if native_sim_summary:
+        f_print(f"{native_sim_summary}\n")
 
     # Print the recap table, one line per board
     f_print(RECAP_TABLE_HEADER)
@@ -177,30 +196,87 @@ def print_failing_sketches():
     with the boards where it fails, linked to their test job.
     """
     failing = defaultdict(dict)
-    for test in sorted(ALL_TESTS, key=lambda t: (t.group, t.name, t.board)):
+    for test in sorted(ALL_TESTS, key=lambda t: (t.group, t.name, board_label(t.board))):
         if test.status in (INVALID_EXCEPTION, ERROR):
             failing[f"{test.group}/{test.name}" if test.group else test.name].setdefault(test.board, test)
     if not failing:
         return
     f_print(f"<b>Failing sketches</b> ({len(failing)})\n")
     for sketch, tests in failing.items():
-        boards = ", ".join(f"{t.status.test_icon} [`{b}`]({t.job_link})" if t.job_link
-                           else f"{t.status.test_icon} `{b}`" for b, t in tests.items())
+        boards = ", ".join(f"{t.status.test_icon} [`{board_label(b)}`]({t.job_link})" if t.job_link
+                           else f"{t.status.test_icon} `{board_label(b)}`" for b, t in tests.items())
         f_print(f"- <code>{sketch}</code>: {boards}")
     f_print("")
 
+# native_sim sketch categories, in display order, with their icon and text
+NATIVE_SIM_CATEGORIES = {
+    'incomplete': (FAILURE.test_icon, "CI failure"),
+    'build_failed': (ERROR.test_icon, "build failed"),
+    'only_built': (PASS.test_icon, "compiled only"),
+    'ran': (RAN_ICON, "passed sim"),
+    'ran_failing': (RUN_FAILED_ICON, "failed sim"),
+    'known_issue': (EXPECTED_ERROR.test_icon, "known issues"),
+    'not_sim_ready': (SKIP.test_icon, "require libs not in native_sim"),
+}
+
+def native_sim_category(test):
+    """
+    Returns the category of a native_sim test (see NATIVE_SIM_CATEGORIES).
+    """
+    if test.status == FAILURE:
+        return 'incomplete'
+    if test.status == SKIP:
+        return 'not_sim_ready'
+    if test.status in (EXPECTED_ERROR, ERROR):
+        if test.run_success is False:
+            return 'ran_failing'
+        return 'known_issue' if test.status == EXPECTED_ERROR else 'build_failed'
+    return 'only_built' if test.run_success is None else 'ran'
+
+def native_sim_title(name):
+    """
+    Returns the title line of the native_sim tests: the number of sketches
+    and the given name in bold, then their counts in each category (and the
+    incomplete test jobs).
+    """
+    totals = defaultdict(int)
+    for test in ALL_TESTS:
+        totals[native_sim_category(test)] += 1
+    parts = { cat: f"{icon} {totals[cat]} {text}" for cat, (icon, text) in NATIVE_SIM_CATEGORIES.items() if totals[cat] }
+    counts = ", ".join(part for cat, part in parts.items() if cat != 'not_sim_ready')
+    if 'not_sim_ready' in parts:
+        counts += "; " + parts['not_sim_ready']
+    sketches = sum(totals.values()) - totals['incomplete']
+    return f"<b>{sketches} {name}</b>: {counts}"
+
+def print_native_sim_summary():
+    """
+    Prints the short summary of the native_sim tests: their title line,
+    linking to their report page (or the CI run).
+    """
+    f_print(native_sim_title(f"<a href='{details_link()}'>native_sim tests</a>"))
+
 parser = argparse.ArgumentParser(description="Write the CI summary of the collected data")
+parser.add_argument("--native-sim-summary", type=str.strip,
+                    help="short summary of the native_sim tests, printed after the title")
 parser.add_argument("--details-url", type=str.strip,
                     help="URL of the report page, the target of the links")
+parser.add_argument("--native-sim", action="store_true",
+                    help="summary of the native_sim tests only (see test_native_sim.yml)")
 parser.add_argument("json_file", help="data collected by ci_collect_data.py")
-parser.add_argument("files", nargs="*", metavar="file", help="<results_file> <summary_file>")
+parser.add_argument("files", nargs="*", metavar="file",
+                    help="<results_file> <summary_file>, or with --native-sim <summary_file> <step_summary_file>")
 args = parser.parse_args()
-if len(args.files) not in (0, 2):
+if len(args.files) not in ((2,) if args.native_sim else (0, 2)):
     parser.error("wrong number of output files")
 
+native_sim_summary = args.native_sim_summary
 details_url = args.details_url
+native_sim_mode = args.native_sim
 json_file = args.json_file
-if args.files:
+if native_sim_mode:
+    summary_file, step_summary_file = args.files
+elif args.files:
     results_file, summary_file = args.files
 else:
     results_file = "/dev/null"
@@ -229,6 +305,18 @@ BOARD_TESTS = defaultdict(TestGroup)
 for t in ALL_TESTS:
     ARTIFACT_TESTS[t.artifact].track(t)
     BOARD_TESTS[t.board].track(t)
+
+if native_sim_mode:
+    native_sim_passed = ci_run_passed and bool(ALL_TESTS)
+    with open(summary_file, 'w') as f:
+        f_print = lambda *args, **kwargs: print(*args, file=f, **kwargs)
+        print_native_sim_summary()
+    with open(step_summary_file, 'w') as f:
+        f_print = lambda *args, **kwargs: print(*args, file=f, **kwargs)
+        print_native_sim_summary()
+        f_print("")
+        print_failing_sketches()
+    sys.exit(0 if native_sim_passed else 1)
 
 # Update the results file
 with open(results_file, 'w') as f:
