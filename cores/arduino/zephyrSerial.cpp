@@ -120,7 +120,7 @@ void arduino::ZephyrSerial::IrqHandler() {
 			ring_buf_peek(&tx.ringbuf, &buf[0], length);
 			ret = uart_fifo_fill(uart, &buf[0], length);
 			if (ret > 0) {
-				ring_buf_get(&tx.ringbuf, nullptr, ret);
+				ring_buf_consume(&tx.ringbuf, ret);
 			}
 		}
 		k_spin_unlock(&tx.lock, key);
