@@ -7,8 +7,10 @@
 # and saved in 'boards.local.txt'. VALUES IN THIS FILE WILL HAVE NO EFFECT.
 #
 # - loader.address
+# - loader.basename         (only under MCUboot)
 # - loader.maximum_size
 # - bootloader.tool.default (only on boards with a bootloader image)
+# - burner.basename         (only under MCUboot)
 # - swd_flash.image         (only on boards with a bootloader image)
 # - swd_flash.pattern       (only on boards with a bootloader image)
 # - iap_flash.pattern       (only on boards with a bootloader image)

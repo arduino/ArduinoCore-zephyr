@@ -105,8 +105,10 @@ if [ $DEBUG -eq 1 ]; then
 	debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
 fi
 
-# Save the build version to loader/VERSION and for later use in local files
+# Save the build version to loader/VERSION and for later use in local files;
+# the burner image gets the same version
 build_version=$(extra/get_core_version.sh loader/VERSION)
+cp loader/VERSION burner/VERSION
 
 # CMake arguments go after a '--' separator, which args may already contain
 [[ " ${args[*]} " == *" -- "* ]] || args+=(--)
@@ -206,16 +208,22 @@ for domain in "${domains[@]}"; do
 	image_dir=${domain#* }/zephyr
 	rm -f firmwares/$variant/$name.*
 	for ext in elf bin hex uf2 exe; do
-		if [ -f "$image_dir/zephyr.$ext" ]; then
-			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
-		fi
+		for kind in "" .signed; do
+			if [ -f "$image_dir/zephyr$kind.$ext" ]; then
+				cp "$image_dir/zephyr$kind.$ext" firmwares/$variant/$name$kind.$ext
+			fi
+		done
 	done
 	cp "$image_dir/zephyr.dts" firmwares/$variant/$name.dts
 	cp "$image_dir/.config" firmwares/$variant/$name.config
 done
 
 # Boards with a separate bootloader also build the bootloader updater as the
-# burner sysbuild image (see loader/sysbuild.cmake)
+# burner sysbuild image (see loader/sysbuild.cmake), signed under MCUboot
+if [ -f firmwares/${variant}/mcuboot.hex ] && [ ! -f firmwares/${variant}/burner.signed.bin ]; then
+	log_msg error "Signed bootloader updater for '${variant}' not built" >&2
+	exit 1
+fi
 if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ]; then
 	log_msg error "Bootloader updater for '${variant}' not built" >&2
 	exit 1
@@ -342,17 +350,27 @@ if [ ! -z "$board" ]; then
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
 	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
 
-	# For "Burn Bootloader" on boards with a bootloader image:
+	# For "Burn Bootloader" on boards with a bootloader image (MCUboot built
+	# by sysbuild, else the prebuilt bootloader.hex):
 	# - with a hardware programmer, write the image with the board's
 	#   swd_flash.tool;
 	# - with the burner app, upload the burner image with the
 	#   board's usual upload tool (copied as bootloader.tool.default).
-	if [ -f firmwares/${variant}/bootloader.hex ]; then
-		update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/bootloader.hex"
-		update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
-		BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
-		update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
-		update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+	for image in mcuboot.hex bootloader.hex; do
+		if [ -f firmwares/${variant}/$image ]; then
+			update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/$image"
+			update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
+			BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
+			update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
+			update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+			break
+		fi
+	done
+
+	# MCUboot only boots signed images: upload the signed loader and burner
+	if [ -f firmwares/${variant}/mcuboot.hex ]; then
+		update_local_field "loader.basename" "loader.signed"
+		update_local_field "burner.basename" "burner.signed"
 	fi
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)

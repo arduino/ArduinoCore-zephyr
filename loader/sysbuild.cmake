@@ -27,11 +27,24 @@ endif()
 # Boards with a separate bootloader also get the bootloader updater, uploaded
 # by the 'Zephyr burner app' programmer in place of the loader. It is linked where
 # the loader lives, so it is only built and never flashed by 'west flash'.
+# The bootloader is the MCUboot image built here, if any, or else the prebuilt
+# firmwares/<variant>/bootloader.hex (see burner/CMakeLists.txt).
 set(bootloader_hex ${CMAKE_CURRENT_LIST_DIR}/../firmwares/${NORMALIZED_BOARD_TARGET}/bootloader.hex)
-if(EXISTS ${bootloader_hex})
+if(SB_CONFIG_BOOTLOADER_MCUBOOT OR EXISTS ${bootloader_hex})
   ExternalZephyrProject_Add(
     APPLICATION burner
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../burner
     BUILD_ONLY TRUE
   )
+  # same version as the loader (and the core), see extra/build.sh
+  set(burner_APP_BUILD_VERSION ${APP_BUILD_VERSION} CACHE INTERNAL "burner build version")
+endif()
+if(SB_CONFIG_BOOTLOADER_MCUBOOT)
+  # MCUboot is built in its own image directory, before the burner embeds it
+  set(burner_BOOTLOADER_MCUBOOT_DIR ${CMAKE_BINARY_DIR}/mcuboot CACHE INTERNAL "MCUboot build directory")
+  add_dependencies(burner mcuboot)
+  # MCUboot only boots signed images in the loader slot: sign the burner like
+  # the loader, applying the main image defaults (MCUboot mode, signing key)
+  set_property(TARGET burner APPEND PROPERTY IMAGE_CONF_SCRIPT
+    ${ZEPHYR_BASE}/share/sysbuild/image_configurations/MAIN_image_default.cmake)
 endif()

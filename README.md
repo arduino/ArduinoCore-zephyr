@@ -279,10 +279,13 @@ as a sysbuild image, in `build/<variant>/mcuboot`, and saves it as
 
 ### Build the Bootloader Updater
 
-For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`),
-`./extra/build.sh` also builds the firmware uploaded by the `Zephyr burner app`
-programmer from [burner](/burner), as the `burner` sysbuild image
-in `build/<variant>/burner`, and saves it as `firmwares/<variant>/burner.bin`.
+For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`, or
+MCUboot enabled in sysbuild), `./extra/build.sh` also builds the firmware
+uploaded by the `Zephyr burner app` programmer from [burner](/burner), as the
+`burner` sysbuild image in `build/<variant>/burner`, and saves it as
+`firmwares/<variant>/burner.bin` (`burner.signed.bin` under MCUboot, which
+only boots signed images). The burner embeds the MCUboot image built by
+sysbuild, if any, or else the prebuilt `bootloader.hex`.
 
 ### Using the Core in Arduino IDE/CLI
 
