@@ -476,6 +476,13 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
+#if ZARD_FIRST_SERIAL_IS_SERIALUSB && defined(CONFIG_RETENTION_BOOT_MODE)
+	/* No sketch running: keep USB up so the 1200-bps touch still works. */
+	if (loader(NULL) != 0 && _usbd == NULL) {
+		loader_usb_enable();
+	}
+#else
 	loader(NULL);
+#endif
 	return 0;
 }
