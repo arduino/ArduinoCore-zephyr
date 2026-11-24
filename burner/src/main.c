@@ -13,6 +13,15 @@
 #ifdef CONFIG_CPU_CORTEX_M_HAS_DWT
 #include <cmsis_core.h>
 #endif
+#ifdef CONFIG_RETENTION_BOOT_MODE
+#include <zephyr/retention/bootmode.h>
+#endif
+#ifdef CONFIG_BURNER_USB_TOUCH
+#include <zephyr/drivers/uart.h>
+#include <zephyr/sys/iterable_sections.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/usb/usbd.h>
+#endif
 
 /*
  * Not const, so it is copied to RAM at boot: some flash controllers (e.g.
@@ -95,6 +104,28 @@ out:
 	return rc;
 }
 
+#ifdef CONFIG_BURNER_USB_TOUCH
+/* the CDC ACM port brought up at boot, see CDC_ACM_SERIAL_INITIALIZE_AT_BOOT */
+static const struct device *const usb_uart = DEVICE_DT_GET(DT_INST(0, zephyr_cdc_acm_uart));
+
+/* a 1200 bps touch resets the board, which then enters bootloader mode */
+static void check_1200_bps_touch(void) {
+	uint32_t baudrate = 0;
+
+	if (uart_line_ctrl_get(usb_uart, UART_LINE_CTRL_BAUD_RATE, &baudrate) == 0 &&
+		baudrate == 1200) {
+		k_sleep(K_MSEC(100));
+		/* detach from the host first, as the loader does; the USB device
+		 * belongs to the CDC ACM serial backend, so walk the contexts
+		 */
+		STRUCT_SECTION_FOREACH (usbd_context, ctx) {
+			(void)usbd_disable(ctx);
+		}
+		sys_reboot(SYS_REBOOT_COLD);
+	}
+}
+#endif
+
 #ifdef CONFIG_CPU_CORTEX_M_HAS_DWT
 /*
  * DWT watchpoints survive a system reset. The loader's null pointer detection
@@ -119,14 +150,29 @@ int main(void) {
 #endif
 	int rc = update_bootloader();
 
+#ifdef CONFIG_RETENTION_BOOT_MODE
+	/* the bootloader enters bootloader mode at the next reset */
+	(void)bootmode_set(BOOT_MODE_TYPE_BOOTLOADER);
+#ifdef CONFIG_BURNER_USB_TOUCH
+	printk("Done; upload a sketch to install the loader\n");
+#else
+	printk("Done; press RESET and upload a sketch to install the loader\n");
+#endif
+#else
 	printk("Done; double-tap RESET and upload a sketch to install the loader\n");
+#endif
 
 	/* slow blink: success, fast blink: failure */
-	k_timeout_t period = rc ? K_MSEC(100) : K_MSEC(1000);
+	int period_ms = rc ? 100 : 1000;
 
 	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
 	while (true) {
 		gpio_pin_toggle_dt(&led);
-		k_sleep(period);
+		for (int ms = 0; ms < period_ms; ms += 100) {
+#ifdef CONFIG_BURNER_USB_TOUCH
+			check_1200_bps_touch();
+#endif
+			k_msleep(100);
+		}
 	}
 }

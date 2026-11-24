@@ -1,0 +1,57 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Boards with a boot-mode retention area (such as the MCUboot ones) get it in
+# the burner too, which then asks the bootloader to stay in bootloader mode
+# after the next reset, so the loader can be uploaded again.
+DT_CHOSEN_BOOT_MODE := zephyr,boot-mode
+
+config BURNER_BOOT_MODE
+	bool
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_BOOT_MODE))
+	select RETAINED_MEM
+	select RETENTION
+	select RETENTION_BOOT_MODE
+
+# On those boards, a 1200 bps touch on the burner's USB port resets it into
+# bootloader mode, as with the loader
+config BURNER_USB_TOUCH
+	bool
+	default y if BURNER_BOOT_MODE && CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+	select UART_LINE_CTRL
+	select REBOOT
+
+# USB identity of the loader (the variant's CONFIG_USB_DEVICE_* settings, see
+# CMakeLists.txt): the USB port brought up at boot uses it, so the burner's
+# port is the board's. Boards whose variant has none keep Zephyr's default.
+config BURNER_USB_VID
+	hex "Loader USB Vendor ID"
+	default 0x0
+
+config BURNER_USB_PID
+	hex "Loader USB Product ID"
+	default 0x0
+
+config BURNER_USB_MANUFACTURER
+	string "Loader USB manufacturer string"
+
+config BURNER_USB_PRODUCT
+	string "Loader USB product string"
+
+if CDC_ACM_SERIAL_INITIALIZE_AT_BOOT && BURNER_USB_VID != 0x0
+
+config CDC_ACM_SERIAL_VID
+	default BURNER_USB_VID
+
+config CDC_ACM_SERIAL_PID
+	default BURNER_USB_PID
+
+config CDC_ACM_SERIAL_MANUFACTURER_STRING
+	default BURNER_USB_MANUFACTURER
+
+config CDC_ACM_SERIAL_PRODUCT_STRING
+	default BURNER_USB_PRODUCT
+
+endif
+
+source "Kconfig.zephyr"

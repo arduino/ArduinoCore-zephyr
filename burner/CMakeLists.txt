@@ -9,6 +9,24 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} COMPONENTS basic_settings y
 set(DTC_OVERLAY_FILE ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.overlay)
 list(APPEND DTS_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 
+# USB identity of the loader: the variant's CONFIG_USB_DEVICE_* settings, as
+# CONFIG_BURNER_USB_* (no dependencies, so burners without USB are unaffected),
+# which the burner's USB port uses (see Kconfig)
+set(variant_conf ${CMAKE_CURRENT_LIST_DIR}/../variants/${NORMALIZED_BOARD_TARGET}/${NORMALIZED_BOARD_TARGET}.conf)
+if(EXISTS ${variant_conf})
+  # reconfigure when the variant's settings change
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${variant_conf})
+  file(STRINGS ${variant_conf} usb_identity
+       REGEX "^CONFIG_USB_DEVICE_(VID|PID|MANUFACTURER|PRODUCT)=")
+  if(usb_identity)
+    list(TRANSFORM usb_identity REPLACE "^CONFIG_USB_DEVICE_" "CONFIG_BURNER_USB_")
+    list(JOIN usb_identity "\n" usb_identity)
+    file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/usb_identity.conf
+         CONTENT "${usb_identity}\n" @ONLY)
+    list(APPEND EXTRA_CONF_FILE ${CMAKE_CURRENT_BINARY_DIR}/usb_identity.conf)
+  endif()
+endif()
+
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(burner LANGUAGES C)
