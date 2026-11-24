@@ -203,11 +203,16 @@ erase.pattern=
 upload.artifacts.loader={runtime.platform.path}/firmwares/zephyr-{build.variant}.{loader.format}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
-# Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
-# section. The loader is flashed if it does not match the current (maybe
-# board-specific) core version. The sketch is then flashed in any case.
-# Extra arguments are passed to either command depending on whether the other
-# part will be flashed in the same session or not.
+# Shared flash recipes, built from the pieces in each tool's section:
+# - {loader.cmd} and {sketch.cmd} flash the loader and the sketch, with extra
+#   arguments ({loader.args.*}, {sketch.args.*}) that depend on whether the
+#   other part is flashed in the same session or not;
+# - flash-loader-and-sketch is the upload: the loader is flashed if it does
+#   not match the current (maybe board-specific) core version, then the
+#   sketch is flashed in any case;
+# - iap_flash flashes only the loader artifact, through the bootloader
+#   already on the board (in-application programming), with the
+#   iap_flash.cmd of the board's bootloader tool.
 empty=
 loader.args.with_sketch={empty}
 loader.args.without_sketch={empty}
@@ -218,7 +223,7 @@ flash-loader-and-sketch.1=if {flash-loader-condition} {loader.cmd}{loader.args.w
 flash-loader-and-sketch.2=if {flash-loader-condition} {sketch.cmd}{sketch.args.with_loader}
 flash-loader-and-sketch.3=if not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
 tools.patterns.flash-loader-and-sketch="{runtime.tools.scripting-tools.path}/scripting-tools" {flash-loader-and-sketch.1} :: {flash-loader-and-sketch.2} :: {flash-loader-and-sketch.3}
-tools.patterns.flash-loader-only={loader.cmd}{loader.args.without_sketch}
+tools.patterns.iap_flash={tools.{bootloader.tool.default}.iap_flash.cmd}
 
 #
 # OpenOCD
@@ -256,6 +261,7 @@ tools.bossac.cmd.windows=bossac.exe
 tools.bossac.sketch.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.sketch}" --offset {upload.address} -R
 tools.bossac.loader.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.loader}" --offset {loader.address}
 tools.bossac.loader.args.without_sketch={empty} -R
+tools.bossac.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.bossac.upload.params.verbose=-d
 tools.bossac.upload.params.quiet=
@@ -263,7 +269,7 @@ tools.bossac.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.bossac.bootloader.params.verbose=-d
 tools.bossac.bootloader.params.quiet=
-tools.bossac.bootloader.pattern={tools.patterns.flash-loader-only}
+tools.bossac.bootloader.pattern={tools.patterns.iap_flash}
 
 
 #
@@ -282,6 +288,7 @@ tools.dfu-util.cmd=dfu-util
 tools.dfu-util.sketch.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{upload.interface} {upload.dfuse}{leave.dfuse}
 tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{loader.interface} {loader.dfuse}
 tools.dfu-util.loader.args.without_sketch={leave.dfuse}
+tools.dfu-util.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.dfu-util.upload.params.verbose=-d
 tools.dfu-util.upload.params.quiet=
@@ -289,7 +296,7 @@ tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
-tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
+tools.dfu-util.bootloader.pattern={tools.patterns.iap_flash}
 
 
 #
@@ -299,6 +306,7 @@ tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
 tools.picotool.sketch.cmd="{path}/{cmd}" {upload.verbose} -n -D "{upload.artifacts.sketch}"
 tools.picotool.loader.cmd="{path}/{cmd}" {upload.verbose} -n -D "{upload.artifacts.loader}"
 tools.picotool.loader.args.with_sketch={empty} -R
+tools.picotool.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.picotool.path={runtime.tools.rp2040tools.path}
 tools.picotool.loader.format=uf2
@@ -309,7 +317,7 @@ tools.picotool.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.picotool.bootloader.params.verbose=-v
 tools.picotool.bootloader.params.quiet=
-tools.picotool.bootloader.pattern={tools.patterns.flash-loader-only}
+tools.picotool.bootloader.pattern={tools.patterns.iap_flash}
 
 
 #
