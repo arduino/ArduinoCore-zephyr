@@ -37,8 +37,9 @@
 #     Local build: <label> = "wip.<date-time>"
 #
 # These are among the lowest possible SemVer versions greater than the last
-# tagged version. If there are no tags at all (for example when run in a fork
-# etc), it defaults to "9.9.9-<date-time>".
+# tagged version. Only tags starting with "<maj>.<min>.<patch>" are considered;
+# if none is reachable (for example in a fork without tags), the version
+# defaults to "9.9.9-0.<label>".
 #
 # Finally, non-exact-tag versions have a "+g<commit-hash[-dirty]>" appended. The
 # commit hash used is taken from HEAD_REF if set - this is to ensure that in CI
@@ -85,7 +86,11 @@ if [ -n "$PINNED_CORE_VERSION" ] ; then
 		exit 1
 	fi
 else
-	exact_version=$(git describe --tags --exact-match --exclude '*/*' 2>/dev/null)
+	# only consider release tags, ignoring tool tags ('tools/...') and any
+	# legacy or foreign tag that does not start with a version number
+	describe_args=(--tags --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*/*')
+
+	exact_version=$(git describe "${describe_args[@]}" --exact-match 2>/dev/null)
 	if [ -n "$exact_version" ] ; then
 		# this is a tagged build, extract the version components from the tag
 		# must match <maj>.<min>.<patch>(-<prerel>)
@@ -96,24 +101,33 @@ else
 			v_patch="${BASH_REMATCH[3]}"
 			v_extra="${BASH_REMATCH[4]}" # optional, lead -
 		else
-			echo "Error: unexpected tag '$exact_version'" >&2
+			echo "Error: unexpected git tag '$exact_version'" >&2
 			exit 1
 		fi
 
 		# no additional information
 		v_tweak=""
 	else
-		version_from_git=$(git describe --tags --long --exclude '*/*' 2>/dev/null)
+		version_from_git=$(git describe "${describe_args[@]}" --long 2>/dev/null)
 		# must match <maj>.<min>.<patch>(-<prerel>)-<number-of-commits-since-tag>-g<commit-hash>
 		pattern='^([0-9]+)\.([0-9]+)\.([0-9]+)(-.*)?-([0-9]+)-g.*'
-		if [[ $version_from_git =~ $pattern ]]; then
+		if [ -z "$version_from_git" ]; then
+			# no release tag reachable (e.g. a fork without tags): use a
+			# placeholder that sorts above any real release
+			echo "warning: no valid git tags found, using 9.9.9" >&2
+			v_maj=9
+			v_min=9
+			v_patch=9
+			v_extra="-0"
+			count=$(git rev-list --count HEAD)
+		elif [[ $version_from_git =~ $pattern ]]; then
 			v_maj="${BASH_REMATCH[1]}"
 			v_min="${BASH_REMATCH[2]}"
 			v_patch="${BASH_REMATCH[3]}"
 			v_extra="${BASH_REMATCH[4]}" # optional, lead -
 			count="${BASH_REMATCH[5]}"
 		else
-			echo "Error: unexpected git describe output '$version_from_git'" >&2
+			echo "Error: unexpected git version '$version_from_git', fetch tags" >&2
 			exit 1
 		fi
 
