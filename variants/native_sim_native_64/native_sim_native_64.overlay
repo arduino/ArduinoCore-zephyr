@@ -24,6 +24,22 @@
 		reg = <0x5c>;                                                  \
 		regs = [0f b1  28 00  29 80  2a 3e  2b c4  2c 09];             \
 		self-clearing-bits = [11 01];                                  \
+	};                                                                     \
+	/* HS300x: no registers, a write of 0 then a read of 4 bytes: 50.00 %  \
+	 * (8112), 25.00 C (6454 << 2, status 1)                               \
+	 */                                                                    \
+	hs300x@44 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x44>;                                                  \
+		regs = [00 1f  01 b0  02 64  03 d8];                           \
+	};                                                                     \
+	/* APDS9960: ID, colour and proximity valid, C/R/G/B = 400/100/200/300 \
+	 */                                                                    \
+	apds9960@39 {                                                          \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x39>;                                                  \
+		regs = [92 ab  93 03  94 90  95 01  96 64  97 00  98 c8  99 00 \
+			9a 2c  9b 01];                                         \
 	};
 
 / {
