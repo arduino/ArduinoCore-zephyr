@@ -12,8 +12,9 @@
  */
 /*
  * The sensors of the boards, emulated by their registers with constant
- * readings (see arduino,emul-i2c-regs). They are on both Wire and Wire1:
- * the libraries use Wire1 posing as the Nano 33 BLE, Wire otherwise.
+ * readings (see arduino,emul-i2c-regs), and their secure element. They
+ * are on both Wire and Wire1: the libraries use Wire1 posing as the Nano 33
+ * BLE (the secure element ones on Zephyr), Wire otherwise.
  */
 #define ARDUINO_EMUL_SENSORS                                                   \
 	/* LPS22HB: WHO_AM_I, 100 kPa (0x3e8000 / 40960), 25.00 C (2500),     \
@@ -40,6 +41,13 @@
 		reg = <0x39>;                                                  \
 		regs = [92 ab  93 03  94 90  95 01  96 64  97 00  98 c8  99 00 \
 			9a 2c  9b 01];                                         \
+	};                                                                     \
+	/* ATECC608 secure element (libraries: ECCX08 on CRYPTO_WIRE, Wire1 \
+	 * on Zephyr, Wire on the Nano RP2040 Connect)                        \
+	 */                                                                    \
+	atecc608@60 {                                                          \
+		compatible = "arduino,emul-atecc608";                          \
+		reg = <0x60>;                                                  \
 	};
 
 / {
