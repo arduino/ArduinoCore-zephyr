@@ -268,6 +268,15 @@ With the core properly installed, as detailed below, uploading any sketch from
 the IDE/CLI also flashes the new loader, since its version differs from the one
 on the board.
 
+### Boards with MCUboot
+
+A variant enables MCUboot with `SB_CONFIG_BOOTLOADER_MCUBOOT=y` in its
+`variants/<variant>/sysbuild.conf`. `./extra/build.sh` then also builds MCUboot
+as a sysbuild image, in `build/<variant>/mcuboot`, and saves it as
+`firmwares/<variant>/mcuboot.hex`. The MCUboot configuration is in
+[mcuboot](/mcuboot): `prj.conf` for every board, and the board's own
+`boards/<board>.conf` and `.overlay`.
+
 ### Build the Bootloader Updater
 
 For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`),

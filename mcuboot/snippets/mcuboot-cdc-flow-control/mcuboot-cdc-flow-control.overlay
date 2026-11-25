@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Applied to the MCUboot image of every board that enables MCUboot (see
+ * loader/sysbuild.cmake). The board's MCUboot overlay labels the CDC ACM port
+ * used for serial recovery board_cdc_acm_mcuboot.
+ *
+ * MCUboot writes its serial recovery replies with uart_poll_out(). Without
+ * flow control, the USB device_next CDC ACM driver drops the bytes that do not
+ * fit in its packet-sized TX buffer, so replies longer than one USB packet
+ * (such as "image list") are truncated. With flow control, poll_out waits for
+ * TX space instead.
+ */
+&board_cdc_acm_mcuboot {
+	hw-flow-control;
+};
