@@ -123,6 +123,16 @@ expect() {
 	fi
 }
 
+# expect_none <description> <stdout|stderr> <regex>: check that no line of
+# the last run output matches
+expect_none() {
+	if grep -qE "$3" "$OUT/$2" ; then
+		report fail "$1" <(grep -E "$3" "$OUT/$2")
+	else
+		report pass "$1"
+	fi
+}
+
 # run_loader_until <regex> [<zephyr.exe args>...]: run the loader until a
 # complete line of its output matches the extended regex, or for RUN_TIMEOUT
 # seconds, keeping its output (without CRs) in $OUT/stdout and $OUT/stderr.

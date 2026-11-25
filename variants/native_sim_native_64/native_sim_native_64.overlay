@@ -248,12 +248,23 @@
 			      <&adc0 13>;
 
 		i2cs = <&i2c0>, <&i2c1>, <&i2c2>;
+		spis = <&spi0>;
 		serials = <&uart0>;
 	};
 };
 
 &i2c0 {
 	ARDUINO_EMUL_SENSORS
+};
+
+/* the M95M01 of the SPI test, with its chip select on D2 */
+&spi0 {
+	eeprom@0 {
+		compatible = "arduino,emul-m95m01";
+		reg = <0>;
+		spi-max-frequency = <2000000>;
+		cs-monitor-gpios = <&arduino_gpio 2 0>;
+	};
 };
 
 &uart0 {
