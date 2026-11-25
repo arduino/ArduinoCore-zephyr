@@ -19,6 +19,11 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "gomod"
+    directory: "/tools/mcumgr"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
     directory: "/tools/sync-zephyr-artifacts"
     schedule:
       interval: "weekly"

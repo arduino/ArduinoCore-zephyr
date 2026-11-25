@@ -97,7 +97,8 @@ jobs:
   build-tool:
     name: Build ${{ matrix.tool }} ${{ matrix.version }}
     needs: setup
-    runs-on: ubuntu-latest
+    # MCUmgr's macOS binaries need cgo, so they cannot be cross-compiled on Linux.
+    runs-on: ${{ matrix.tool == 'mcumgr' && 'macos-latest' || 'ubuntu-latest' }}
     strategy:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     steps:

@@ -1,0 +1,297 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Flash layout, shared with the MCUboot image as well. */
+#include "rak4631_nrf52840_partitions.dtsi"
+/* Boot-mode retention area, shared with the MCUboot image as well. */
+#include "rak4631_nrf52840_bootmode.dtsi"
+
+/ {
+	chosen {
+		zephyr,console = &board_cdc_acm_logging;
+		zephyr,log-uart = &log_uarts;
+		zephyr,shell-uart = &board_cdc_acm_shell;
+		zephyr,code-partition = &code_partition;
+		/delete-property/ zephyr,uart-mcumgr;
+	};
+
+	aliases {
+		/* LED_BUILTIN resolves to the green LED (D7). */
+		led0 = &green_led;
+	};
+
+	log_uarts: log_uarts {
+		compatible = "zephyr,log-uart";
+		uarts = <&board_cdc_acm_logging>;
+	};
+};
+
+/*
+ * USB CDC-ACM ports, in enumeration order:
+ *  1. sketch:  the sketch's 'Serial' (SerialUSB)
+ *  2. shell:   Zephyr shell (debug builds only, unused otherwise)
+ *  3. logging: console (printk/stdout msg) + log backend (debug builds only, unused otherwise)
+ */
+&zephyr_udc0 {
+	board_cdc_acm_sketch: board_cdc_acm_sketch {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	board_cdc_acm_shell: board_cdc_acm_shell {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	board_cdc_acm_logging: board_cdc_acm_logging {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+	};
+
+	num-bidir-endpoints = <1>;
+	num-in-endpoints = <6>;
+	num-out-endpoints = <3>;
+	num-isoin-endpoints = <0>;
+	num-isoout-endpoints = <0>;
+};
+
+/* The board's own CDC-ACM port would be a fourth one. */
+&board_cdc_acm_uart {
+	status = "disabled";
+};
+
+/* The RAK4631 LEDs: green on P1.03 (D7), blue on P1.04 (D8). */
+/ {
+	leds {
+		compatible = "gpio-leds";
+
+		blue_led: led_2 {
+			gpios = <&wisblock_io WISBLOCK_IO_LED2 GPIO_ACTIVE_HIGH>;
+		};
+
+		green_led: led_1 {
+			gpios = <&wisblock_io WISBLOCK_IO_LED1 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+/*
+ * WisBlock 3V3_S: IO2 (P1.02, WB_IO2 / D1)
+ * IO2=1 on, IO2=0 off.
+ */
+&gpio1 {
+	wb-3v3-s {
+		gpio-hog;
+		gpios = <2 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "3V3_S";
+	};
+};
+
+/* RTC backend for the Arduino RTC library */
+&rtc2 {
+	status = "okay";
+};
+
+/* 'Serial1', 'Serial2' and 'Wire' (zephyr,user below) */
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+};
+
+/* Shares the TWI1/SPI1 instance with the SX1262 SPI; keep disabled. */
+&i2c1 {
+	status = "disabled";
+};
+
+/* WisBlock header SPI: SCK P0.03, MOSI P0.30, MISO P0.29 */
+&spi2 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+};
+
+/* Standard drive is too slow for 8 MHz */
+&spi2_default {
+	group1 {
+		nordic,drive-mode = <NRF_DRIVE_H0H1>;
+	};
+};
+
+/* Arduino API pin mappings */
+/ {
+	zephyr,user {
+		digital-pin-gpios = <&wisblock_io WISBLOCK_IO_IO1 0>,	/* D0 - P0.17 */
+				    <&wisblock_io WISBLOCK_IO_IO2 0>,	/* D1 - P1.02 */
+				    <&wisblock_io WISBLOCK_IO_IO3 0>,	/* D2 - P0.21 */
+				    <&wisblock_io WISBLOCK_IO_IO4 0>,	/* D3 - P0.04 */
+				    <&wisblock_io WISBLOCK_IO_IO5 0>,	/* D4 - P0.09 */
+				    <&wisblock_io WISBLOCK_IO_IO6 0>,	/* D5 - P0.10 */
+				    <&wisblock_io WISBLOCK_IO_IO7 0>,	/* D6 - P0.28 (AIN4) */
+				    <&wisblock_io WISBLOCK_IO_LED1 0>,	/* D7 - P1.03, green LED */
+				    <&wisblock_io WISBLOCK_IO_LED2 0>,	/* D8 - P1.04, blue LED */
+				    <&wisblock_io WISBLOCK_IO_AIN0 0>,	/* D9 - P0.05 (AIN3) */
+				    <&wisblock_io WISBLOCK_IO_AIN1 0>,	/* D10 - P0.31 (AIN7) */
+				    <&wisblock_io WISBLOCK_IO_SPI_CS 0>,/* D11 - P0.26 */
+				    <&wisblock_io WISBLOCK_IO_SW1 0>,	/* D12 - P1.01 */
+				    <&wisblock_io WISBLOCK_IO_LED3 0>;	/* D13 - P0.02 */
+
+		pwm-pin-gpios = <&wisblock_io WISBLOCK_IO_IO1 0>,	/* D0 */
+				<&wisblock_io WISBLOCK_IO_IO2 0>,	/* D1 */
+				<&wisblock_io WISBLOCK_IO_IO3 0>,	/* D2 */
+				<&wisblock_io WISBLOCK_IO_IO4 0>,	/* D3 */
+				<&wisblock_io WISBLOCK_IO_IO5 0>,	/* D4 */
+				<&wisblock_io WISBLOCK_IO_IO6 0>,	/* D5 */
+				<&wisblock_io WISBLOCK_IO_IO7 0>,	/* D6 */
+				<&wisblock_io WISBLOCK_IO_LED1 0>,	/* D7 */
+				<&wisblock_io WISBLOCK_IO_LED2 0>;	/* D8 */
+
+		/*
+		 * WisBlock analog pins. On the RAK19007 base board, A0
+		 * (WB_A0/AIN0) is also wired to the battery voltage
+		 * divider (1.5 MOhm / 2.5 MOhm): VBAT = A0 * 5 / 3.
+		 */
+		adc-pin-gpios = <&wisblock_io WISBLOCK_IO_AIN0 0>,	/* A0 */
+				<&wisblock_io WISBLOCK_IO_AIN1 0>,	/* A1 */
+				<&wisblock_io WISBLOCK_IO_IO4 0>,	/* A2 - D3 */
+				<&wisblock_io WISBLOCK_IO_IO7 0>;	/* A3 - D6 */
+
+		/*
+		 * The period cell is in nanoseconds. The PWM counter runs at
+		 * 16 MHz, so one count is 62.5 ns and pwm_set_pulse_dt() turns
+		 * both the period and the pulse into counts:
+		 *
+		 *   counts    = ns * 16000000 / 1000000000 = ns / 62.5
+		 *   COUNTERTOP = 2000000 / 62.5 = 32000    (2 ms, 500 Hz)
+		 *
+		 * analogWrite(pin, v) asks for v/255 of the period, so:
+		 *
+		 *   pulse_ns  = v * period_ns / 255
+		 *   COMPARE   = pulse_ns / 62.5
+		 *   duty      = COMPARE / COUNTERTOP
+		 *
+		 * e.g. v = 64 -> 501960 ns -> COMPARE 8031 -> 25 %.
+		 *
+		 * COMPARE is a whole number, so the period must hold at least
+		 * 255 counts (>= 16 us) for all 256 values of v to differ.
+		 * 500 Hz has 32000 of them and stays well above flicker.
+		 */
+		pwms = <&pwm0 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm1 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm1 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 0 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 1 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm2 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 2 PWM_HZ(500) PWM_POLARITY_NORMAL>,
+		       <&pwm0 3 PWM_HZ(500) PWM_POLARITY_NORMAL>;
+
+		io-channels = <&adc 3>,	/* A0 - WB_A0 (AIN3) */
+			      <&adc 7>,	/* A1 - WB_A1 (AIN7) */
+			      <&adc 2>,	/* A2 - WB_IO4 (AIN2) */
+			      <&adc 4>;	/* A3 - WB_IO7 (AIN4) */
+
+		i2cs = <&i2c0>;	/* 'Wire': WisBlock sensor I2C (SDA P0.13, SCL P0.14) */
+		spis = <&spi2>;	/* 'SPI': WisBlock header SPI */
+
+		cdc-acm-serial = <&board_cdc_acm_sketch>; /* 'Serial' object is managed by SerialUSB */
+		serials = <&uart0>, <&uart1>;
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-2 = <&pwm0_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm1_sleep>;
+	pinctrl-2 = <&pwm1_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&empty_default>;
+	pinctrl-1 = <&pwm2_sleep>;
+	pinctrl-2 = <&pwm2_default>;
+	pinctrl-names = "default", "sleep", "arduino";
+};
+
+&pinctrl {
+	empty_default: empty_default {
+		group1 {
+			psels = <>;
+		};
+	};
+
+	pwm0_default: pwm0_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 17)>,
+				<NRF_PSEL(PWM_OUT1, 1, 2)>,
+				<NRF_PSEL(PWM_OUT2, 1, 3)>,
+				<NRF_PSEL(PWM_OUT3, 1, 4)>;
+		};
+	};
+
+	pwm0_sleep: pwm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 17)>,
+				<NRF_PSEL(PWM_OUT1, 1, 2)>,
+				<NRF_PSEL(PWM_OUT2, 1, 3)>,
+				<NRF_PSEL(PWM_OUT3, 1, 4)>;
+				low-power-enable;
+		};
+	};
+
+	pwm1_default: pwm1_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 21)>,
+				<NRF_PSEL(PWM_OUT1, 0, 4)>;
+		};
+	};
+
+	pwm1_sleep: pwm1_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 21)>,
+				<NRF_PSEL(PWM_OUT1, 0, 4)>;
+				low-power-enable;
+		};
+	};
+
+	pwm2_default: pwm2_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>,
+				<NRF_PSEL(PWM_OUT1, 0, 10)>,
+				<NRF_PSEL(PWM_OUT2, 0, 28)>;
+		};
+	};
+
+	pwm2_sleep: pwm2_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>,
+				<NRF_PSEL(PWM_OUT1, 0, 10)>,
+				<NRF_PSEL(PWM_OUT2, 0, 28)>;
+				low-power-enable;
+		};
+	};
+
+};

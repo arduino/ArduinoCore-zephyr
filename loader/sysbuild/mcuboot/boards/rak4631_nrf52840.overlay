@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2026 RAKwireless Technology Limited
+ * Author: sercan.erat@rakwireless.com
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Same flash layout as the loader.  */
+#include "../../../../variants/rak4631_nrf52840/rak4631_nrf52840_partitions.dtsi"
+/* Same boot-mode retention area as the loader. */
+#include "../../../../variants/rak4631_nrf52840/rak4631_nrf52840_bootmode.dtsi"
+
+/ {
+	aliases {
+		mcuboot-led0 = &blue_led;
+	};
+};
+
+/ {
+	chosen {
+		zephyr,code-partition = &boot_partition;
+		zephyr,uart-mcumgr = &board_cdc_acm_mcuboot;
+	};
+};
+
+&zephyr_udc0 {
+	board_cdc_acm_mcuboot: board_cdc_acm_mcuboot {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+		rx-fifo-size = <4096>;
+	};
+};
+
+/* MCUboot registers only the first CDC-ACM instance, which must be ours. */
+&board_cdc_acm_uart {
+	status = "disabled";
+};
+
+/* The RAK4631 LEDs: green on P1.03 (D7), blue on P1.04 (D8). */
+/ {
+	leds {
+		compatible = "gpio-leds";
+
+		blue_led: led_2 {
+			gpios = <&wisblock_io WISBLOCK_IO_LED2 GPIO_ACTIVE_HIGH>;
+		};
+
+		green_led: led_1 {
+			gpios = <&wisblock_io WISBLOCK_IO_LED1 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
