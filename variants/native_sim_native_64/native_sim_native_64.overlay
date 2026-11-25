@@ -10,6 +10,22 @@
  * There are as many pins as on the board with the most (Giga R1: 101), so
  * that native_sim can pose as any board.
  */
+/*
+ * The sensors of the boards, emulated by their registers with constant
+ * readings (see arduino,emul-i2c-regs). They are on both Wire and Wire1:
+ * the libraries use Wire1 posing as the Nano 33 BLE, Wire otherwise.
+ */
+#define ARDUINO_EMUL_SENSORS                                                   \
+	/* LPS22HB: WHO_AM_I, 100 kPa (0x3e8000 / 40960), 25.00 C (2500),     \
+	 * one-shot bit of CTRL2 done at once                                  \
+	 */                                                                    \
+	lps22hb@5c {                                                           \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x5c>;                                                  \
+		regs = [0f b1  28 00  29 80  2a 3e  2b c4  2c 09];             \
+		self-clearing-bits = [11 01];                                  \
+	};
+
 / {
 	arduino_gpio: gpio@800 {
 		status = "okay";
@@ -57,6 +73,27 @@
 		low-level;
 		gpio-controller;
 		#gpio-cells = <2>;
+	};
+
+	/* Wire1 and Wire2 (Wire is i2c0 of the board) */
+	i2c1: i2c@101 {
+		status = "okay";
+		compatible = "zephyr,i2c-emul-controller";
+		clock-frequency = <I2C_BITRATE_STANDARD>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x101 4>;
+
+		ARDUINO_EMUL_SENSORS
+	};
+
+	i2c2: i2c@102 {
+		status = "okay";
+		compatible = "zephyr,i2c-emul-controller";
+		clock-frequency = <I2C_BITRATE_STANDARD>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x102 4>;
 	};
 
 	zephyr,user {
@@ -194,8 +231,13 @@
 			      <&adc0 12>,
 			      <&adc0 13>;
 
+		i2cs = <&i2c0>, <&i2c1>, <&i2c2>;
 		serials = <&uart0>;
 	};
+};
+
+&i2c0 {
+	ARDUINO_EMUL_SENSORS
 };
 
 &uart0 {
