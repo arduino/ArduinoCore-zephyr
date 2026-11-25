@@ -7,7 +7,8 @@ set -e
 
 source venv/bin/activate
 
-ZEPHYR_BASE=$(west topdir)/zephyr
+WEST_TOPDIR=$(west topdir)
+ZEPHYR_BASE=${WEST_TOPDIR}/zephyr
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -23,7 +24,7 @@ fi
 usage() {
 	cat << EOF
 Usage:
-	$0 [--debug] <arduino_board> [<cmake_args>]
+	$0 [--key <file>] [--debug] <arduino_board> [<cmake_args>]
 Build the loader for the given board.
 
 The board must be defined in 'boards.txt' (e.g. 'giga'): its Zephyr target and
@@ -33,6 +34,9 @@ Additional <cmake_args> are passed as-is to 'west build', after the board's
 arguments and --.
 
 Options, accepted anywhere on the command line:
+	--key <file>  on boards using MCUboot, the key used to sign the images;
+	              without it, the publicly known development key of MCUboot
+	              is used
 	--debug       build the loader with extra/debug.conf
 	-h, --help    show this help
 
@@ -45,6 +49,7 @@ EOF
 	echo
 }
 
+SIGNING_KEY_PATH=""
 # parse the arguments: -h and --debug can be given anywhere; the first other
 # argument is the board name, the following ones are west arguments
 DEBUG=0
@@ -55,6 +60,14 @@ while [ $# -gt 0 ]; do
 		-h|--help)
 			usage
 			exit 0
+			;;
+		--key)
+			if [ $# -lt 2 ]; then
+				log_msg error "--key needs a file argument" >&2
+				exit 1
+			fi
+			SIGNING_KEY_PATH="$2"
+			shift
 			;;
 		--debug)
 			DEBUG=1
@@ -137,9 +150,49 @@ rm -rf ${BUILD_DIR}
 # files add further images alongside it; a variant can configure sysbuild
 # with a sysbuild.conf file.
 sysbuild_args=()
+KEY_FILE_NAME=""
 if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	sysbuild_args=(-DSB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf))
+
+	if grep -qs '^SB_CONFIG_BOOTLOADER_MCUBOOT=y' ${VARIANT_DIR}/sysbuild.conf && \
+	   ! grep -qs '^SB_CONFIG_BOOT_SIGNATURE_TYPE_NONE=y' ${VARIANT_DIR}/sysbuild.conf; then
+		# MCUboot only boots signed images: sign them with the given
+		# key, a variant default or the publicly known MCUboot dev key.
+		# The key is copied to firmwares/<variant>/, where it can be used
+		# to sign the sketches too.
+		if [ -n "${SIGNING_KEY_PATH}" ]; then
+			# directly provided key
+			KEY_FILE_NAME=$(basename "${SIGNING_KEY_PATH}")
+		elif key_files=(${VARIANT_DIR}/key/*.pem) && [ -f "${key_files[0]}" ]; then
+			# variant key directory present
+			if [ ${#key_files[@]} -gt 1 ]; then
+				log_msg error "Multiple keys in ${VARIANT_DIR}/key/, use --key" >&2
+				exit 1
+			fi
+			SIGNING_KEY_PATH=${key_files[0]}
+			KEY_FILE_NAME=$(basename "${SIGNING_KEY_PATH}")
+		else
+			# fallback
+			log_msg warning "No signing key given or found, using the insecure MCUboot development key"
+			SIGNING_KEY_PATH=${WEST_TOPDIR}/bootloader/mcuboot/root-ec-p256.pem
+			KEY_FILE_NAME=development-key.pem
+		fi
+		if [ ! -f "${SIGNING_KEY_PATH}" ]; then
+			log_msg error "Signing key '${SIGNING_KEY_PATH}' not found" >&2
+			exit 1
+		fi
+		echo "Signing key: ${SIGNING_KEY_PATH}"
+		mkdir -p firmwares/${variant}
+		rm -f firmwares/${variant}/*.pem
+		cp "${SIGNING_KEY_PATH}" firmwares/${variant}/${KEY_FILE_NAME}
+		# a Kconfig string: the value given with -D must include the quotes
+		sysbuild_args+=(-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$(realpath firmwares/${variant}/${KEY_FILE_NAME})\")
+	elif [ -n "${SIGNING_KEY_PATH}" ]; then
+		log_msg warning "'${variant}' does not use MCUboot signing, --key ignored"
+	fi
 fi
+
+# Run the main build process
 west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}" "${debug_args[@]}"
 
 # The images built by sysbuild, as "<name> <build_dir>" lines from domains.yaml,
@@ -371,6 +424,11 @@ if [ ! -z "$board" ]; then
 	if [ -f firmwares/${variant}/mcuboot.hex ]; then
 		update_local_field "loader.basename" "loader.signed"
 		update_local_field "burner.basename" "burner.signed"
+	fi
+
+	# the key to sign the sketches with, under MCUboot
+	if [ -n "${KEY_FILE_NAME}" ]; then
+		update_local_field "build.signing_key" "{runtime.platform.path}/firmwares/{build.variant}/${KEY_FILE_NAME}"
 	fi
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)

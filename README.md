@@ -277,6 +277,16 @@ as a sysbuild image, in `build/<variant>/mcuboot`, and saves it as
 [mcuboot](/mcuboot): `prj.conf` for every board, and the board's own
 `boards/<board>.conf` and `.overlay`.
 
+MCUboot only boots signed images. Pass the signing key with `--key`:
+
+```bash
+./extra/build.sh <board> --key <path/to/key.pem>
+```
+
+Without it, the publicly known MCUboot development key is used, which is not
+suitable for production. The key is copied to `firmwares/<variant>/` and
+set as `build.signing_key`, to sign the sketches as well.
+
 ### Build the Bootloader Updater
 
 For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`, or
