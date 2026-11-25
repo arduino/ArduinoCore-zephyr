@@ -52,7 +52,7 @@ if(CONFIG_ARCH_POSIX)
     zephyr_linker_sources(NOINIT native_sim/llext_heap_noinit.ld)
     target_sources(app PRIVATE native_sim/sketch_native_impl.c native_sim/gpio_log.c
         native_sim/adc_const.c native_sim/emul_i2c_regs.c native_sim/emul_m95m01.c
-        native_sim/emul_atecc608.c)
+        native_sim/emul_atecc608.c native_sim/emul_gpio_irq.c)
     target_include_directories(app PRIVATE native_sim)
     target_sources(native_simulator INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/native_sim/sketch_native_host.c)
