@@ -82,6 +82,15 @@ for variant in $INCLUDED_VARIANTS ; do
 	fi
 done
 
+# native_sim poses as the other boards, including their variant.h (see the
+# 'mimic' menu): add the headers of their variants (the ones in
+# variants/common/ are already included)
+if [ $ARTIFACT == "native_sim" ] ; then
+	for variant in $(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"native_sim\")) | .[].variant") ; do
+		ls variants/${variant}/*.h >> ${TEMP_INC}
+	done
+fi
+
 # deduplicate llext-edk headers shared by all included variants
 # (CI only: this modifies the working tree)
 if [ -n "$GITHUB_ACTIONS" ] ; then

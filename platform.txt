@@ -65,6 +65,8 @@ compiler.zephyr.extra_ldflags=-lstdc++ -lsupc++ -lm -lgcc -lc
 # these can be overriden in boards.txt
 build.extra_flags=
 build.extra_ldflags=
+# native_sim posing as a board: the define with the variant.h of that board
+build.posed_variant_flags=
 build.link_mode=dynamic
 build.boot_mode=wait
 upload.extension=elf-zsk.bin
@@ -134,13 +136,13 @@ recipe.hooks.prebuild.1.pattern=sh -c 'if [ ! -f "{build.variant.path}/includes.
 recipe.hooks.prebuild.1.pattern.windows=cmd /c if not exist "{build.variant.path}/includes.txt" (echo Error: No binaries found for {_id}. See README.md to compile or download them first. && exit 1)
 
 ## Compile c files
-recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.library_discovery_phase_flag} {build.extra_flags} {build.extra_ldflags} {compiler.c.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" {includes} "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" -o "{object_file}" "{source_file}"
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.posed_variant_flags} {build.library_discovery_phase_flag} {build.extra_flags} {build.extra_ldflags} {compiler.c.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" {includes} "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" -o "{object_file}" "{source_file}"
 
 ## Compile c++ files
-recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.library_discovery_phase_flag} {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.posed_variant_flags} {build.library_discovery_phase_flag} {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
 
 ## Compile asm files
-recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.S.cmd}" {compiler.S.flags} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_ARCH_ZEPHYR {build.posed_variant_flags} {includes} {build.extra_flags} {build.extra_ldflags} {compiler.cpp.extra_flags} "-I{build.core.path}/api/deprecated" "-I{build.core.path}/api/deprecated-avr-comp" "-iprefix{build.variant.path}" "@{compiler.zephyr.includes_file}" "{source_file}" -o "{object_file}"
 
 ## Create archives
 recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}" "{object_file}"

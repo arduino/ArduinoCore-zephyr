@@ -269,7 +269,7 @@ EOF
 		fi
 	fi
 
-	# update the actual field line
+	# update the actual field line (the value escaped for the sed replacement)
 	if grep -qE "^${match_regexp}=" $file; then
 		local escaped_value=$(sed -e 's/[\/&]/\\&/g' <<< "$value") # escape for sed
 		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${escaped_value}/" $file
@@ -349,10 +349,15 @@ if [ ! -z "$board" ]; then
 	if [ "$board" == "native_sim" ] ; then
 		# native_sim can pose as any other board, to build its sketches on
 		# the host with the same board define: add a 'mimic' menu option
-		# for each, with its name and its build.board
+		# for each, with its name and its build.board, and the variant.h
+		# of the board for the native_sim variant.h to include (the single
+		# quotes keep the double quotes of the path in the define)
 		for mimic in $(grep -oP '^\w+(?=\.build\.board=)' boards.txt | grep -vx native_sim) ; do
 			update_local_field "menu.mimic.${mimic}" "$(sed -n -e "s/^${mimic}\.name=//p" boards.txt)"
 			update_local_field "menu.mimic.${mimic}.build.board" "$(sed -n -e "s/^${mimic}\.build\.board=//p" boards.txt)"
+			mimic_variant=$(sed -n -e "s/^${mimic}\.build\.variant=//p" boards.txt)
+			update_local_field "menu.mimic.${mimic}.build.posed_variant_flags" \
+				"'-DARDUINO_POSED_VARIANT_H=\"{runtime.platform.path}/variants/${mimic_variant}/variant.h\"'"
 		done
 	fi
 fi
