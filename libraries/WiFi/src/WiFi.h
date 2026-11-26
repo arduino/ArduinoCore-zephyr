@@ -14,8 +14,10 @@
 #include "utility/wl_definitions.h"
 #include <zephyr/net/wifi_mgmt.h>
 #include "ZephyrClient.h"
+#include "ZephyrServer.h"
 
 using WiFiClient = ZephyrClient;
+using WiFiServer = ZephyrServer;
 
 #define MAX_SCAN_RESULTS 20u
 

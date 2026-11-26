@@ -10,9 +10,11 @@
 #include "SocketHelpers.h"
 #include <zephyr/net/ethernet.h>
 #include "ZephyrClient.h"
+#include "ZephyrServer.h"
 
 #if DT_HAS_COMPAT_STATUS_OKAY(ethernet_phy) || DT_HAS_COMPAT_STATUS_OKAY(microchip_ksz8081)
 using EthernetClient = ZephyrClient;
+using EthernetServer = ZephyrServer;
 
 enum EthernetLinkStatus {
 	Unknown,
