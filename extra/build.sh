@@ -20,60 +20,89 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 	export ZEPHYR_SDK_INSTALL_DIR=${SDK_PATH}
 fi
 
-if [ $# -eq 0 ] || [ x$1 == x"-h" ] || [ x$1 == x"--help" ]; then
+usage() {
 	cat << EOF
 Usage:
-	$0 <arduino_board>
-	$0 <zephyr_board> [<west_args>]
-Build the loader for the given target.
+	$0 [--debug] <arduino_board> [<cmake_args>]
+Build the loader for the given board.
 
-When given an <arduino_board> defined in 'boards.txt' (e.g. 'giga'), the actual
-Zephyr board target and arguments are taken from that definition.
+The board must be defined in 'boards.txt' (e.g. 'giga'): its Zephyr target and
+arguments are taken from that definition.
 
-When given a <zephyr_board>, it is passed as the '-b' argument to 'west build'.
-Additional <west_args> are passed as-is at the end of the command line.
+Additional <cmake_args> are passed as-is to 'west build', after the board's
+arguments and --.
 
-Available targets, as defined in 'boards.txt':
+Options, accepted anywhere on the command line:
+	--debug       build the loader with extra/debug.conf
+	-h, --help    show this help
+
+Available boards, as defined in 'boards.txt':
 
 EOF
 	extra/get_board_details.sh |
 		jq -r 'sort_by(.variant) | .[] | "\t\(.board)\t\(.target) \(.args)"' |
 		column -ts$'\t'
 	echo
-	exit 0
+}
+
+# parse the arguments: -h and --debug can be given anywhere; the first other
+# argument is the board name, the following ones are west arguments
+DEBUG=0
+board_name=""
+cmake_args=()
+while [ $# -gt 0 ]; do
+	case "$1" in
+		-h|--help)
+			usage
+			exit 0
+			;;
+		--debug)
+			DEBUG=1
+			;;
+		-*)
+			if [ -z "$board_name" ]; then
+				log_msg error "Unknown option '$1'" >&2
+				usage >&2
+				exit 1
+			fi
+			cmake_args+=("$1")
+			;;
+		*)
+			if [ -z "$board_name" ]; then
+				board_name=$1
+			else
+				cmake_args+=("$1")
+			fi
+			;;
+	esac
+	shift
+done
+
+if [ -z "$board_name" ]; then
+	usage >&2
+	exit 1
 fi
+
+# the board details (target and arguments) come from boards.txt
+chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$board_name\") // empty")
+if [ -z "$chosen_board" ]; then
+	log_msg error "Board '$board_name' not defined in 'boards.txt'" >&2
+	exit 1
+fi
+board=$(jq -cr '.board' <<< "$chosen_board")
+target=$(jq -cr '.target' <<< "$chosen_board")
+# the args field is a single string; split it on unquoted whitespace,
+# keeping quotes so a quoted value with spaces stays one array element
+arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
+mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+# the cmake arguments come after the board's ones
+args+=("${cmake_args[@]}")
+upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
 
 # extra CMake arguments for the loader build only
 debug_args=()
-# try to find the board in boards.txt
-chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
-if ! [ -z "$chosen_board" ]; then
-	# found, use the target and args from there
-	board=$(jq -cr '.board' <<< "$chosen_board")
-	target=$(jq -cr '.target' <<< "$chosen_board")
-	# the args field is a single string; split it on unquoted whitespace,
-	# keeping quotes so a quoted value with spaces stays one array element
-	arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
-	mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
-	upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
-
-	# Check for debug flag and append
-	if [ x$2 == x"--debug" ]; then
-		debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
-	fi
-else
-	# expect Zephyr-compatible target and args
-	target=$1
-	shift
-	# keep each argument as a separate array element to preserve quoting
-	args=("$@")
-	chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.target == \"$target\") // empty")
-	if [ ! -z "$chosen_board" ]; then
-		board=$(jq -cr '.board' <<< "$chosen_board")
-		upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
-	else
-		log_msg warning "No board for '$target' defined in 'boards.txt'. A proper definition is required to use the core."
-	fi
+if [ $DEBUG -eq 1 ]; then
+	debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
 fi
 
 # Save the build version to loader/VERSION and for later use in local files
