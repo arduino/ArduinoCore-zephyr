@@ -565,3 +565,6 @@ FORCE_EXPORT_SYM(regulator_disable);
 #endif
 
 EXPORT_SYMBOL(sketch_header_v1_verify);
+#if defined(CONFIG_RETENTION)
+EXPORT_SYMBOL(retention_write);
+#endif

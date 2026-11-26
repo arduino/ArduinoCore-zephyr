@@ -37,6 +37,11 @@ extern struct k_thread z_main_thread;
 #define ZARD_FIRST_SERIAL_IS_SERIALUSB                                                             \
 	ZARD_BOARD_HAS_SERIALUSB && !(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), arduino_router_serial))
 
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+bool check_dfu_mode_requested(void);
+void wait_for_dfu_update(void);
+#endif
+
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 const struct device *const usb_dev =
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(DT_PATH(zephyr_user), cdc_acm_serial, 0));
@@ -152,12 +157,18 @@ static int loader(const struct shell *sh) {
 	try_ota_update(fa);
 #endif
 
-	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
-
 	char header[SKETCH_HEADER_LEN];
+
+#ifdef CONFIG_USE_LOADER_AND_BINARY_SQUASHED
+	uintptr_t base_addr = sketch_layout.sketch_addr;
+	rc = flash_area_read(fa, sketch_layout.sketch_offset, header, sizeof(header));
+#else
+	uintptr_t base_addr = DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 	rc = flash_area_read(fa, 0, header, sizeof(header));
+#endif
+
 	if (rc) {
-		printk("Failed to read header, rc %d\n", rc);
+		LOG_ERR("Failed to read header, rc %d\n", rc);
 		recoverable_error_led();
 		return rc;
 	}
@@ -165,10 +176,16 @@ static int loader(const struct shell *sh) {
 	bool sketch_valid = true;
 	struct sketch_header_v1 *sketch_hdr = (struct sketch_header_v1 *)(header + 7);
 	if (sketch_header_v1_verify(sketch_hdr) != 0) {
-		printk("Invalid sketch header\n");
+		LOG_WRN("Invalid sketch header\n");
 		sketch_valid = false;
 		// This is not a valid sketch, but try to start a shell anyway
 	}
+
+#ifdef CONFIG_WAIT_FOR_DFU_IF_SKETCH_IS_NOT_VALID
+	if (!sketch_valid) {
+		wait_for_dfu_update();
+	}
+#endif
 
 #if ZARD_FIRST_SERIAL_IS_SERIALUSB
 	int debug = (!sketch_valid) || (sketch_hdr->flags & SKETCH_FLAG_DEBUG);
@@ -211,7 +228,7 @@ static int loader(const struct shell *sh) {
 #if defined(CONFIG_BOARD_ARDUINO_UNO_Q) || defined(CONFIG_BOARD_ARDUINO_VENTUNO_Q)
 	void matrixBegin(void);
 	void matrixEnd(void);
-	void matrixPlay(uint8_t *buf, uint32_t len);
+	void matrixPlay(const uint8_t *buf, uint32_t len);
 	void matrixSetGrayscaleBits(uint8_t _max);
 	void matrixGrayscaleWrite(uint8_t *buf);
 #include "bootanimation.h"
@@ -412,6 +429,11 @@ SHELL_CMD_REGISTER(sketch, NULL, "Run sketch", loader);
 #endif
 
 int main(void) {
+#ifdef CONFIG_USE_DFU_FLASH_UPDATES
+	if (check_dfu_mode_requested()) {
+		wait_for_dfu_update();
+	}
+#endif
 	loader(NULL);
 	return 0;
 }
