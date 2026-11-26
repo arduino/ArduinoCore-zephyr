@@ -19,6 +19,20 @@ config MAIN_STACK_REGION
 	string "Main stack memory region"
 	depends on CODE_DATA_RELOCATION
 	help
-	  Specify the memory region for main stack.
+	  Specify the memory region for main stack
+
+config USE_LOADER_AND_BINARY_SQUASHED
+    bool "Loader and sketch share a single squashed flash image"
+    default y if BOARD_ARDUINO_MEZZA
+    depends on USE_DFU_FLASH_UPDATES
+    help
+      Enable this when the loader and the sketch are packed together into
+      a single flash image whose layout (sketch offset, erase size, block
+      count and padding) is only known at runtime. When enabled, the
+      loader reads this layout from the image header via
+      retrieve_flash_info() instead of relying on statically retained
+      sketch_base_addr/sketch_max_size symbols. This layout is only
+      produced to support the dynamic sketch DFU alternate, hence the
+      dependency on USE_DFU_FLASH_UPDATES.
 
 rsource "ota/Kconfig"
