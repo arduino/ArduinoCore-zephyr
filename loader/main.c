@@ -117,6 +117,18 @@ __attribute__((retain)) const uintptr_t sketch_base_addr =
 	DT_PARTITION_ADDR(DT_NODELABEL(user_sketch));
 __attribute__((retain)) const uintptr_t sketch_max_size = DT_REG_SIZE(DT_NODELABEL(user_sketch));
 
+/* Determine start address of the loader application */
+#if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition address */
+#define LOADER_BASE_ADDR DT_PARTITION_ADDR(DT_NODE_BY_PARTITION_LABEL(image_0))
+#elif DT_HAS_CHOSEN(zephyr_code_partition) /* code partition address */
+#define LOADER_BASE_ADDR DT_PARTITION_ADDR(DT_CHOSEN(zephyr_code_partition))
+#elif CONFIG_FLASH_LOAD_OFFSET /* load offset from Kconfig */
+#define LOADER_BASE_ADDR (CONFIG_FLASH_BASE_ADDRESS + CONFIG_FLASH_LOAD_OFFSET)
+#else /* default: start of Flash */
+#define LOADER_BASE_ADDR CONFIG_FLASH_BASE_ADDRESS
+#endif
+__attribute__((retain)) const uintptr_t loader_base_addr = LOADER_BASE_ADDR;
+
 /* Determine maximum size of the loader application */
 #if DT_HAS_PARTITION_LABEL(image_0) /* "image_0" partition size */
 #define LOADER_MAX_SIZE DT_REG_SIZE(DT_NODE_BY_PARTITION_LABEL(image_0))

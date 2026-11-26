@@ -87,6 +87,20 @@ jobs:
         run: |
           echo "## Building \`$CORE_VER\`" >> "$GITHUB_STEP_SUMMARY"
 
+      # The bootloader images are not stored in the repository: extract them
+      # in firmwares/<variant>/, so that the build environment passes them to
+      # the board builds and the core packages.
+      - name: Fetch bootloader images
+        timeout-minutes: 5 # early error on Github network issues
+        env:
+          BOOTLOADERS_URL: https://downloads.arduino.cc/cores/zephyr/bootloaders-20261120.zip
+          BOOTLOADERS_SHA256: cfe08116d060e854783e2220eb1dd470775e6aeb2bb9bfe8a08d8ee0be0fbaa7
+          BOOTLOADERS_ZIP: ${{ runner.temp }}/bootloaders.zip
+        run: |
+          wget --https-only -nv -O "$BOOTLOADERS_ZIP" "$BOOTLOADERS_URL"
+          echo "$BOOTLOADERS_SHA256  $BOOTLOADERS_ZIP" | sha256sum -c -
+          unzip -o "$BOOTLOADERS_ZIP" 'firmwares/*/bootloader.*'
+
       # Restore the west cache saved by main (or the latest one, if the
       # manifest changed): west only fetches what is missing from it.
       - name: Restore west modules and blobs
@@ -225,7 +239,7 @@ jobs:
           # and add the size of the sketch partition (not reported by Zephyr)
           LOADER_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_loader_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
           SKETCH_SIZE=$(( $(cat variants/${{ matrix.variant }}/syms-static.ld | grep '_sketch_max_size' | cut -d '=' -f 2 | tr -d ') ;') ))
-          BUILD_DIR=build/${{ matrix.variant }}/zephyr
+          BUILD_DIR=build/${{ matrix.variant }}/loader/zephyr
           venv/bin/python3 extra/map_memusage.py --json $REPORT.memusage \
                                   --set-max FLASH ${LOADER_SIZE} --set-max SKETCH ${SKETCH_SIZE} \
                                   $BUILD_DIR/zephyr.map $BUILD_DIR/zephyr.elf
@@ -242,7 +256,7 @@ jobs:
         if: ${{ steps.restore-env.outcome == 'success' && !cancelled() }}
         run: |
           # add the config file to the report files, list them for later archiving
-          cp firmwares/zephyr-${{ matrix.variant }}.config $REPORT.config
+          cp firmwares/${{ matrix.variant }}/loader.config $REPORT.config
           echo "REPORT_FILES<<EOF" >> $GITHUB_ENV
           ls reports/* >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -257,7 +271,7 @@ jobs:
           echo "BINARIES_FILE=${BINARIES_FILE}" >> $GITHUB_ENV
           sed -e '/^#/d' boards.local.txt > boards.local_${{ matrix.variant }}.txt
           tar chf - \
-            firmwares/*${{ matrix.variant }}* \
+            firmwares/${{ matrix.variant }}/ \
             variants/${{ matrix.variant }}/ \
             boards.local_${{ matrix.variant }}.txt \
             cores/arduino/api/ \

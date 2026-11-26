@@ -26,7 +26,7 @@ Install the core and its toolchains via Board Manager:
 * Download and install the latest [Arduino IDE](https://www.arduino.cc/en/software) (only versions `2.x.x` are supported).
 * Open the *'Settings / Preferences'* window.
 * Open the *'Boards Manager'* from the side menu and search for *'Zephyr'*.
-* Install the *'Arduino Zephyr Boards'* platform (or the *'Arduino Uno Q Board'* platform if you have an Arduino UNO Q).
+* Install the *'Arduino Zephyr Boards'* platform (or the *'Arduino Uno Q Boards'* platform if you have an Arduino UNO Q).
 
 ## 🏗️ First Use
 
@@ -34,24 +34,34 @@ The first time you use a Zephyr board, the *Zephyr loader* must be installed on
 the board. Since release 0.90.0 this procedure is fully automated and the
 loader will be installed automatically when you upload your first sketch.
 
-[!NOTE]
-> The Arduino Portenta C33 needs a full bootloader update to work with the
-> Zephyr core. For this board, the update *must be performed manually* the
-> first time. Make sure to follow the instructions in [this Help Center
-> article](https://support.arduino.cc/hc/en-us/articles/29180434600476-Install-the-Zephyr-loader-on-your-board)
-> to properly update the bootloader on your Portenta C33.
-
-To manually force a loader update, follow these steps:
-
-* Put the board in bootloader mode by double-clicking the RESET button.
-* Run the `Burn Bootloader` option from the IDE/CLI.
-  * Note that due to limitations in the Arduino IDE, you may need to select any programmer from the `Programmers` menu.
-* Once the bootloader is installed, you can load your first sketch by placing the board into bootloader mode again.
+> [!NOTE]
+> The Arduino Portenta C33 needs a bootloader update to work with the Zephyr
+> core. For this board, the update *must be performed manually* the first time,
+> as described in [Update the board bootloader](#update-the-board-bootloader).
 
 > [!NOTE]
 > After the initial setup, future sketches will be loaded automatically without
 > needing to reset the board. Each sketch update will also reflash the loader
 > if a different version is detected.
+
+### Update the board bootloader
+
+The board bootloader can be restored or updated as follows:
+
+* Put the board in bootloader mode by double-clicking the RESET button.
+* Select `Zephyr burner app (no programmer needed)` from the `Programmers` menu.
+* Run the `Burn Bootloader` option from the IDE/CLI.
+
+This uploads a *bootloader updater* ("burner app"), which rewrites the original
+bootloader without the need for a hardware programmer. The LED blinks slowly on
+success, fast on failure; the loader is then installed by the next sketch
+upload. For more information, see the
+[Bootloader Updater README](burner/README.md).
+
+> [!NOTE]
+> Selecting a hardware programmer (CMSIS-DAP, STLINK, J-Link) instead makes
+> `Burn Bootloader` restore the board's original bootloader via SWD, as in the
+> Mbed core.
 
 ## 🔧 Troubleshooting
 
@@ -227,7 +237,7 @@ or the Zephyr board target:
 ./extra/build.sh arduino_portenta_h7//m7
 ```
 
-The firmwares will be copied to the [firmware](/firmware) folder, and the
+The firmwares will be copied to the [firmwares](/firmwares)/`<variant>` folder, and the
 associated variant will be updated.
 
 ### Flash the Loader
@@ -254,7 +264,16 @@ In this case, you would flash with:
 west flash -d build/arduino_portenta_h7_stm32h747xx_m7
 ```
 
-This can also be performed via the "Burn bootloader" action in the IDE if the core is properly installed, as detailed below.
+With the core properly installed, as detailed below, uploading any sketch from
+the IDE/CLI also flashes the new loader, since its version differs from the one
+on the board.
+
+### Build the Bootloader Updater
+
+For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`),
+`./extra/build.sh` also builds the firmware uploaded by the `Zephyr burner app`
+programmer from [burner](/burner), as the `burner` sysbuild image
+in `build/<variant>/burner`, and saves it as `firmwares/<variant>/burner.bin`.
 
 ### Using the Core in Arduino IDE/CLI
 
@@ -301,10 +320,11 @@ Place your custom core in the following path:
 
 3. Flash the new loader
 
-Build and flash the loader from your custom core to overwrite the release version.
-For example, on UNO Q:
+Build the loader from your custom core, then upload any sketch: the loader
+version differs from the release one, so it is flashed together with the
+sketch. For example, on UNO Q:
 ```bash
-arduino-cli burn-bootloader -b arduino:zephyr:unoq -P jlink
+arduino-cli compile -u -b arduino:zephyr:unoq -p <port> <sketch>
 ```
 
 #### Revert to release core

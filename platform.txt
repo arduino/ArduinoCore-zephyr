@@ -168,10 +168,10 @@ recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf
 ## Mangle the file
 recipe.hooks.objcopy.postobjcopy.1.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.elf"
 recipe.hooks.objcopy.postobjcopy.2.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" {build.zsk_args.debug} {build.zsk_args.mode-{build.link_mode}} {build.zsk_args.startup-mode-{build.boot_mode}} "{build.path}/{build.project_name}.bin"
-recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/zephyr-{build.variant}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
+recipe.hooks.objcopy.postobjcopy.3.pattern="{runtime.tools.zephyr-sketch-tool.path}/zephyr-sketch-tool" -ota -ota-loader "{runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.bin" -ota-sketch "{build.path}/{build.project_name}.{upload.extension}" -ota-offset {build.ota.sketch_offset} -ota-magic {build.ota.magic} -output "{build.path}/{build.project_name}"
 
 ## Compute size
-recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/zephyr-{build.variant}.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"
+recipe.size.pattern="{runtime.tools.zephyr-check-size.path}/zephyr-check-size" {build.link_mode} "{runtime.platform.path}/firmwares/{build.variant}/loader.config" "{build.path}/{build.project_name}.{upload.extension}" "{build.path}/{build.project_name}.elf"
 recipe.size.regex=^\.text\s+([0-9]+).*
 recipe.size.regex.data=^\.data\s+([0-9]+).*
 
@@ -200,14 +200,53 @@ upload.pid={bootloader.pid}
 erase.pattern=
 
 # Generated files used at upload time
-upload.artifacts.loader={runtime.platform.path}/firmwares/{bootloader.file}
+loader.basename=loader
+upload.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.{loader.format}
 upload.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
 
-# Expects a {loader.cmd} and a {sketch.cmd} to be defined in the tool's
-# section. The loader is flashed if it does not match the current (maybe
-# board-specific) core version. The sketch is then flashed in any case.
-# Extra arguments are passed to either command depending on whether the other
-# part will be flashed in the same session or not.
+# Files used by "Upload Using Programmer" (SWD, absolute addresses)
+program.artifacts.loader={runtime.platform.path}/firmwares/{build.variant}/{loader.basename}.hex
+program.artifacts.sketch={build.path}/{build.project_name}.{upload.extension}
+upload.offset=0
+
+# On boards with a bootloader image, "Burn Bootloader" needs a bootloader tool
+# and pattern: the SWD programmers set their tool and swd_flash.pattern; the
+# burner app reuses the board's upload tool (enforced via build.sh) and sets
+# iap_flash.pattern.
+# On other boards, the placeholders below are not substituted, so the action
+# fails showing their name.
+bootloader.tool.default=no-bootloader-available
+bootloader.pattern=no-bootloader-available
+
+# "Burn Bootloader" with a hardware programmer: the programmer sets the
+# bootloader pattern to swd_flash.pattern, overriding the default: it writes
+# swd_flash.image over SWD with the swd_flash.cmd of swd_flash.tool.
+# This allows each board to override the programmer's tool.
+swd_flash.config=
+swd_flash.preflash=
+swd_flash.tool={bootloader.tool.default}
+swd_flash.pattern=no-bootloader-available
+swd_flash.image={runtime.platform.path}/firmwares/{build.variant}/bootloader.hex
+
+# "Burn Bootloader" with the burner app: arduino-cli runs the board's
+# bootloader.tool (its USB upload tool), and the pattern used to upload
+# iap_flash.image is iap_flash.pattern.
+burner.basename=burner
+iap_flash.pattern=no-bootloader-available
+iap_flash.image={runtime.platform.path}/firmwares/{build.variant}/{burner.basename}.{loader.format}
+
+# Shared flash recipes, built from the pieces in each tool's section:
+# - {loader.cmd} and {sketch.cmd} flash the loader and the sketch, with extra
+#   arguments ({loader.args.*}, {sketch.args.*}) that depend on whether the
+#   other part is flashed in the same session or not;
+# - flash-loader-and-sketch is the upload: the loader is flashed if it does
+#   not match the current (maybe board-specific) core version, then the
+#   sketch is flashed in any case;
+# - iap_flash flashes only the loader artifact, through the bootloader
+#   already on the board (in-application programming), with the
+#   iap_flash.cmd of the board's bootloader tool;
+# - swd_flash writes swd_flash.image over SWD with the swd_flash.cmd of
+#   swd_flash.tool.
 empty=
 loader.args.with_sketch={empty}
 loader.args.without_sketch={empty}
@@ -218,7 +257,8 @@ flash-loader-and-sketch.1=if {flash-loader-condition} {loader.cmd}{loader.args.w
 flash-loader-and-sketch.2=if {flash-loader-condition} {sketch.cmd}{sketch.args.with_loader}
 flash-loader-and-sketch.3=if not {flash-loader-condition} {sketch.cmd}{sketch.args.without_loader}
 tools.patterns.flash-loader-and-sketch="{runtime.tools.scripting-tools.path}/scripting-tools" {flash-loader-and-sketch.1} :: {flash-loader-and-sketch.2} :: {flash-loader-and-sketch.3}
-tools.patterns.flash-loader-only={loader.cmd}{loader.args.without_sketch}
+tools.patterns.iap_flash={tools.{bootloader.tool.default}.iap_flash.cmd}
+tools.patterns.swd_flash={tools.{swd_flash.tool}.swd_flash.cmd}
 
 #
 # OpenOCD
@@ -227,6 +267,7 @@ tools.patterns.flash-loader-only={loader.cmd}{loader.args.without_sketch}
 # Special handling of loader and sketch via cfg file
 
 tools.openocd.path={runtime.tools.openocd-0.12.0-arduino1-static.path}
+tools.openocd.loader.format=hex
 tools.openocd.cmd=bin/openocd
 tools.openocd.cmd.windows=bin/openocd.exe
 
@@ -236,11 +277,11 @@ tools.openocd.upload.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {
 
 tools.openocd.program.params.verbose=-d2
 tools.openocd.program.params.quiet=-d0
-tools.openocd.program.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -c "set filename1 "{upload.artifacts.sketch}"" -c "set offset {upload.address}" -f "{build.variant.path}/{openocd_cfg}" "{upload.verbose}"
+tools.openocd.program.pattern="{path}/{cmd}" {program.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {swd_flash.config} -c "set filename0 "{program.artifacts.loader}"" -c "set filename1 "{program.artifacts.sketch}"" -c "set offset [expr {upload.address} + {upload.offset}]" -f "{runtime.platform.path}/debugger/flash_sketch.cfg"
 
 tools.openocd.bootloader.params.verbose=-d2
 tools.openocd.bootloader.params.quiet=-d0
-tools.openocd.bootloader.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts/" {upload.programmer} {upload.config} -c "set filename0 "{upload.artifacts.loader}"" -f "{build.variant.path}/flash_bootloader.cfg" "{upload.verbose}"
+tools.openocd.swd_flash.cmd="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f interface/{programmer.protocol}.cfg -f "{programmer.transport_script}" {swd_flash.config} -c "telnet_port disabled; init; reset init; halt; adapter speed 10000; {swd_flash.preflash}; program {{swd_flash.image}}; reset run; shutdown"
 
 
 #
@@ -248,12 +289,14 @@ tools.openocd.bootloader.pattern="{path}/{cmd}" -s "{path}/share/openocd/scripts
 #
 
 tools.bossac.path={runtime.tools.bossac-1.9.1-arduino2.path}
+tools.bossac.loader.format=bin
 tools.bossac.cmd=bossac
 tools.bossac.cmd.windows=bossac.exe
 
 tools.bossac.sketch.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.sketch}" --offset {upload.address} -R
-tools.bossac.loader.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.loader}" --offset {bootloader.address}
+tools.bossac.loader.cmd="{path}/{cmd}" {upload.verbose} --port={serial.port.file} -U -i -e -w "{upload.artifacts.loader}" --offset {loader.address}
 tools.bossac.loader.args.without_sketch={empty} -R
+tools.bossac.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.bossac.upload.params.verbose=-d
 tools.bossac.upload.params.quiet=
@@ -261,7 +304,6 @@ tools.bossac.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.bossac.bootloader.params.verbose=-d
 tools.bossac.bootloader.params.quiet=
-tools.bossac.bootloader.pattern={tools.patterns.flash-loader-only}
 
 
 #
@@ -271,13 +313,16 @@ tools.bossac.bootloader.pattern={tools.patterns.flash-loader-only}
 # overridable by boards.txt
 leave.dfuse=:leave
 upload.dfuse=--dfuse-address={upload.address}
-bootloader.dfuse=--dfuse-address={bootloader.address}
+loader.dfuse=--dfuse-address={loader.address}
+loader.interface=0
 
 tools.dfu-util.path={runtime.tools.dfu-util.path}
+tools.dfu-util.loader.format=bin
 tools.dfu-util.cmd=dfu-util
 tools.dfu-util.sketch.cmd="{path}/{cmd}" --device ,{upload.vid}:{upload.pid} -D "{upload.artifacts.sketch}" -a{upload.interface} {upload.dfuse}{leave.dfuse}
-tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{bootloader.interface} {bootloader.dfuse}
+tools.dfu-util.loader.cmd="{path}/{cmd}" --device ,{bootloader.vid}:{bootloader.pid} -D "{upload.artifacts.loader}" -a{loader.interface} {loader.dfuse}
 tools.dfu-util.loader.args.without_sketch={leave.dfuse}
+tools.dfu-util.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.dfu-util.upload.params.verbose=-d
 tools.dfu-util.upload.params.quiet=
@@ -285,7 +330,6 @@ tools.dfu-util.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.dfu-util.bootloader.params.verbose=-d
 tools.dfu-util.bootloader.params.quiet=
-tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
 
 
 #
@@ -295,8 +339,10 @@ tools.dfu-util.bootloader.pattern={tools.patterns.flash-loader-only}
 tools.picotool.sketch.cmd="{path}/{cmd}" {upload.verbose} -n -D "{upload.artifacts.sketch}"
 tools.picotool.loader.cmd="{path}/{cmd}" {upload.verbose} -n -D "{upload.artifacts.loader}"
 tools.picotool.loader.args.with_sketch={empty} -R
+tools.picotool.iap_flash.cmd={loader.cmd}{loader.args.without_sketch}
 
 tools.picotool.path={runtime.tools.rp2040tools.path}
+tools.picotool.loader.format=uf2
 tools.picotool.cmd=rp2040load
 tools.picotool.upload.params.verbose=-v
 tools.picotool.upload.params.quiet=
@@ -304,7 +350,6 @@ tools.picotool.upload.pattern={tools.patterns.flash-loader-and-sketch}
 
 tools.picotool.bootloader.params.verbose=-v
 tools.picotool.bootloader.params.quiet=
-tools.picotool.bootloader.pattern={tools.patterns.flash-loader-only}
 
 
 #
@@ -323,6 +368,7 @@ tools.imgtool.flags=sign --key "{build.keys.keychain}/{build.keys.sign_key}" --e
 # Special handling of loader and sketch via upload command
 
 tools.remoteocd.path={runtime.tools.remoteocd.path}
+tools.remoteocd.loader.format=elf
 tools.remoteocd.cmd=remoteocd
 tools.remoteocd.upload.params.verbose=--verbose
 tools.remoteocd.upload.params.quiet=
@@ -331,12 +377,12 @@ tools.remoteocd.upload.pattern="{path}/{cmd}" upload --adb-path "{runtime.tools.
 
 tools.remoteocd.bootloader.params.verbose=--verbose
 tools.remoteocd.bootloader.params.quiet=
-tools.remoteocd.bootloader.pattern="{path}/{cmd}" upload --adb-path "{runtime.tools.adb.path}/adb" -s "{upload.port.properties.serialNumber}" -f "{build.variant.path}/flash_bootloader.cfg" "{upload.verbose}" "{upload.artifacts.loader}"
 
 tools.remoteocd_network.upload.protocol=network
 tools.remoteocd_network.upload.field.password=Password
 tools.remoteocd_network.upload.field.password.secret=true
 tools.remoteocd_network.path={runtime.tools.remoteocd.path}
+tools.remoteocd_network.loader.format=elf
 tools.remoteocd_network.cmd=remoteocd
 tools.remoteocd_network.upload.params.verbose=--verbose
 tools.remoteocd_network.upload.params.quiet=
@@ -351,6 +397,7 @@ tools.remoteocd_network.upload.pattern="{path}/{cmd}" upload -a "{upload.port.ad
 # TODO: at the moment, install pyocd manually (with provided script)
 #tools.pyocd.path={runtime.tools.pyocd.path}
 tools.pyocd.path=
+tools.pyocd.loader.format=elf
 tools.pyocd.cmd=pyocd
 tools.pyocd.upload.params.verbose=
 tools.pyocd.upload.params.quiet=
@@ -358,7 +405,7 @@ tools.pyocd.upload.pattern="{cmd}" load --target {upload.target} {upload.artifac
 
 tools.pyocd.bootloader.params.verbose=
 tools.pyocd.bootloader.params.quiet=
-tools.pyocd.bootloader.pattern="{cmd}" load --target {bootloader.target} "{upload.artifacts.loader}"
+tools.pyocd.swd_flash.cmd="{tools.pyocd.cmd}" load --target {bootloader.target} "{swd_flash.image}"
 
 
 #

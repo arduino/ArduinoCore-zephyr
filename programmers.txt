@@ -1,23 +1,45 @@
+# SWD programmers: their bootloader pattern is swd_flash.pattern, which writes
+# the bootloader with the swd_flash.cmd of swd_flash.tool: the programmer's
+# tool, unless the board sets another one (see platform.txt).
 cmsis-dap.name=ARM CMSIS-DAP compatible
 cmsis-dap.communication=USB
 cmsis-dap.protocol=
 cmsis-dap.program.protocol=
-cmsis-dap.program.tool=openocd
 cmsis-dap.program.tool.default=openocd
 cmsis-dap.program.extra_params=
+cmsis-dap.bootloader.tool.default=openocd
+cmsis-dap.bootloader.pattern={swd_flash.pattern}
 cmsis-dap.programmer.protocol=cmsis-dap
+cmsis-dap.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
+
+stlink.name=STMicroelectronics STLINK
+stlink.communication=USB
+stlink.protocol=
+stlink.program.protocol=
+stlink.program.tool.default=openocd
+stlink.program.extra_params=
+stlink.bootloader.tool.default=openocd
+stlink.bootloader.pattern={swd_flash.pattern}
+stlink.programmer.protocol=stlink
+stlink.programmer.transport_script={runtime.platform.path}/debugger/select_hla.cfg
 
 jlink.name=JLink
 jlink.communication=USB
 jlink.protocol=
 jlink.program.protocol=
-jlink.program.tool=pyocd
-jlink.program.tool.default=pyocd
+jlink.program.tool.default=openocd
 jlink.program.extra_params=
+jlink.bootloader.tool.default=openocd
+jlink.bootloader.pattern={swd_flash.pattern}
 jlink.programmer.protocol=jlink
+jlink.programmer.transport_script={runtime.platform.path}/debugger/select_swd.cfg
 
-openocd.name=OpenOCD
-openocd.protocol=SWD
-openocd.program.tool=openocd
-openocd.program.tool.default=openocd
-openocd.program.extra_params=
+# Fake programmer: does not override the board's bootloader.tool, so "Burn
+# Bootloader" uploads the bootloader updater with the board's own upload tool,
+# through the bootloader already on the board (in-application programming).
+# Boards that do not ship a bootloader fail, see iap_flash.pattern.
+burner_app.name=Zephyr burner app (no programmer needed)
+burner_app.communication=USB
+burner_app.protocol=
+burner_app.bootloader.pattern={iap_flash.pattern}
+burner_app.upload.artifacts.loader={iap_flash.image}

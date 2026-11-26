@@ -12,6 +12,7 @@
 programmers.txt
 LICENSE
 README.md
+debugger/
 doc/
 cores/
 libraries/

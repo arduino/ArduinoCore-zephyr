@@ -70,8 +70,13 @@ for variant in $INCLUDED_VARIANTS ; do
 	echo "- ${variant}"
 	echo "variants/${variant}/" >> ${TEMP_INC}
 	# add the firmwares, if some are missing notify at end
-	if ! ls firmwares/zephyr-${variant}.* >> ${TEMP_INC} ; then
+	if ! ls -d firmwares/${variant} >> ${TEMP_INC} ; then
 		log_msg error "No firmware for '${variant}' found."
+		RET=3
+	fi
+	# boards with a separate bootloader also need the bootloader updater
+	if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ] ; then
+		log_msg error "No bootloader updater for '${variant}' found."
 		RET=3
 	fi
 done

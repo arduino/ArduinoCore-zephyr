@@ -43,7 +43,8 @@ EOF
 	exit 0
 fi
 
-debug=false
+# extra CMake arguments for the loader build only
+debug_args=()
 # try to find the board in boards.txt
 chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
 if ! [ -z "$chosen_board" ]; then
@@ -58,7 +59,7 @@ if ! [ -z "$chosen_board" ]; then
 
 	# Check for debug flag and append
 	if [ x$2 == x"--debug" ]; then
-		debug=true
+		debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
 	fi
 else
 	# expect Zephyr-compatible target and args
@@ -81,13 +82,10 @@ build_version=$(extra/get_core_version.sh loader/VERSION)
 # CMake arguments go after a '--' separator, which args may already contain
 [[ " ${args[*]} " == *" -- "* ]] || args+=(--)
 args+=(-DAPP_BUILD_VERSION=${build_version})
-if ${debug} ; then
-	args+=(-DEXTRA_CONF_FILE=../extra/debug.conf)
-fi
 
 echo
 echo "Build version: $build_version"
-echo "Build target: $target ${args[*]}"
+echo "Build target: $target ${args[*]} ${debug_args[*]}"
 
 # Get the variant name (NORMALIZED_BOARD_TARGET in Zephyr)
 variant=$(extra/get_variant_name.sh $target)
@@ -103,12 +101,36 @@ fi
 BUILD_DIR=build/${variant}
 VARIANT_DIR=variants/${variant}
 rm -rf ${BUILD_DIR}
-west build -d ${BUILD_DIR} -b ${target} loader -t llext-edk "${args[@]}"
+
+# The loader is built through sysbuild, which lets per-image sysbuild.cmake
+# files add further images alongside it; a variant can configure sysbuild
+# with a sysbuild.conf file.
+sysbuild_args=()
+if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
+	sysbuild_args=(-DSB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf))
+fi
+west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}" "${debug_args[@]}"
+
+# The images built by sysbuild, as "<name> <build_dir>" lines from domains.yaml,
+# the default (loader) image first. LOADER_DIR is the loader's own build tree.
+domains=()
+while IFS= read -r domain; do
+	domains+=("$domain")
+done < <(python3 -c '
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+for x in sorted(d["domains"], key=lambda x: x["name"] != d["default"]):
+    print(x["name"], x["build_dir"])
+' ${BUILD_DIR}/domains.yaml)
+LOADER_DIR=${domains[0]#* }
+
+# The llext-edk target is not part of the sysbuild 'all', so build it separately
+cmake --build ${LOADER_DIR} --target llext-edk
 
 # Extract the generated EDK tarball and copy it to the variant directory
-mkdir -p ${VARIANT_DIR} firmwares
-(set -e ; cd ${BUILD_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
-rsync -a --delete ${BUILD_DIR}/llext-edk ${VARIANT_DIR}/
+mkdir -p ${VARIANT_DIR} firmwares/${variant}
+(set -e ; cd ${LOADER_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
+rsync -a --delete ${LOADER_DIR}/llext-edk ${VARIANT_DIR}/
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -127,24 +149,37 @@ edk_funcs='k_ticks_t k_sleep_ticks\(k_timeout_t timeout\)|void k_busy_wait\(uint
 perl -0pi -e "s/static inline ($edk_funcs)/$edk_qual \$1/g" $syscalls_hdrs
 perl -0pi -e "s/__syscall ($edk_funcs);/$edk_qual \$1;/g" $api_hdrs
 
-for ext in elf bin hex uf2; do
-    rm -f firmwares/zephyr-$variant.$ext
-    if [ -f ${BUILD_DIR}/zephyr/zephyr.$ext ]; then
-        cp ${BUILD_DIR}/zephyr/zephyr.$ext firmwares/zephyr-$variant.$ext
-    fi
+# Copy the outputs of each image as firmwares/<variant>/<image>.<ext>
+for domain in "${domains[@]}"; do
+	name=${domain%% *}
+	image_dir=${domain#* }/zephyr
+	rm -f firmwares/$variant/$name.*
+	for ext in elf bin hex uf2; do
+		if [ -f "$image_dir/zephyr.$ext" ]; then
+			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
+		fi
+	done
+	cp "$image_dir/zephyr.dts" firmwares/$variant/$name.dts
+	cp "$image_dir/.config" firmwares/$variant/$name.config
 done
-cp ${BUILD_DIR}/zephyr/zephyr.dts firmwares/zephyr-$variant.dts
-cp ${BUILD_DIR}/zephyr/.config firmwares/zephyr-$variant.config
+
+# Boards with a separate bootloader also build the bootloader updater as the
+# burner sysbuild image (see loader/sysbuild.cmake)
+if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ]; then
+	log_msg error "Bootloader updater for '${variant}' not built" >&2
+	exit 1
+fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${BUILD_DIR}/zephyr/zephyr.elf" -LF \
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
 	"*sketch_max_size=_sketch_max_size" \
+	"*loader_base_addr=_loader_start" \
 	"*loader_max_size=_loader_max_size" \
 	"malloc=__wrap_malloc" \
 	"free=__wrap_free" \
@@ -159,6 +194,15 @@ get_value_from_text_file() {
 	local field=$2
 
 	grep -E "\<${field//./\\./}\>\s*=" $file | tail -n 1 | cut -d '=' -f 2- | tr -d '); '
+}
+
+get_board_field() {
+	local field=$1
+	local full_field_name="${board}.${field}"
+	local match_regexp="${full_field_name//./\\.}" # escape dots
+
+	# strip comments, then print the value of the field
+	sed -e 's/\s*#.*//' boards.txt | sed -n -e "s/^${match_regexp}=//p"
 }
 
 update_local_field() {
@@ -198,7 +242,8 @@ EOF
 
 	# update the actual field line
 	if grep -qE "^${match_regexp}=" $file; then
-		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${value}/" $file
+		local escaped_value=$(sed -e 's/[\/&]/\\&/g' <<< "$value") # escape for sed
+		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${escaped_value}/" $file
 	else
 		echo "${full_field_name}=${value}" >> $file
 	fi
@@ -225,15 +270,39 @@ if [ ! -z "$board" ]; then
 	fi
 	update_local_field "upload.address" "$UPLOAD_ADDR" "$UPLOAD_ADDR_COMMENT"
 
+	# loader load address: start of loader partition, hex (exact), offset as above
+	LOADER_START=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_start')
+	if [ -z "$upload_offset" ] ; then
+		LOADER_ADDR=$LOADER_START
+		LOADER_ADDR_COMMENT=""
+	else
+		LOADER_ADDR=$(printf "0x%X" $((LOADER_START - upload_offset)))
+		LOADER_ADDR_COMMENT="$LOADER_START was offset by $upload_offset from ${board}.upload.offset"
+	fi
+	update_local_field "loader.address" "$LOADER_ADDR" "$LOADER_ADDR_COMMENT"
+
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
-	update_local_field "bootloader.maximum_size" $LOADER_MAX_SIZE
+	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
+
+	# For "Burn Bootloader" on boards with a bootloader image:
+	# - with a hardware programmer, write the image with the board's
+	#   swd_flash.tool;
+	# - with the burner app, upload the burner image with the
+	#   board's usual upload tool (copied as bootloader.tool.default).
+	if [ -f firmwares/${variant}/bootloader.hex ]; then
+		update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/bootloader.hex"
+		update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
+		BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
+		update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
+		update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+	fi
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)
 	CODE_SIZE=$(( $(get_value_from_text_file variants/${variant}/syms-static.ld '_sketch_max_size') ))
 	update_local_field "upload.maximum_size" $CODE_SIZE
 
 	# maximum data size: configured LLEXT heap size, decimal (larger bound, real limit is smaller)
-	DATA_SIZE=$(( 1024*$(get_value_from_text_file firmwares/zephyr-${variant}.config 'CONFIG_LLEXT_HEAP_SIZE') ))
+	DATA_SIZE=$(( 1024*$(get_value_from_text_file firmwares/${variant}/loader.config 'CONFIG_LLEXT_HEAP_SIZE') ))
 	update_local_field "upload.maximum_data_size" $DATA_SIZE
 
 	# machine fields
