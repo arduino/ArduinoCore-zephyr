@@ -17,6 +17,7 @@
 #  - CORE_TAG: tag (if found) or hash, for user-friendly strings and file names
 #  - CORE_BRANCH: target branch of this build, used for ci-builds tracking
 #  - ALL_BOARD_DATA: JSON describing all boards, from get_board_details.sh
+#    (except native_sim, a test only board that is never published)
 #  - ALL_BOARD_FQBNS: ALL_BOARD_DATA with link_mode alternatives added, each
 #    requiring the package of its artifact
 #  - ARTIFACTS: list of artifacts, including the "zephyr" umbrella artifact
@@ -44,7 +45,8 @@ REF=${1:-HEAD}
 OUTPUT=${GITHUB_ENV:-/dev/stdout}
 
 CORE_HASH=$(git describe --always $REF)
-ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'sort_by(.variant) | map(. + {id: "build-\(.board)"})')
+# native_sim is never published: keep it out of the board matrix
+ALL_BOARD_DATA=$(extra/get_board_details.sh | jq -c 'map(select(.artifact != "native_sim")) | sort_by(.variant) | map(. + {id: "build-\(.board)"})')
 CORE_VER=$(extra/get_core_version.sh)
 CORE_TAG=$(git describe --tags --exact-match --exclude '*/*' 2>/dev/null || echo $CORE_HASH)
 if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
