@@ -79,6 +79,9 @@ void enableInterrupt(pin_size_t pinNumber) {
 void disableInterrupt(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
+	gpio_pin_interrupt_configure(arduino_pins[pinNumber].port, arduino_pins[pinNumber].pin,
+								 GPIO_INT_DISABLE);
+
 	struct gpio_port_callback *pcb = find_gpio_port_callback(arduino_pins[pinNumber].port);
 
 	if (pcb) {
@@ -128,8 +131,8 @@ void attachInterrupt(pin_size_t pinNumber, voidFuncPtr callback, PinStatus pinSt
 void detachInterrupt(pin_size_t pinNumber) {
 	RETURN_ON_INVALID_PIN(pinNumber);
 
-	setInterruptHandler(pinNumber, nullptr);
 	disableInterrupt(pinNumber);
+	setInterruptHandler(pinNumber, nullptr);
 }
 
 void interrupts(void) {
