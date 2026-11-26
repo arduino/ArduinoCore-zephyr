@@ -42,6 +42,24 @@
 		regs = [92 ab  93 03  94 90  95 01  96 64  97 00  98 c8  99 00 \
 			9a 2c  9b 01];                                         \
 	};                                                                     \
+	/* BMI270: chip id, config loaded, accelerometer data ready, and a    \
+	 * constant accelerometer of (2048, 4096, 8192) raw = (0.25, 0.50, 1.00) g \
+	 * (range 4 g, 100 Hz); the gyro and sensortime are zero              \
+	 */                                                                    \
+	bmi270@68 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x68>;                                                  \
+		regs = [00 24  21 01  1b 00  1c 00  1d 80  40 98  41 01        \
+			0c 00  0d 08  0e 00  0f 10  10 00  11 20];                 \
+		self-clearing-bits = [7e ff];                                  \
+	};                                                                     \
+	/* BMM150: chip id, trim and operation mode, all plain registers      \
+	 */                                                                    \
+	bmm150@10 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x10>;                                                  \
+		regs = [40 32];                                                \
+	};                                                                     \
 	/* ATECC608 secure element (libraries: ECCX08 on CRYPTO_WIRE, Wire1 \
 	 * on Zephyr, Wire on the Nano RP2040 Connect)                        \
 	 */                                                                    \
