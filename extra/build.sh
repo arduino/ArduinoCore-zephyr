@@ -154,7 +154,7 @@ for domain in "${domains[@]}"; do
 	name=${domain%% *}
 	image_dir=${domain#* }/zephyr
 	rm -f firmwares/$variant/$name.*
-	for ext in elf bin hex uf2; do
+	for ext in elf bin hex uf2 exe; do
 		if [ -f "$image_dir/zephyr.$ext" ]; then
 			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
 		fi
@@ -172,9 +172,16 @@ fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -LF \
+if [ -f "${LOADER_DIR}/zephyr/zephyr.exe" ] ; then
+	# native_sim: zephyr.elf is a partially linked object, final addresses
+	# are only known in the host executable
+	LOADER_ELF="${LOADER_DIR}/zephyr/zephyr.exe"
+else
+	LOADER_ELF="${LOADER_DIR}/zephyr/zephyr.elf"
+fi
+extra/gen_provides.py "${LOADER_ELF}" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${LOADER_ELF}" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${LOADER_ELF}" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \

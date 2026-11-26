@@ -1,0 +1,173 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * CI/dev only target: pins are lines of emulated GPIO ports. The core
+ * identifies pins by the controller address, so the ports need a reg.
+ * There are as many pins as on the board with the most (Giga R1: 101), so
+ * that native_sim can pose as any board.
+ */
+/ {
+	arduino_gpio: gpio@800 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0x800 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio1: gpio@900 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0x900 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio2: gpio@a00 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0xa00 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio3: gpio@b00 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0xb00 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	zephyr,user {
+		digital-pin-gpios = <&arduino_gpio 0 0>,
+				    <&arduino_gpio 1 0>,
+				    <&arduino_gpio 2 0>,
+				    <&arduino_gpio 3 0>,
+				    <&arduino_gpio 4 0>,
+				    <&arduino_gpio 5 0>,
+				    <&arduino_gpio 6 0>,
+				    <&arduino_gpio 7 0>,
+				    <&arduino_gpio 8 0>,
+				    <&arduino_gpio 9 0>,
+				    <&arduino_gpio 10 0>,
+				    <&arduino_gpio 11 0>,
+				    <&arduino_gpio 12 0>,
+				    <&arduino_gpio 13 0>,
+				    <&arduino_gpio 14 0>,
+				    <&arduino_gpio 15 0>,
+				    <&arduino_gpio 16 0>,
+				    <&arduino_gpio 17 0>,
+				    <&arduino_gpio 18 0>,
+				    <&arduino_gpio 19 0>,
+				    <&arduino_gpio 20 0>,
+				    <&arduino_gpio 21 0>,
+				    <&arduino_gpio 22 0>,
+				    <&arduino_gpio 23 0>,
+				    <&arduino_gpio 24 0>,
+				    <&arduino_gpio 25 0>,
+				    <&arduino_gpio 26 0>,
+				    <&arduino_gpio 27 0>,
+				    <&arduino_gpio 28 0>,
+				    <&arduino_gpio 29 0>,
+				    <&arduino_gpio 30 0>,
+				    <&arduino_gpio 31 0>,
+				    <&arduino_gpio1 0 0>,
+				    <&arduino_gpio1 1 0>,
+				    <&arduino_gpio1 2 0>,
+				    <&arduino_gpio1 3 0>,
+				    <&arduino_gpio1 4 0>,
+				    <&arduino_gpio1 5 0>,
+				    <&arduino_gpio1 6 0>,
+				    <&arduino_gpio1 7 0>,
+				    <&arduino_gpio1 8 0>,
+				    <&arduino_gpio1 9 0>,
+				    <&arduino_gpio1 10 0>,
+				    <&arduino_gpio1 11 0>,
+				    <&arduino_gpio1 12 0>,
+				    <&arduino_gpio1 13 0>,
+				    <&arduino_gpio1 14 0>,
+				    <&arduino_gpio1 15 0>,
+				    <&arduino_gpio1 16 0>,
+				    <&arduino_gpio1 17 0>,
+				    <&arduino_gpio1 18 0>,
+				    <&arduino_gpio1 19 0>,
+				    <&arduino_gpio1 20 0>,
+				    <&arduino_gpio1 21 0>,
+				    <&arduino_gpio1 22 0>,
+				    <&arduino_gpio1 23 0>,
+				    <&arduino_gpio1 24 0>,
+				    <&arduino_gpio1 25 0>,
+				    <&arduino_gpio1 26 0>,
+				    <&arduino_gpio1 27 0>,
+				    <&arduino_gpio1 28 0>,
+				    <&arduino_gpio1 29 0>,
+				    <&arduino_gpio1 30 0>,
+				    <&arduino_gpio1 31 0>,
+				    <&arduino_gpio2 0 0>,
+				    <&arduino_gpio2 1 0>,
+				    <&arduino_gpio2 2 0>,
+				    <&arduino_gpio2 3 0>,
+				    <&arduino_gpio2 4 0>,
+				    <&arduino_gpio2 5 0>,
+				    <&arduino_gpio2 6 0>,
+				    <&arduino_gpio2 7 0>,
+				    <&arduino_gpio2 8 0>,
+				    <&arduino_gpio2 9 0>,
+				    <&arduino_gpio2 10 0>,
+				    <&arduino_gpio2 11 0>,
+				    <&arduino_gpio2 12 0>,
+				    <&arduino_gpio2 13 0>,
+				    <&arduino_gpio2 14 0>,
+				    <&arduino_gpio2 15 0>,
+				    <&arduino_gpio2 16 0>,
+				    <&arduino_gpio2 17 0>,
+				    <&arduino_gpio2 18 0>,
+				    <&arduino_gpio2 19 0>,
+				    <&arduino_gpio2 20 0>,
+				    <&arduino_gpio2 21 0>,
+				    <&arduino_gpio2 22 0>,
+				    <&arduino_gpio2 23 0>,
+				    <&arduino_gpio2 24 0>,
+				    <&arduino_gpio2 25 0>,
+				    <&arduino_gpio2 26 0>,
+				    <&arduino_gpio2 27 0>,
+				    <&arduino_gpio2 28 0>,
+				    <&arduino_gpio2 29 0>,
+				    <&arduino_gpio2 30 0>,
+				    <&arduino_gpio2 31 0>,
+				    <&arduino_gpio3 0 0>,
+				    <&arduino_gpio3 1 0>,
+				    <&arduino_gpio3 2 0>,
+				    <&arduino_gpio3 3 0>,
+				    <&arduino_gpio3 4 0>;
+
+		builtin-led-gpios = <&arduino_gpio 13 0>;
+
+		serials = <&uart0>;
+	};
+};
+
+&uart0 {
+	on-stdinout;
+};
