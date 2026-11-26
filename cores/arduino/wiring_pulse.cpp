@@ -23,7 +23,7 @@ unsigned long pulseIn(pin_size_t pinNumber, uint8_t state, unsigned long timeout
 	}
 
 	k_timer_init(&timer, NULL, NULL);
-	k_timer_start(&timer, K_MSEC(timeout), K_NO_WAIT);
+	k_timer_start(&timer, K_USEC(timeout), K_NO_WAIT);
 
 	while (gpio_pin_get_dt(spec) == state && k_timer_status_get(&timer) == 0)
 		;
