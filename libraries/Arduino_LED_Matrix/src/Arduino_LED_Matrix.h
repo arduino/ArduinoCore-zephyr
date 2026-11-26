@@ -249,7 +249,7 @@ private:
 
 private:
 	int _currentFrame = 0;
-	uint32_t _frameHolder[3];
+	uint32_t _frameHolder[4];
 	uint32_t *_frames;
 	uint32_t _framesCount;
 	uint32_t _interval = 0;
