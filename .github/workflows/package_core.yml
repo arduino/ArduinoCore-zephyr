@@ -811,6 +811,9 @@ jobs:
       - package-core
       - verify-core
     environment: production
+    env:
+      CORE_HASH: ${{ needs.build-env.outputs.CORE_HASH }}
+      PACKAGE_DATA: ${{ needs.build-env.outputs.PACKAGE_DATA }}
     permissions:
       id-token: write
       contents: read
@@ -838,10 +841,11 @@ jobs:
 
       - name: Upload artifact
         run: |
-          for f in ArduinoCore-*.tar.zst ; do
-            aws s3 cp $f s3://${{ secrets.S3_BUCKET }}/
+          # one upload per package of the matrix: a missing file is an error
+          jq -r '.[].artifact' <<< "$PACKAGE_DATA" | while read -r artifact; do
+            aws s3 cp ArduinoCore-${artifact}-${CORE_HASH}.tar.zst s3://${{ secrets.S3_BUCKET }}/
           done
-          aws s3 cp size-reports-*.tar.zst s3://${{ secrets.S3_BUCKET }}/size-reports/
+          aws s3 cp size-reports-${CORE_HASH}.tar.zst s3://${{ secrets.S3_BUCKET }}/size-reports/
 
 
 

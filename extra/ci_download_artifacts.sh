@@ -52,11 +52,11 @@ api() {
 # "<id> <digest> <name>" of the non-expired artifacts of the run, the latest
 # one for each name
 list_artifacts() {
-	local page=1 count
+	local page=1 count json
 	while : ; do
-		json=$(api "$API/runs/$RUN_ID/artifacts?per_page=100&page=$page")
-		count=$(jq '.artifacts | length' <<< "$json")
-		jq -r '.artifacts[] | select(.expired | not) | "\(.id) \(.digest // "-") \(.name)"' <<< "$json"
+		json=$(api "$API/runs/$RUN_ID/artifacts?per_page=100&page=$page") || return 1
+		count=$(jq '.artifacts | length' <<< "$json") || return 1
+		jq -r '.artifacts[] | select(.expired | not) | "\(.id) \(.digest // "-") \(.name)"' <<< "$json" || return 1
 		[ "$count" -eq 100 ] || break
 		page=$((page + 1))
 	done | sort -k1,1nr | sort -s -u -k3,3
@@ -97,7 +97,8 @@ fetch() {
 	touch "$WORK/$1.failed"
 }
 
-# the matching artifacts, JOBS at a time
+# Download the matching artifacts, JOBS at a time
+LIST=$(list_artifacts)
 TOTAL=0
 while read -r id digest name ; do
 	match=
@@ -111,7 +112,7 @@ while read -r id digest name ; do
 	while [ "$(jobs -rp | wc -l)" -ge $JOBS ] ; do
 		wait -n || true
 	done
-done < <(list_artifacts)
+done <<< "$LIST"
 wait
 FAILED=$(find "$WORK" -name '*.failed' | wc -l)
 
