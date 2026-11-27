@@ -197,10 +197,11 @@ frdm_mcxn947.build.board=FRDM_MCXN947
 frdm_mcxn947.upload_port.0.vid=0x1fc9
 frdm_mcxn947.upload_port.0.pid=0x0143
 frdm_mcxn947.upload.target=mcxn947vdf
+frdm_mcxn947.upload.linkserver_device=MCXN947:FRDM-MCXN947
+frdm_mcxn947.programmer.default=pyocd
 
 frdm_mcxn947.upload.tool=pyocd
 frdm_mcxn947.upload.tool.default=pyocd
-frdm_mcxn947.upload.protocol=
 frdm_mcxn947.upload.transport=
 frdm_mcxn947.upload.use_1200bps_touch=false
 frdm_mcxn947.upload.wait_for_upload_port=false

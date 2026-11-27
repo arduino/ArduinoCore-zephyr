@@ -402,10 +402,26 @@ tools.pyocd.cmd=pyocd
 tools.pyocd.upload.params.verbose=
 tools.pyocd.upload.params.quiet=
 tools.pyocd.upload.pattern="{cmd}" load --target {upload.target} {upload.artifacts.sketch}@{upload.address}
+tools.pyocd.program.params.verbose=
+tools.pyocd.program.params.quiet=
+tools.pyocd.program.pattern="{cmd}" load --target {upload.target} "{program.artifacts.loader}" "{program.artifacts.sketch}@{upload.address}"
 
 tools.pyocd.bootloader.params.verbose=
 tools.pyocd.bootloader.params.quiet=
 tools.pyocd.swd_flash.cmd="{tools.pyocd.cmd}" load --target {bootloader.target} "{swd_flash.image}"
+
+
+#
+# NXP LINKSERVER
+#
+
+# LinkServer cannot be distributed through the Arduino package index: install
+# it from NXP and make sure the LinkServer executable is in PATH.
+tools.linkserver.path=
+tools.linkserver.cmd=LinkServer
+tools.linkserver.program.params.verbose=
+tools.linkserver.program.params.quiet=
+tools.linkserver.program.pattern="{runtime.tools.scripting-tools.path}/scripting-tools" run "{cmd}" flash {upload.linkserver_device} load "{program.artifacts.loader}" :: run "{cmd}" flash {upload.linkserver_device} load "{program.artifacts.sketch}:{upload.address}"
 
 
 #
