@@ -275,7 +275,7 @@
                             <&gpioe 3 GPIO_ACTIVE_HIGH>, /* D23 LEDR */
                             <&gpioc 13 GPIO_ACTIVE_HIGH>, /* D24 LEDG */
                             <&gpiof 4 GPIO_ACTIVE_HIGH>, /* D25 LEDB */
-                            <&gpioa 0 GPIO_ACTIVE_HIGH>, /* D26 PA0 */
+                            <&gpio_invalid 7 GPIO_ACTIVE_HIGH>, /* D26 PA0 */
                             <&gpioa 1 GPIO_ACTIVE_HIGH>, /* D27 IMU interrupt */
                             <&gpiog 0 GPIO_ACTIVE_HIGH>, /* D28 SE05X_EN */
                             <&gpio_invalid 2 GPIO_ACTIVE_HIGH>, /* D29 Reserved */
@@ -283,7 +283,8 @@
                             <&gpio_invalid 4 GPIO_ACTIVE_HIGH>, /* D31 Reserved */
                             <&gpio_invalid 5 GPIO_ACTIVE_HIGH>, /* D32 Reserved */
                             <&gpio_invalid 6 GPIO_ACTIVE_HIGH>, /* D33 Reserved */
-			    <&gpiog 10 GPIO_ACTIVE_HIGH>; /* D34 VL53L1CB XSHUT */
+			    <&gpiog 10 GPIO_ACTIVE_HIGH>, /* D34 VL53L1CB XSHUT */
+			    <&gpioa 13 GPIO_ACTIVE_HIGH>; /* Provisioning reconfigure pin */
 
         adc-pin-gpios = <&gpioc 4 GPIO_ACTIVE_HIGH>,   /* A0 PC4  */
                         <&gpiof 13 GPIO_ACTIVE_HIGH>,   /* A1 PF13 */
