@@ -34,9 +34,17 @@ project(burner LANGUAGES C)
 # custom pinctrl state used by the variant overlays, see the core CMakeLists.txt
 zephyr_compile_options(-DPINCTRL_STATE_ARDUINO=PINCTRL_STATE_PRIV_START)
 
-set(BOOTLOADER_HEX ${CMAKE_CURRENT_LIST_DIR}/../firmwares/${NORMALIZED_BOARD_TARGET}/bootloader.hex)
-if(NOT EXISTS ${BOOTLOADER_HEX})
-	message(FATAL_ERROR "No bootloader image for ${NORMALIZED_BOARD_TARGET}: ${BOOTLOADER_HEX}")
+# The bootloader image: the MCUboot image built by sysbuild (before the
+# burner, see loader/sysbuild.cmake), if any, or else the prebuilt
+# firmwares/<variant>/bootloader.hex.
+zephyr_get(BOOTLOADER_MCUBOOT_DIR SYSBUILD LOCAL)
+if(BOOTLOADER_MCUBOOT_DIR)
+	set(BOOTLOADER_HEX ${BOOTLOADER_MCUBOOT_DIR}/zephyr/zephyr.hex)
+else()
+	set(BOOTLOADER_HEX ${CMAKE_CURRENT_LIST_DIR}/../firmwares/${NORMALIZED_BOARD_TARGET}/bootloader.hex)
+	if(NOT EXISTS ${BOOTLOADER_HEX})
+		message(FATAL_ERROR "No bootloader image for ${NORMALIZED_BOARD_TARGET}: ${BOOTLOADER_HEX}")
+	endif()
 endif()
 
 dt_nodelabel(boot_partition NODELABEL boot_partition REQUIRED)

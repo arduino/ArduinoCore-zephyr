@@ -268,12 +268,34 @@ With the core properly installed, as detailed below, uploading any sketch from
 the IDE/CLI also flashes the new loader, since its version differs from the one
 on the board.
 
+### Boards with MCUboot
+
+A variant enables MCUboot with `SB_CONFIG_BOOTLOADER_MCUBOOT=y` in its
+`variants/<variant>/sysbuild.conf`. `./extra/build.sh` then also builds MCUboot
+as a sysbuild image, in `build/<variant>/mcuboot`, and saves it as
+`firmwares/<variant>/mcuboot.hex`. The MCUboot configuration is in
+[mcuboot](/mcuboot): `prj.conf` for every board, and the board's own
+`boards/<board>.conf` and `.overlay`.
+
+MCUboot only boots signed images. Pass the signing key with `--key`:
+
+```bash
+./extra/build.sh <board> --key <path/to/key.pem>
+```
+
+Without it, the publicly known MCUboot development key is used, which is not
+suitable for production. The key is copied to `firmwares/<variant>/` and
+set as `build.signing_key`, to sign the sketches as well.
+
 ### Build the Bootloader Updater
 
-For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`),
-`./extra/build.sh` also builds the firmware uploaded by the `Zephyr burner app`
-programmer from [burner](/burner), as the `burner` sysbuild image
-in `build/<variant>/burner`, and saves it as `firmwares/<variant>/burner.bin`.
+For boards with a separate bootloader (`firmwares/<variant>/bootloader.hex`, or
+MCUboot enabled in sysbuild), `./extra/build.sh` also builds the firmware
+uploaded by the `Zephyr burner app` programmer from [burner](/burner), as the
+`burner` sysbuild image in `build/<variant>/burner`, and saves it as
+`firmwares/<variant>/burner.bin` (`burner.signed.bin` under MCUboot, which
+only boots signed images). The burner embeds the MCUboot image built by
+sysbuild, if any, or else the prebuilt `bootloader.hex`.
 
 ### Using the Core in Arduino IDE/CLI
 

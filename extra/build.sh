@@ -7,7 +7,8 @@ set -e
 
 source venv/bin/activate
 
-ZEPHYR_BASE=$(west topdir)/zephyr
+WEST_TOPDIR=$(west topdir)
+ZEPHYR_BASE=${WEST_TOPDIR}/zephyr
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -20,64 +21,107 @@ if [ x$ZEPHYR_SDK_INSTALL_DIR == x"" ]; then
 	export ZEPHYR_SDK_INSTALL_DIR=${SDK_PATH}
 fi
 
-if [ $# -eq 0 ] || [ x$1 == x"-h" ] || [ x$1 == x"--help" ]; then
+usage() {
 	cat << EOF
 Usage:
-	$0 <arduino_board>
-	$0 <zephyr_board> [<west_args>]
-Build the loader for the given target.
+	$0 [--key <file>] [--debug] <arduino_board> [<cmake_args>]
+Build the loader for the given board.
 
-When given an <arduino_board> defined in 'boards.txt' (e.g. 'giga'), the actual
-Zephyr board target and arguments are taken from that definition.
+The board must be defined in 'boards.txt' (e.g. 'giga'): its Zephyr target and
+arguments are taken from that definition.
 
-When given a <zephyr_board>, it is passed as the '-b' argument to 'west build'.
-Additional <west_args> are passed as-is at the end of the command line.
+Additional <cmake_args> are passed as-is to 'west build', after the board's
+arguments and --.
 
-Available targets, as defined in 'boards.txt':
+Options, accepted anywhere on the command line:
+	--key <file>  on boards using MCUboot, the key used to sign the images;
+	              without it, the publicly known development key of MCUboot
+	              is used
+	--debug       build the loader with extra/debug.conf
+	-h, --help    show this help
+
+Available boards, as defined in 'boards.txt':
 
 EOF
 	extra/get_board_details.sh |
 		jq -r 'sort_by(.variant) | .[] | "\t\(.board)\t\(.target) \(.args)"' |
 		column -ts$'\t'
 	echo
-	exit 0
+}
+
+SIGNING_KEY_PATH=""
+# parse the arguments: -h and --debug can be given anywhere; the first other
+# argument is the board name, the following ones are west arguments
+DEBUG=0
+board_name=""
+cmake_args=()
+while [ $# -gt 0 ]; do
+	case "$1" in
+		-h|--help)
+			usage
+			exit 0
+			;;
+		--key)
+			if [ $# -lt 2 ]; then
+				log_msg error "--key needs a file argument" >&2
+				exit 1
+			fi
+			SIGNING_KEY_PATH="$2"
+			shift
+			;;
+		--debug)
+			DEBUG=1
+			;;
+		-*)
+			if [ -z "$board_name" ]; then
+				log_msg error "Unknown option '$1'" >&2
+				usage >&2
+				exit 1
+			fi
+			cmake_args+=("$1")
+			;;
+		*)
+			if [ -z "$board_name" ]; then
+				board_name=$1
+			else
+				cmake_args+=("$1")
+			fi
+			;;
+	esac
+	shift
+done
+
+if [ -z "$board_name" ]; then
+	usage >&2
+	exit 1
 fi
+
+# the board details (target and arguments) come from boards.txt
+chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$board_name\") // empty")
+if [ -z "$chosen_board" ]; then
+	log_msg error "Board '$board_name' not defined in 'boards.txt'" >&2
+	exit 1
+fi
+board=$(jq -cr '.board' <<< "$chosen_board")
+target=$(jq -cr '.target' <<< "$chosen_board")
+# the args field is a single string; split it on unquoted whitespace,
+# keeping quotes so a quoted value with spaces stays one array element
+arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
+mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
+# the cmake arguments come after the board's ones
+args+=("${cmake_args[@]}")
+upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
 
 # extra CMake arguments for the loader build only
 debug_args=()
-# try to find the board in boards.txt
-chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.board == \"$1\") // empty")
-if ! [ -z "$chosen_board" ]; then
-	# found, use the target and args from there
-	board=$(jq -cr '.board' <<< "$chosen_board")
-	target=$(jq -cr '.target' <<< "$chosen_board")
-	# the args field is a single string; split it on unquoted whitespace,
-	# keeping quotes so a quoted value with spaces stays one array element
-	arg_token='(?:[^\s"'\'']+|"[^"]*"|'\''[^'\'']*'\'')+'
-	mapfile -t args < <(jq -cr '.args' <<< "$chosen_board" | grep -oP "$arg_token")
-	upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
-
-	# Check for debug flag and append
-	if [ x$2 == x"--debug" ]; then
-		debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
-	fi
-else
-	# expect Zephyr-compatible target and args
-	target=$1
-	shift
-	# keep each argument as a separate array element to preserve quoting
-	args=("$@")
-	chosen_board=$(extra/get_board_details.sh | jq -cr ".[] | select(.target == \"$target\") // empty")
-	if [ ! -z "$chosen_board" ]; then
-		board=$(jq -cr '.board' <<< "$chosen_board")
-		upload_offset=$(jq -cr '.upload_offset' <<< "$chosen_board")
-	else
-		log_msg warning "No board for '$target' defined in 'boards.txt'. A proper definition is required to use the core."
-	fi
+if [ $DEBUG -eq 1 ]; then
+	debug_args=(-DEXTRA_CONF_FILE=../extra/debug.conf)
 fi
 
-# Save the build version to loader/VERSION and for later use in local files
+# Save the build version to loader/VERSION and for later use in local files;
+# the burner image gets the same version
 build_version=$(extra/get_core_version.sh loader/VERSION)
+cp loader/VERSION burner/VERSION
 
 # CMake arguments go after a '--' separator, which args may already contain
 [[ " ${args[*]} " == *" -- "* ]] || args+=(--)
@@ -106,9 +150,49 @@ rm -rf ${BUILD_DIR}
 # files add further images alongside it; a variant can configure sysbuild
 # with a sysbuild.conf file.
 sysbuild_args=()
+KEY_FILE_NAME=""
 if [ -f ${VARIANT_DIR}/sysbuild.conf ]; then
 	sysbuild_args=(-DSB_CONF_FILE=$(realpath ${VARIANT_DIR}/sysbuild.conf))
+
+	if grep -qs '^SB_CONFIG_BOOTLOADER_MCUBOOT=y' ${VARIANT_DIR}/sysbuild.conf && \
+	   ! grep -qs '^SB_CONFIG_BOOT_SIGNATURE_TYPE_NONE=y' ${VARIANT_DIR}/sysbuild.conf; then
+		# MCUboot only boots signed images: sign them with the given
+		# key, a variant default or the publicly known MCUboot dev key.
+		# The key is copied to firmwares/<variant>/, where it can be used
+		# to sign the sketches too.
+		if [ -n "${SIGNING_KEY_PATH}" ]; then
+			# directly provided key
+			KEY_FILE_NAME=$(basename "${SIGNING_KEY_PATH}")
+		elif key_files=(${VARIANT_DIR}/key/*.pem) && [ -f "${key_files[0]}" ]; then
+			# variant key directory present
+			if [ ${#key_files[@]} -gt 1 ]; then
+				log_msg error "Multiple keys in ${VARIANT_DIR}/key/, use --key" >&2
+				exit 1
+			fi
+			SIGNING_KEY_PATH=${key_files[0]}
+			KEY_FILE_NAME=$(basename "${SIGNING_KEY_PATH}")
+		else
+			# fallback
+			log_msg warning "No signing key given or found, using the insecure MCUboot development key"
+			SIGNING_KEY_PATH=${WEST_TOPDIR}/bootloader/mcuboot/root-ec-p256.pem
+			KEY_FILE_NAME=development-key.pem
+		fi
+		if [ ! -f "${SIGNING_KEY_PATH}" ]; then
+			log_msg error "Signing key '${SIGNING_KEY_PATH}' not found" >&2
+			exit 1
+		fi
+		echo "Signing key: ${SIGNING_KEY_PATH}"
+		mkdir -p firmwares/${variant}
+		rm -f firmwares/${variant}/*.pem
+		cp "${SIGNING_KEY_PATH}" firmwares/${variant}/${KEY_FILE_NAME}
+		# a Kconfig string: the value given with -D must include the quotes
+		sysbuild_args+=(-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE=\"$(realpath firmwares/${variant}/${KEY_FILE_NAME})\")
+	elif [ -n "${SIGNING_KEY_PATH}" ]; then
+		log_msg warning "'${variant}' does not use MCUboot signing, --key ignored"
+	fi
 fi
+
+# Run the main build process
 west build -d ${BUILD_DIR} -b ${target} --sysbuild loader "${args[@]}" "${sysbuild_args[@]}" "${debug_args[@]}"
 
 # The images built by sysbuild, as "<name> <build_dir>" lines from domains.yaml,
@@ -177,16 +261,22 @@ for domain in "${domains[@]}"; do
 	image_dir=${domain#* }/zephyr
 	rm -f firmwares/$variant/$name.*
 	for ext in elf bin hex uf2 exe; do
-		if [ -f "$image_dir/zephyr.$ext" ]; then
-			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
-		fi
+		for kind in "" .signed; do
+			if [ -f "$image_dir/zephyr$kind.$ext" ]; then
+				cp "$image_dir/zephyr$kind.$ext" firmwares/$variant/$name$kind.$ext
+			fi
+		done
 	done
 	cp "$image_dir/zephyr.dts" firmwares/$variant/$name.dts
 	cp "$image_dir/.config" firmwares/$variant/$name.config
 done
 
 # Boards with a separate bootloader also build the bootloader updater as the
-# burner sysbuild image (see loader/sysbuild.cmake)
+# burner sysbuild image (see loader/sysbuild.cmake), signed under MCUboot
+if [ -f firmwares/${variant}/mcuboot.hex ] && [ ! -f firmwares/${variant}/burner.signed.bin ]; then
+	log_msg error "Signed bootloader updater for '${variant}' not built" >&2
+	exit 1
+fi
 if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ]; then
 	log_msg error "Bootloader updater for '${variant}' not built" >&2
 	exit 1
@@ -313,17 +403,32 @@ if [ ! -z "$board" ]; then
 	LOADER_MAX_SIZE=$(get_value_from_text_file variants/${variant}/syms-static.ld '_loader_max_size')
 	update_local_field "loader.maximum_size" $LOADER_MAX_SIZE
 
-	# For "Burn Bootloader" on boards with a bootloader image:
+	# For "Burn Bootloader" on boards with a bootloader image (MCUboot built
+	# by sysbuild, else the prebuilt bootloader.hex):
 	# - with a hardware programmer, write the image with the board's
 	#   swd_flash.tool;
 	# - with the burner app, upload the burner image with the
 	#   board's usual upload tool (copied as bootloader.tool.default).
-	if [ -f firmwares/${variant}/bootloader.hex ]; then
-		update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/bootloader.hex"
-		update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
-		BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
-		update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
-		update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+	for image in mcuboot.hex bootloader.hex; do
+		if [ -f firmwares/${variant}/$image ]; then
+			update_local_field "swd_flash.image" "{runtime.platform.path}/firmwares/{build.variant}/$image"
+			update_local_field "swd_flash.pattern" "{tools.patterns.swd_flash}"
+			BOOTLOADER_TOOL=$(get_board_field "upload.tool.default")
+			update_local_field "bootloader.tool.default" "$BOOTLOADER_TOOL"
+			update_local_field "iap_flash.pattern" "{tools.patterns.iap_flash}"
+			break
+		fi
+	done
+
+	# MCUboot only boots signed images: upload the signed loader and burner
+	if [ -f firmwares/${variant}/mcuboot.hex ]; then
+		update_local_field "loader.basename" "loader.signed"
+		update_local_field "burner.basename" "burner.signed"
+	fi
+
+	# the key to sign the sketches with, under MCUboot
+	if [ -n "${KEY_FILE_NAME}" ]; then
+		update_local_field "build.signing_key" "{runtime.platform.path}/firmwares/{build.variant}/${KEY_FILE_NAME}"
 	fi
 
 	# maximum sketch size: size of sketch partition, decimal (exact limit)

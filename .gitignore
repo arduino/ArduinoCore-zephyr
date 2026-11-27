@@ -5,6 +5,7 @@
 /boards.local.txt
 /platform.local.txt
 /loader/VERSION
+/burner/VERSION
 /cores/arduino/api/
 /variants/include/
 

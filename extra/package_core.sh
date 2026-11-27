@@ -75,7 +75,12 @@ for variant in $INCLUDED_VARIANTS ; do
 		log_msg error "No firmware for '${variant}' found."
 		RET=3
 	fi
-	# boards with a separate bootloader also need the bootloader updater
+	# boards with a separate bootloader also need the bootloader updater,
+	# signed under MCUboot
+	if [ -f firmwares/${variant}/mcuboot.hex ] && [ ! -f firmwares/${variant}/burner.signed.bin ] ; then
+		log_msg error "No signed bootloader updater for '${variant}' found."
+		RET=3
+	fi
 	if [ -f firmwares/${variant}/bootloader.hex ] && [ ! -f firmwares/${variant}/burner.bin ] ; then
 		log_msg error "No bootloader updater for '${variant}' found."
 		RET=3

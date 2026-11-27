@@ -63,6 +63,7 @@ fi
 west config manifest.project-filter -- "$HAL_FILTER"
 west update $WEST_MODULES_CACHE "$@"
 pip3 install -r ../zephyr/scripts/requirements-base.txt
+pip3 install -r ../bootloader/mcuboot/scripts/requirements.txt
 west zephyr-export
 log_msg "endgroup"
 

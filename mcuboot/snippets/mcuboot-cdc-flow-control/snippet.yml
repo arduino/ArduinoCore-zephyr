@@ -1,0 +1,7 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+name: mcuboot-cdc-flow-control
+append:
+  EXTRA_DTC_OVERLAY_FILE: mcuboot-cdc-flow-control.overlay
+  EXTRA_CONF_FILE: mcuboot-cdc-flow-control.conf
