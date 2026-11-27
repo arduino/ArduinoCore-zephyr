@@ -117,6 +117,8 @@ protected:
 	 * Protected by rx.lock.
 	 */
 	bool rxThrottled = false;
+
+	volatile bool txDone = true;
 };
 
 } // namespace arduino
