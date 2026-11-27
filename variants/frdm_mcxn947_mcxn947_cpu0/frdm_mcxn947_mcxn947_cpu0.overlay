@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
 &zephyr_udc0 {
 	status = "okay";
 	board_cdc_acm_uart: board_cdc_acm_uart {
@@ -45,11 +47,49 @@
 			<&gpio4 0  GPIO_ACTIVE_HIGH>, /* D14 = P4_0  (I2C SDA) */
 			<&gpio4 1  GPIO_ACTIVE_HIGH>, /* D15 = P4_1  (I2C SCL) */
 			<&gpio0 23 GPIO_ACTIVE_HIGH>, /* D16 = P0_23 (SW2, shared with A5) */
-			<&gpio0 6  GPIO_ACTIVE_HIGH>; /* D17 = P0_6  (SW3) */
+			<&gpio0 6  GPIO_ACTIVE_HIGH>, /* D17 = P0_6  (SW3) */
+			<&gpio0 14 GPIO_ACTIVE_HIGH>, /* D18 = P0_14 (A2) */
+			<&gpio0 22 GPIO_ACTIVE_HIGH>, /* D19 = P0_22 (A3) */
+			<&gpio0 15 GPIO_ACTIVE_HIGH>; /* D20 = P0_15 (A4) */
 		builtin-led-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>, <&gpio0 27 GPIO_ACTIVE_LOW>, <&gpio1 2 GPIO_ACTIVE_LOW>;
 		cdc-acm-serial = <&board_cdc_acm_uart>; /* 'Serial' object is managed by SerialUSB */
 		serials = <&flexcomm4_lpuart4>; /* 'Serial1' onwards */
 		i2cs = <&flexcomm2_lpi2c2>;
 		spis = <&flexcomm1_lpspi1>;
+
+		/*
+		 * A2-A5 on the Arduino header. A0/A1 are analog-only pads with no
+		 * GPIO, so they can't be listed in adc-pin-gpios.
+		 */
+		io-channels = <&lpadc0 2>, <&lpadc0 3>, <&lpadc0 4>, <&lpadc0 5>;
+		adc-pin-gpios = <&gpio0 14 0>, /* A2 = D18 */
+				<&gpio0 22 0>, /* A3 = D19 */
+				<&gpio0 15 0>, /* A4 = D20 */
+				<&gpio0 23 0>; /* A5 = D16 (SW2) */
+
+		/*
+		 * pwm-pin-gpios entries are paired with pwms entries by index.
+		 * D12/D13 are also SPI MISO/SCK, so analogWrite() on them can't be
+		 * used together with SPI in the same sketch.
+		 *
+		 * D10 (CT0_MAT3) is not exposed: a CTimer reserves one of its four
+		 * match channels as the period channel, so only three of ctimer0's
+		 * MAT0-3 can be PWM outputs. D9/D13/D12 (MAT0-2) are kept.
+		 *
+		 * All channels use PWM_POLARITY_NORMAL; duty cycles were checked
+		 * with a logic analyzer on every pin.
+		 */
+		pwms = <&ctimer0_pwm 0 PWM_HZ(500) PWM_POLARITY_NORMAL>, /* D9  CT0_MAT0 */
+		       <&ctimer1_pwm 0 PWM_HZ(500) PWM_POLARITY_NORMAL>, /* D6  CT1_MAT0 */
+		       <&ctimer0_pwm 1 PWM_HZ(500) PWM_POLARITY_NORMAL>, /* D13 CT0_MAT1 */
+		       <&ctimer0_pwm 2 PWM_HZ(500) PWM_POLARITY_NORMAL>, /* D12 CT0_MAT2 */
+		       <&sc_timer 5 PWM_HZ(500) PWM_POLARITY_NORMAL>,    /* D3  SCT0_OUT5 */
+		       <&ctimer3_pwm 3 PWM_HZ(500) PWM_POLARITY_NORMAL>; /* D5  CT3_MAT3 */
+		pwm-pin-gpios = <&gpio0 10 0>, /* D9 */
+				<&gpio1 2  0>, /* D6 */
+				<&gpio0 25 0>, /* D13 */
+				<&gpio0 26 0>, /* D12 */
+				<&gpio1 23 0>, /* D3 */
+				<&gpio1 21 0>; /* D5 */
 	};
 };
