@@ -1,0 +1,39 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+title: Emulated I2C device with a register file
+
+description: |
+    Emulated I2C device (native_sim loader) made of 256 byte-wide registers,
+    for chips that are read and written through a register pointer: a write
+    sets the pointer with its first byte and stores the following bytes, a
+    read returns the registers from the pointer; both increment the pointer
+    after each byte. The registers start at 0, then take the values of the
+    'regs' property.
+
+    Example, an LPS22HB (WHO_AM_I = 0xb1, one-shot bit of CTRL2 cleared
+    as soon as it is set):
+
+        lps22hb@5c {
+            compatible = "arduino,emul-i2c-regs";
+            reg = <0x5c>;
+            regs = [0f b1];
+            self-clearing-bits = [11 01];
+        };
+
+compatible: "arduino,emul-i2c-regs"
+
+include: i2c-device.yaml
+
+properties:
+  regs:
+    type: uint8-array
+    description: |
+      Initial register values, as (register, value) pairs.
+
+  self-clearing-bits:
+    type: uint8-array
+    description: |
+      Bits cleared right after a write to their register, as (register,
+      mask) pairs: e.g. the trigger bit of a measurement that completes at
+      once.

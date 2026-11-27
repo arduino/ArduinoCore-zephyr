@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* native_sim posing as an STM32 board has no STM32 headers: keep the generic
+ * port macros of the core there
+ */
+#ifndef CONFIG_ARCH_POSIX
+
 #include <stm32_ll_gpio.h>
 #include <gpio/gpio_stm32.h>
 
@@ -19,3 +24,5 @@
 #define digitalPinToBitMask(x) STM_LL_GPIO_PIN(x)
 #define portOutputRegister(x)  (digitalPinToPort(x)->ODR)
 #define portInputRegister(x)   (digitalPinToPort(x)->IDR)
+
+#endif /* CONFIG_ARCH_POSIX */

@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Copyright (c) Arduino s.r.l. and/or its affiliated companies -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- CI report page template, filled by ci_report_page.py -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CI report</title>
+<script>
+// light or dark theme, before the page is drawn: the one chosen with the
+// header toggle (saved in this browser), or the system preference
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('arduino-ci-report:theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<style>/*CSS*/</style>
+</head>
+<body>
+<div id="app"><p>Loading the report&hellip;</p></div>
+<script id="report-data" type="application/octet-stream">/*DATA*/</script>
+<script>/*JS*/</script>
+</body>
+</html>

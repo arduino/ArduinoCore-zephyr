@@ -36,6 +36,8 @@ manifest:
           - nanopb
           - lvgl
           - fatfs
+          # native_sim builds picolibc from source
+          - picolibc
         path-allowlist:
           - modules/hal/*
 

@@ -1,0 +1,103 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Delete the artifacts of the current workflow run whose names match some
+# shell globs, several at a time. With failOnError false, failures are only
+# reported as warnings (inputs as geekyeggo/delete-artifact).
+#
+# The REST API needs 'actions: write', which the token of pull requests from
+# forks never has: like actions/upload-artifact, this uses the artifact
+# service of the runner with the job runtime token instead, the calls of
+# @actions/artifact (ListArtifacts, DeleteArtifact), without deleting the
+# artifacts one by one as geekyeggo/delete-artifact does.
+
+name: Delete artifacts
+description: Delete the artifacts of the current run matching some globs
+
+inputs:
+  name:
+    description: Artifact name globs, one per line ('*' and '?' wildcards)
+    required: true
+  failOnError:
+    description: Fail the step if an artifact cannot be listed or deleted
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+
+    - name: Delete artifacts
+      uses: actions/github-script@v8
+      env:
+        NAMES: ${{ inputs.name }}
+        FAIL_ON_ERROR: ${{ inputs.failOnError }}
+      with:
+        script: |
+          const JOBS = 8;
+          const ATTEMPTS = 3;
+          const report = process.env.FAIL_ON_ERROR == 'false' ? core.warning : core.error;
+          let failed = 0;
+
+          const globs = process.env.NAMES.split('\n').map(s => s.trim()).filter(Boolean);
+          const regexes = globs.map(glob => new RegExp('^' + glob
+              .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+              .replace(/\*/g, '.*').replace(/\?/g, '.') + '$'));
+
+          // the run and job backend IDs are in the 'Actions.Results' scope
+          // of the runtime token, see getBackendIdsFromToken()
+          const token = process.env.ACTIONS_RUNTIME_TOKEN;
+          const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url'));
+          const scope = claims.scp.split(' ').find(s => s.startsWith('Actions.Results:')).split(':');
+          const service = new URL(process.env.ACTIONS_RESULTS_URL).origin +
+              '/twirp/github.actions.results.api.v1.ArtifactService/';
+
+          async function call(method, body) {
+            for (let attempt = 1; ; attempt++) {
+              const res = await fetch(service + method, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (res.ok) {
+                return res.json();
+              }
+              const retry = res.status >= 500 || res.status == 429;
+              if (!retry || attempt == ATTEMPTS) {
+                throw new Error(`${method}: ${res.status} ${await res.text()}`);
+              }
+              await new Promise(r => setTimeout(r, attempt * 2000));
+            }
+          }
+
+          try {
+            const { artifacts = [] } = await call('ListArtifacts', {
+              workflow_run_backend_id: scope[1],
+              workflow_job_run_backend_id: scope[2],
+            });
+            const matching = artifacts.filter(a => regexes.some(r => r.test(a.name)));
+            core.info(`Found ${artifacts.length} artifacts, ${matching.length} matching`);
+
+            const queue = [...matching];
+            await Promise.all(Array.from({ length: JOBS }, async () => {
+              for (let a; (a = queue.shift()); ) {
+                try {
+                  await call('DeleteArtifact', {
+                    workflow_run_backend_id: a.workflow_run_backend_id ?? a.workflowRunBackendId,
+                    workflow_job_run_backend_id: a.workflow_job_run_backend_id ?? a.workflowJobRunBackendId,
+                    name: a.name,
+                  });
+                  core.info(`Deleted ${a.name}`);
+                } catch (e) {
+                  failed++;
+                  report(`Cannot delete ${a.name}: ${e.message}`);
+                }
+              }
+            }));
+            core.info(`Deleted ${matching.length - failed} of ${matching.length} artifacts`);
+          } catch (e) {
+            failed++;
+            report(`Cannot list the artifacts: ${e.message}`);
+          }
+          if (failed && process.env.FAIL_ON_ERROR != 'false') {
+            core.setFailed(`${failed} errors deleting the artifacts`);
+          }

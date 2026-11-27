@@ -1,0 +1,15 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+title: Emulated Microchip ATECC608 secure element
+
+description: |
+    Emulated ATECC608 secure element (native_sim loader), with only what the
+    secure element libraries need to start and to read data: the wake-up,
+    idle and sleep sequences, and the Info (revision), Read (configuration
+    zone: serial number and lock bytes, locked) and Random (fixed bytes)
+    commands. Other commands fail with an execution error.
+
+compatible: "arduino,emul-atecc608"
+
+include: i2c-device.yaml

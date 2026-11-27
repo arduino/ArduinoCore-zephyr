@@ -21,4 +21,21 @@ config MAIN_STACK_REGION
 	help
 	  Specify the memory region for main stack.
 
+config ARDUINO_NATIVE_SKETCH_BASE
+	hex "Sketch load address on native targets"
+	depends on ARCH_POSIX
+	default 0x60000000
+	help
+	  Fixed host address where the sketch file given with --sketch is
+	  mapped. Static sketches are linked for this address.
+	  Linux places the heap (brk) of 64-bit processes at a random offset
+	  of up to 1 GiB after the executable: the default is above that, to
+	  never collide with it, and below 2 GiB, for the default code model
+	  of the static sketches.
+
+config ARDUINO_NATIVE_SKETCH_MAX_SIZE
+	hex "Maximum sketch size on native targets"
+	depends on ARCH_POSIX
+	default 0x400000
+
 rsource "ota/Kconfig"

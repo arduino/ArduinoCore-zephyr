@@ -131,6 +131,28 @@ cmake --build ${LOADER_DIR} --target llext-edk
 mkdir -p ${VARIANT_DIR} firmwares/${variant}
 (set -e ; cd ${LOADER_DIR} && rm -rf llext-edk && tar xf zephyr/llext-edk.tar.Z)
 rsync -a --delete ${LOADER_DIR}/llext-edk ${VARIANT_DIR}/
+if [[ $variant == native_sim* ]] ; then
+	# no toolchain picolibc for the host gcc: static sketches link the one
+	# built for the loader, as ARM sketches link the toolchain one
+	cp ${LOADER_DIR}/modules/picolibc/libc.a ${VARIANT_DIR}/libc.a
+	# no picolibc-based libstdc++ for the host gcc either: use the one from
+	# the Zephyr SDK toolchain for the host architecture (also installed by
+	# bootstrap.sh)
+	host_tc=$(uname -m)-zephyr-elf
+	host_tc_dir=${ZEPHYR_SDK_INSTALL_DIR}/gnu/${host_tc}/${host_tc}
+	cxx_inc=$(ls -d ${host_tc_dir}/include/c++/*/ 2>/dev/null | sort -V | tail -n 1)
+	if [ -z "$cxx_inc" ] || [ ! -f ${host_tc_dir}/lib/libstdc++.a ] ; then
+		echo "No libstdc++ found in ${host_tc_dir}"
+		echo "Re-run extra/bootstrap.sh to install the ${host_tc} SDK toolchain"
+		exit 1
+	fi
+	cp ${host_tc_dir}/lib/libstdc++.a ${host_tc_dir}/lib/libsupc++.a ${VARIANT_DIR}/
+	rm -rf ${VARIANT_DIR}/libstdc++
+	mkdir -p ${VARIANT_DIR}/libstdc++
+	cp -r ${cxx_inc} ${VARIANT_DIR}/libstdc++/include
+	# target specific headers in a fixed path, for boards.txt
+	mv ${VARIANT_DIR}/libstdc++/include/${host_tc} ${VARIANT_DIR}/libstdc++/target
+fi
 
 # remove all inline comments in macro definitions
 # (especially from devicetree_generated.h and sys/util_internal.h)
@@ -154,7 +176,7 @@ for domain in "${domains[@]}"; do
 	name=${domain%% *}
 	image_dir=${domain#* }/zephyr
 	rm -f firmwares/$variant/$name.*
-	for ext in elf bin hex uf2; do
+	for ext in elf bin hex uf2 exe; do
 		if [ -f "$image_dir/zephyr.$ext" ]; then
 			cp "$image_dir/zephyr.$ext" firmwares/$variant/$name.$ext
 		fi
@@ -172,9 +194,16 @@ fi
 
 # Generate the provides.ld file for linked builds
 echo "Generating exported symbol scripts"
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -T > ${VARIANT_DIR}/tls-syms.S
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -L > ${VARIANT_DIR}/syms-dynamic.ld
-extra/gen_provides.py "${LOADER_DIR}/zephyr/zephyr.elf" -LF \
+if [ -f "${LOADER_DIR}/zephyr/zephyr.exe" ] ; then
+	# native_sim: zephyr.elf is a partially linked object, final addresses
+	# are only known in the host executable
+	LOADER_ELF="${LOADER_DIR}/zephyr/zephyr.exe"
+else
+	LOADER_ELF="${LOADER_DIR}/zephyr/zephyr.elf"
+fi
+extra/gen_provides.py "${LOADER_ELF}" -T > ${VARIANT_DIR}/tls-syms.S
+extra/gen_provides.py "${LOADER_ELF}" -L > ${VARIANT_DIR}/syms-dynamic.ld
+extra/gen_provides.py "${LOADER_ELF}" -LF \
 	"+kheap_llext_heap" \
 	"+kheap__system_heap" \
 	"*sketch_base_addr=_sketch_start" \
@@ -240,7 +269,7 @@ EOF
 		fi
 	fi
 
-	# update the actual field line
+	# update the actual field line (the value escaped for the sed replacement)
 	if grep -qE "^${match_regexp}=" $file; then
 		local escaped_value=$(sed -e 's/[\/&]/\\&/g' <<< "$value") # escape for sed
 		sed -i -e "s/^${match_regexp}=.*/${full_field_name}=${escaped_value}/" $file
@@ -316,4 +345,19 @@ if [ ! -z "$board" ]; then
 
 	MACH_FABI=$(get_value_from_text_file variants/${variant}/machine_flags.txt 'mfloat-abi')
 	[ -z "$MACH_FABI" ] || update_local_field "build.float-abi" $MACH_FABI
+
+	if [ "$board" == "native_sim" ] ; then
+		# native_sim can pose as any other board, to build its sketches on
+		# the host with the same board define: add a 'mimic' menu option
+		# for each, with its name and its build.board, and the variant.h
+		# of the board for the native_sim variant.h to include (the single
+		# quotes keep the double quotes of the path in the define)
+		for mimic in $(grep -oP '^\w+(?=\.build\.board=)' boards.txt | grep -vx native_sim) ; do
+			update_local_field "menu.mimic.${mimic}" "$(sed -n -e "s/^${mimic}\.name=//p" boards.txt)"
+			update_local_field "menu.mimic.${mimic}.build.board" "$(sed -n -e "s/^${mimic}\.build\.board=//p" boards.txt)"
+			mimic_variant=$(sed -n -e "s/^${mimic}\.build\.variant=//p" boards.txt)
+			update_local_field "menu.mimic.${mimic}.build.posed_variant_flags" \
+				"'-DARDUINO_POSED_VARIANT_H=\"{runtime.platform.path}/variants/${mimic_variant}/variant.h\"'"
+		done
+	fi
 fi

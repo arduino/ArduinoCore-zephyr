@@ -1,0 +1,5 @@
+{
+  "name": "Arduino native_sim",
+  "architecture": "native_sim",
+  "category": "Arduino"
+}

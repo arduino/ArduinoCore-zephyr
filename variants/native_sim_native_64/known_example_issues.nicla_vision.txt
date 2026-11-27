@@ -1,0 +1,9 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+# Known issues of native_sim posing as this board (see known_example_issues.txt
+# for the format).
+
+# A0 is a pure analog pin, implemented by the variant sources of the board,
+# which native_sim does not build
+examples/arduino-examples/examples/01.Basics/AnalogReadSerial

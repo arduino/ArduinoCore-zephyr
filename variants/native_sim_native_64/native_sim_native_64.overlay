@@ -1,0 +1,418 @@
+/*
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * CI/dev only target: pins are lines of emulated GPIO ports. The core
+ * identifies pins by the controller address, so the ports need a reg.
+ * There are as many pins as on the board with the most (Giga R1: 101), so
+ * that native_sim can pose as any board.
+ */
+/*
+ * The sensors of the boards, emulated by their registers with constant
+ * readings (see arduino,emul-i2c-regs), and their secure element. They
+ * are on both Wire and Wire1: the libraries use Wire1 posing as the Nano 33
+ * BLE (the secure element ones on Zephyr), Wire otherwise.
+ */
+#define ARDUINO_EMUL_SENSORS                                                   \
+	/* LPS22HB: WHO_AM_I, 100 kPa (0x3e8000 / 40960), 25.00 C (2500),     \
+	 * one-shot bit of CTRL2 done at once                                  \
+	 */                                                                    \
+	lps22hb@5c {                                                           \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x5c>;                                                  \
+		regs = [0f b1  28 00  29 80  2a 3e  2b c4  2c 09];             \
+		self-clearing-bits = [11 01];                                  \
+	};                                                                     \
+	/* HS300x: no registers, a write of 0 then a read of 4 bytes: 50.00 %  \
+	 * (8112), 25.00 C (6454 << 2, status 1)                               \
+	 */                                                                    \
+	hs300x@44 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x44>;                                                  \
+		regs = [00 1f  01 b0  02 64  03 d8];                           \
+	};                                                                     \
+	/* APDS9960: ID, colour and proximity valid, C/R/G/B = 400/100/200/300 \
+	 */                                                                    \
+	apds9960@39 {                                                          \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x39>;                                                  \
+		regs = [92 ab  93 03  94 90  95 01  96 64  97 00  98 c8  99 00 \
+			9a 2c  9b 01];                                         \
+	};                                                                     \
+	/* BMI270: chip id, config loaded, accelerometer data ready, and a    \
+	 * constant accelerometer of (2048, 4096, 8192) raw = (0.25, 0.50, 1.00) g \
+	 * (range 4 g, 100 Hz); the gyro and sensortime are zero              \
+	 */                                                                    \
+	bmi270@68 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x68>;                                                  \
+		regs = [00 24  21 01  1b 00  1c 00  1d 80  40 98  41 01        \
+			0c 00  0d 08  0e 00  0f 10  10 00  11 20];                 \
+		self-clearing-bits = [7e ff];                                  \
+	};                                                                     \
+	/* BMM150: chip id, trim and operation mode, all plain registers      \
+	 */                                                                    \
+	bmm150@10 {                                                            \
+		compatible = "arduino,emul-i2c-regs";                          \
+		reg = <0x10>;                                                  \
+		regs = [40 32];                                                \
+	};                                                                     \
+	/* ATECC608 secure element (libraries: ECCX08 on CRYPTO_WIRE, Wire1 \
+	 * on Zephyr, Wire on the Nano RP2040 Connect)                        \
+	 */                                                                    \
+	atecc608@60 {                                                          \
+		compatible = "arduino,emul-atecc608";                          \
+		reg = <0x60>;                                                  \
+	};
+
+/ {
+	arduino_gpio: gpio@800 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0x800 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio1: gpio@900 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0x900 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio2: gpio@a00 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0xa00 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	arduino_gpio3: gpio@b00 {
+		status = "okay";
+		compatible = "zephyr,gpio-emul";
+		reg = <0xb00 4>;
+		rising-edge;
+		falling-edge;
+		high-level;
+		low-level;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	/* Wire1 and Wire2 (Wire is i2c0 of the board) */
+	i2c1: i2c@101 {
+		status = "okay";
+		compatible = "zephyr,i2c-emul-controller";
+		clock-frequency = <I2C_BITRATE_STANDARD>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x101 4>;
+
+		ARDUINO_EMUL_SENSORS
+	};
+
+	i2c2: i2c@102 {
+		status = "okay";
+		compatible = "zephyr,i2c-emul-controller";
+		clock-frequency = <I2C_BITRATE_STANDARD>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x102 4>;
+	};
+
+	zephyr,user {
+		digital-pin-gpios = <&arduino_gpio 0 0>,
+				    <&arduino_gpio 1 0>,
+				    <&arduino_gpio 2 0>,
+				    <&arduino_gpio 3 0>,
+				    <&arduino_gpio 4 0>,
+				    <&arduino_gpio 5 0>,
+				    <&arduino_gpio 6 0>,
+				    <&arduino_gpio 7 0>,
+				    <&arduino_gpio 8 0>,
+				    <&arduino_gpio 9 0>,
+				    <&arduino_gpio 10 0>,
+				    <&arduino_gpio 11 0>,
+				    <&arduino_gpio 12 0>,
+				    <&arduino_gpio 13 0>,
+				    <&arduino_gpio 14 0>,
+				    <&arduino_gpio 15 0>,
+				    <&arduino_gpio 16 0>,
+				    <&arduino_gpio 17 0>,
+				    <&arduino_gpio 18 0>,
+				    <&arduino_gpio 19 0>,
+				    <&arduino_gpio 20 0>,
+				    <&arduino_gpio 21 0>,
+				    <&arduino_gpio 22 0>,
+				    <&arduino_gpio 23 0>,
+				    <&arduino_gpio 24 0>,
+				    <&arduino_gpio 25 0>,
+				    <&arduino_gpio 26 0>,
+				    <&arduino_gpio 27 0>,
+				    <&arduino_gpio 28 0>,
+				    <&arduino_gpio 29 0>,
+				    <&arduino_gpio 30 0>,
+				    <&arduino_gpio 31 0>,
+				    <&arduino_gpio1 0 0>,
+				    <&arduino_gpio1 1 0>,
+				    <&arduino_gpio1 2 0>,
+				    <&arduino_gpio1 3 0>,
+				    <&arduino_gpio1 4 0>,
+				    <&arduino_gpio1 5 0>,
+				    <&arduino_gpio1 6 0>,
+				    <&arduino_gpio1 7 0>,
+				    <&arduino_gpio1 8 0>,
+				    <&arduino_gpio1 9 0>,
+				    <&arduino_gpio1 10 0>,
+				    <&arduino_gpio1 11 0>,
+				    <&arduino_gpio1 12 0>,
+				    <&arduino_gpio1 13 0>,
+				    <&arduino_gpio1 14 0>,
+				    <&arduino_gpio1 15 0>,
+				    <&arduino_gpio1 16 0>,
+				    <&arduino_gpio1 17 0>,
+				    <&arduino_gpio1 18 0>,
+				    <&arduino_gpio1 19 0>,
+				    <&arduino_gpio1 20 0>,
+				    <&arduino_gpio1 21 0>,
+				    <&arduino_gpio1 22 0>,
+				    <&arduino_gpio1 23 0>,
+				    <&arduino_gpio1 24 0>,
+				    <&arduino_gpio1 25 0>,
+				    <&arduino_gpio1 26 0>,
+				    <&arduino_gpio1 27 0>,
+				    <&arduino_gpio1 28 0>,
+				    <&arduino_gpio1 29 0>,
+				    <&arduino_gpio1 30 0>,
+				    <&arduino_gpio1 31 0>,
+				    <&arduino_gpio2 0 0>,
+				    <&arduino_gpio2 1 0>,
+				    <&arduino_gpio2 2 0>,
+				    <&arduino_gpio2 3 0>,
+				    <&arduino_gpio2 4 0>,
+				    <&arduino_gpio2 5 0>,
+				    <&arduino_gpio2 6 0>,
+				    <&arduino_gpio2 7 0>,
+				    <&arduino_gpio2 8 0>,
+				    <&arduino_gpio2 9 0>,
+				    <&arduino_gpio2 10 0>,
+				    <&arduino_gpio2 11 0>,
+				    <&arduino_gpio2 12 0>,
+				    <&arduino_gpio2 13 0>,
+				    <&arduino_gpio2 14 0>,
+				    <&arduino_gpio2 15 0>,
+				    <&arduino_gpio2 16 0>,
+				    <&arduino_gpio2 17 0>,
+				    <&arduino_gpio2 18 0>,
+				    <&arduino_gpio2 19 0>,
+				    <&arduino_gpio2 20 0>,
+				    <&arduino_gpio2 21 0>,
+				    <&arduino_gpio2 22 0>,
+				    <&arduino_gpio2 23 0>,
+				    <&arduino_gpio2 24 0>,
+				    <&arduino_gpio2 25 0>,
+				    <&arduino_gpio2 26 0>,
+				    <&arduino_gpio2 27 0>,
+				    <&arduino_gpio2 28 0>,
+				    <&arduino_gpio2 29 0>,
+				    <&arduino_gpio2 30 0>,
+				    <&arduino_gpio2 31 0>,
+				    <&arduino_gpio3 0 0>,
+				    <&arduino_gpio3 1 0>,
+				    <&arduino_gpio3 2 0>,
+				    <&arduino_gpio3 3 0>,
+				    <&arduino_gpio3 4 0>;
+
+		builtin-led-gpios = <&arduino_gpio 13 0>;
+
+		/* as many analog pins as on the board with the most (Giga R1: 14) */
+		adc-pin-gpios = <&arduino_gpio 14 0>,
+				<&arduino_gpio 15 0>,
+				<&arduino_gpio 16 0>,
+				<&arduino_gpio 17 0>,
+				<&arduino_gpio 18 0>,
+				<&arduino_gpio 19 0>,
+				<&arduino_gpio 20 0>,
+				<&arduino_gpio 21 0>,
+				<&arduino_gpio 22 0>,
+				<&arduino_gpio 23 0>,
+				<&arduino_gpio 24 0>,
+				<&arduino_gpio 25 0>,
+				<&arduino_gpio 26 0>,
+				<&arduino_gpio 27 0>;
+		io-channels = <&adc0 0>,
+			      <&adc0 1>,
+			      <&adc0 2>,
+			      <&adc0 3>,
+			      <&adc0 4>,
+			      <&adc0 5>,
+			      <&adc0 6>,
+			      <&adc0 7>,
+			      <&adc0 8>,
+			      <&adc0 9>,
+			      <&adc0 10>,
+			      <&adc0 11>,
+			      <&adc0 12>,
+			      <&adc0 13>;
+
+		i2cs = <&i2c0>, <&i2c1>, <&i2c2>;
+		spis = <&spi0>;
+		serials = <&uart0>;
+	};
+};
+
+&i2c0 {
+	ARDUINO_EMUL_SENSORS
+};
+
+/* the M95M01 of the SPI test, with its chip select on D2 */
+&spi0 {
+	eeprom@0 {
+		compatible = "arduino,emul-m95m01";
+		reg = <0>;
+		spi-max-frequency = <2000000>;
+		cs-monitor-gpios = <&arduino_gpio 2 0>;
+	};
+};
+
+&uart0 {
+	on-stdinout;
+};
+
+/* the constant value of each channel is set by the loader (adc_const.c) */
+&adc0 {
+	nchannels = <14>;
+	ref-internal-mv = <3300>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@5 {
+		reg = <5>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@8 {
+		reg = <8>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@9 {
+		reg = <9>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@10 {
+		reg = <10>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@11 {
+		reg = <11>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@12 {
+		reg = <12>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@13 {
+		reg = <13>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <10>;
+	};
+};

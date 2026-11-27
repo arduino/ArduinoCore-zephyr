@@ -28,8 +28,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 # and boards for exclude because we want to remove matching lines in boards.txt
 BOARD_DETAILS=$(extra/get_board_details.sh)
 if [ $ARTIFACT == "zephyr" ] ; then
-	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr ".[].variant")
-	EXCLUDED_BOARDS=""
+	# all boards, except the CI/dev only native_sim artifact
+	INCLUDED_VARIANTS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"native_sim\")) | .[].variant")
+	EXCLUDED_BOARDS=$(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact == \"native_sim\")) | .[].board")
 elif [ ! -f extra/artifacts/${ARTIFACT}.json ]; then
 	echo "Unknown artifact '$ARTIFACT'."
 	exit 3
@@ -80,6 +81,15 @@ for variant in $INCLUDED_VARIANTS ; do
 		RET=3
 	fi
 done
+
+# native_sim poses as the other boards, including their variant.h (see the
+# 'mimic' menu): add the headers of their variants (the ones in
+# variants/common/ are already included)
+if [ $ARTIFACT == "native_sim" ] ; then
+	for variant in $(echo ${BOARD_DETAILS} | jq -cr "map(select(.artifact != \"native_sim\")) | .[].variant") ; do
+		ls variants/${variant}/*.h >> ${TEMP_INC}
+	done
+fi
 
 # deduplicate llext-edk headers shared by all included variants
 # (CI only: this modifies the working tree)

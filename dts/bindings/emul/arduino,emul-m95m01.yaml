@@ -1,0 +1,24 @@
+# Copyright (c) Arduino s.r.l. and/or its affiliated companies
+# SPDX-License-Identifier: Apache-2.0
+
+title: Emulated ST M95M01 SPI EEPROM
+
+description: |
+    Emulated ST M95M01 SPI EEPROM (native_sim loader): 128 KiB in pages of
+    256 bytes, erased (0xff) at start, with the RDSR, WREN, WRDI, WRSR, READ
+    and WRITE commands; writes complete at once.
+
+    The chip select is a GPIO the sketch drives (e.g. with digitalWrite), not
+    the one of the SPI controller: the emulator follows the level of that
+    GPIO, and a command starts at each falling edge.
+
+compatible: "arduino,emul-m95m01"
+
+include: spi-device.yaml
+
+properties:
+  cs-monitor-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO (of an emulated GPIO controller) used as the chip select.
